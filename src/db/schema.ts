@@ -58,3 +58,4 @@ export const moods = pgTable('moods', {
   note: text('note'),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
