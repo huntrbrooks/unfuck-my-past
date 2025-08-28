@@ -1,10 +1,172 @@
 'use client'
 
-import React from 'react'
-import { Container, Row, Col, Card, Button } from 'react-bootstrap'
+import React, { useState, useEffect } from 'react'
+import { Container, Row, Col, Card, ProgressBar, Button, Form, Alert, Spinner } from 'react-bootstrap'
+import { useRouter } from 'next/navigation'
 import Navigation from '../../components/Navigation'
+import { DiagnosticQuestion } from '../../lib/diagnostic-questions'
+
+interface DiagnosticResponse {
+  question: DiagnosticQuestion
+  response: string
+  insight: string
+  model: string
+  timestamp: string
+}
 
 export default function Diagnostic() {
+  const router = useRouter()
+  const [questions, setQuestions] = useState<DiagnosticQuestion[]>([])
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [responses, setResponses] = useState<DiagnosticResponse[]>([])
+  const [currentResponse, setCurrentResponse] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [generatingInsight, setGeneratingInsight] = useState(false)
+  const [error, setError] = useState('')
+  const [userPreferences, setUserPreferences] = useState<any>(null)
+
+  useEffect(() => {
+    loadQuestions()
+  }, [])
+
+  const loadQuestions = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/diagnostic/questions')
+      if (!response.ok) {
+        throw new Error('Failed to load questions')
+      }
+      const data = await response.json()
+      setQuestions(data.questions)
+      setUserPreferences(data.userPreferences)
+    } catch (error) {
+      setError('Failed to load diagnostic questions. Please try again.')
+      console.error('Error loading questions:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmitResponse = async () => {
+    if (!currentResponse.trim()) return
+
+    setGeneratingInsight(true)
+    try {
+      const currentQuestion = questions[currentQuestionIndex]
+      
+      const response = await fetch('/api/diagnostic/insight', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: currentQuestion,
+          response: currentResponse,
+          useClaude: Math.random() > 0.5 // Randomly choose between GPT-4 and Claude
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate insight')
+      }
+
+      const insightData = await response.json()
+      
+      const newResponse: DiagnosticResponse = {
+        question: currentQuestion,
+        response: currentResponse,
+        insight: insightData.insight,
+        model: insightData.model,
+        timestamp: insightData.timestamp
+      }
+
+      setResponses([...responses, newResponse])
+      setCurrentResponse('')
+      
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1)
+      } else {
+        // All questions answered, generate summary
+        await generateSummary()
+      }
+    } catch (error) {
+      setError('Failed to generate insight. Please try again.')
+      console.error('Error generating insight:', error)
+    } finally {
+      setGeneratingInsight(false)
+    }
+  }
+
+  const generateSummary = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/diagnostic/summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate summary')
+      }
+
+      const summaryData = await response.json()
+      
+      // Redirect to results page with summary
+      router.push(`/diagnostic/results?summary=${encodeURIComponent(summaryData.summary)}`)
+    } catch (error) {
+      setError('Failed to generate summary. Please try again.')
+      console.error('Error generating summary:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const currentQuestion = questions[currentQuestionIndex]
+  const progress = ((currentQuestionIndex + 1) / questions.length) * 100
+
+  if (loading && questions.length === 0) {
+    return (
+      <>
+        <Navigation />
+        <Container className="py-5">
+          <Row className="justify-content-center">
+            <Col lg={8}>
+              <Card className="border-0 shadow-sm">
+                <Card.Body className="p-5 text-center">
+                  <Spinner animation="border" className="mb-3" />
+                  <h3>Loading your personalized questions...</h3>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
+      </>
+    )
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navigation />
+        <Container className="py-5">
+          <Row className="justify-content-center">
+            <Col lg={8}>
+              <Alert variant="danger">
+                <Alert.Heading>Error</Alert.Heading>
+                <p>{error}</p>
+                <Button variant="outline-danger" onClick={loadQuestions}>
+                  Try Again
+                </Button>
+              </Alert>
+            </Col>
+          </Row>
+        </Container>
+      </>
+    )
+  }
+
   return (
     <>
       <Navigation />
@@ -12,21 +174,93 @@ export default function Diagnostic() {
         <Row className="justify-content-center">
           <Col lg={8}>
             <Card className="border-0 shadow-sm">
-              <Card.Body className="p-5 text-center">
-                <h1 className="h2 mb-4">Diagnostic Assessment</h1>
-                <p className="lead mb-4">
-                  This is where the diagnostic Q&A engine will be built.
-                </p>
-                <p className="text-muted mb-4">
-                  Users will answer 3-10 adaptive questions and receive AI-powered insights.
-                </p>
-                
-                <div className="d-flex gap-3 justify-content-center">
-                  <Button variant="primary" href="/dashboard">
-                    Go to Dashboard
+              <Card.Body className="p-5">
+                {/* Progress */}
+                <div className="mb-4">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <small className="text-muted">Question {currentQuestionIndex + 1} of {questions.length}</small>
+                    <small className="text-muted">{Math.round(progress)}% complete</small>
+                  </div>
+                  <ProgressBar now={progress} className="mb-3" />
+                </div>
+
+                {/* Question */}
+                <div className="mb-4">
+                  <h3 className="mb-3">{currentQuestion?.question}</h3>
+                  {currentQuestion?.followUp && (
+                    <p className="text-muted mb-3">{currentQuestion.followUp}</p>
+                  )}
+                </div>
+
+                {/* Response Options or Text Input */}
+                {currentQuestion?.options ? (
+                  <div className="mb-4">
+                    {currentQuestion.options.map((option, index) => (
+                      <Button
+                        key={index}
+                        variant={currentResponse === option ? "primary" : "outline-primary"}
+                        className="w-100 text-start p-3 mb-2"
+                        onClick={() => setCurrentResponse(option)}
+                      >
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <Form.Group className="mb-4">
+                    <Form.Control
+                      as="textarea"
+                      rows={4}
+                      placeholder="Share your thoughts here..."
+                      value={currentResponse}
+                      onChange={(e) => setCurrentResponse(e.target.value)}
+                      disabled={generatingInsight}
+                    />
+                  </Form.Group>
+                )}
+
+                {/* Previous Insights */}
+                {responses.length > 0 && (
+                  <div className="mb-4">
+                    <h5 className="mb-3">Previous Insights</h5>
+                    {responses.slice(-2).map((response, index) => (
+                      <Card key={index} className="mb-3 border-left-primary">
+                        <Card.Body>
+                          <p className="text-muted mb-2">
+                            <small>Powered by {response.model}</small>
+                          </p>
+                          <p className="mb-0">{response.insight}</p>
+                        </Card.Body>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* Navigation */}
+                <div className="d-flex justify-content-between">
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
+                    disabled={currentQuestionIndex === 0 || generatingInsight}
+                  >
+                    Previous
                   </Button>
-                  <Button variant="outline-secondary" href="/onboarding">
-                    Back to Onboarding
+                  
+                  <Button
+                    variant="primary"
+                    onClick={handleSubmitResponse}
+                    disabled={!currentResponse.trim() || generatingInsight}
+                  >
+                    {generatingInsight ? (
+                      <>
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        Analyzing...
+                      </>
+                    ) : currentQuestionIndex === questions.length - 1 ? (
+                      'Complete Assessment'
+                    ) : (
+                      'Next Question'
+                    )}
                   </Button>
                 </div>
               </Card.Body>
