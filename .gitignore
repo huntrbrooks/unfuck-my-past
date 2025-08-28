@@ -58,3 +58,6 @@ jspm_packages/
 .DS_Store
 Thumbs.db
 
+
+# clerk configuration (can include secrets)
+/.clerk/

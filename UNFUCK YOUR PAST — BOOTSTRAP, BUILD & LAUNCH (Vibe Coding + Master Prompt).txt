@@ -1,0 +1,114 @@
+UNFUCK YOUR PAST — BOOTSTRAP, BUILD & LAUNCH (Vibe Coding + Master Prompt)
+This guide integrates the Master Prompt for Vibe Coding【42†Master Prompt for Vibe Coding.docx】 with the Unfuck Your Past Blueprint【43†Unfuck Your Past Outline.docx】 and Build Plan【44†Building unfuck your past.docx】. It reframes everything into the required PRD → Bootstrap → Iteration Loop structure.
+ 
+PRODUCT REQUIREMENTS DOCUMENT (PRD)
+Overview
+A Bootstrap-based webapp called Unfuck Your Past that guides users through self-discovery and healing. Free onboarding + diagnostic preview → $10 diagnostic unlock → $29.95 structured 30-day program. Future subscription expansion.
+Target Audience & UX Considerations
+•	Adults seeking structured, AI-driven self-healing.
+•	UX: zero-friction entry (no signup upfront), Bootstrap-responsive design, minimal cognitive load.
+•	Emotional: empathetic but raw. Safety-first with disclaimers and crisis resources.
+Tech Stack
+•	Frontend: Bootstrap 5 + React (for interactivity) → integrated into Next.js scaffold.
+•	Backend: Next.js API routes (serverless) + Postgres (Supabase/Neon) + Drizzle ORM.
+•	Auth: Clerk (email/social login, minimal friction).
+•	Payments: Stripe Checkout.
+•	Storage: Supabase (audio, journals).
+•	Analytics: PostHog.
+•	Infra: Vercel.
+•	AI: OpenAI GPT‑4o/4o‑mini, STT model for voice transcription.
+Core Features
+Milestone 1 (MVP) - Landing page (Bootstrap scaffold). - 10-step onboarding wizard (Bootstrap components, progress bar). - Diagnostic Q&A engine (voice/text, mini-summaries). - Paywall ($10 diagnostic unlock). - Insights: Trauma Map + Hierarchy of Avoidance + Core Blocker. - Stripe integration.
+Milestone 2 (Program) - $29.95 upsell → drip-fed 30-day program. - Journaling + mood tracking (Bootstrap forms, autosave). - Daily/weekly tasks. - Program dashboard.
+Excellence Details - Accessibility (WCAG AA). - Security: RLS policies, Stripe webhook hardening, rate limits. - Scalability: modular components, CI/CD with Vercel.
+ 
+DEVELOPMENT WORKFLOW (Vibe Coding Adaptation)
+4 Levels of Thinking
+1.	Logical – It’s an AI self-healing consultant app.
+2.	Analytical – Goal: hook users with free onboarding + mini-summaries, monetize with diagnostic & program.
+3.	Computational – Features: onboarding wizard, adaptive Q&A, AI summaries, paywall, insights engine, drip-feed program.
+4.	Procedural – Deliver with Bootstrap for responsive UI, secure flows, emotional safety, analytics, and upgrade paths.
+Bootstrap Integration
+•	Use Bootstrap grid + components for base layout (navbar, footer, cards, forms, modals).
+•	Layer in React + Next.js for dynamic content.
+•	Use Bootstrap JS utilities (alerts, modals) for risk & safety flows.
+Iteration Loop
+•	Feature → Test → Commit → Deploy Preview.
+•	Debug → fix → commit.
+•	Use GitHub commits as checkpoints.
+ 
+STEP-BY-STEP PLAN
+Week 0.5 — Project Scaffold & Env
+•	Install Node 20, PNPM, VS Code/Cursor.
+•	create-next-app@latest ufyp --typescript.
+•	Add Bootstrap 5, Clerk, Stripe SDK, Drizzle, PostHog.
+•	GitHub repo init. Push baseline.
+•	Vercel deploy baseline (/, /dashboard, /api/health).
+✅ Done when: Auth works, dashboard loads, deploy preview live.
+ 
+Week 1 — Data Model + Content Seeding
+Tables: users, onboarding, questions, answers, purchases, program_days, progress, journals, moods. Seed: 30-day program stubs, trauma map sample outputs, playlists.
+✅ Done when: /journey/day/1 loads tone-specific content from DB.
+ 
+Week 2 — Onboarding + Diagnostic Engine
+•	Build 10-step wizard (Bootstrap form wizard, progress bar).
+•	Store responses in DB.
+•	Diagnostic Q&A (3–10 questions) → store responses + transcripts.
+•	After each: AI mini-summary (“What this tells me”).
+•	Paywall after diagnostic → $10 unlock.
+✅ Done when: user can onboard, answer Qs, see free summaries, then hit paywall.
+ 
+Week 3 — Payments + Program Unlock
+•	Stripe Checkout: $10 diagnostic, $29.95 program.
+•	Webhooks update purchases table.
+•	Drip program: unlock next day at midnight.
+•	Journals + moods autosave.
+•	Safety: banners, skip/swap prompts, crisis modal.
+✅ Done when: purchase flows work, drip works, journal export works.
+ 
+Week 4 — UX Polish + Analytics
+•	WCAG AA accessibility pass.
+•	Bootstrap styling polish (responsive grids, alerts, cards).
+•	Analytics funnel (PostHog): onboarding → diagnostic → paywall → Day 30.
+✅ Done when: smooth UX, analytics visible, 90% test coverage.
+ 
+Week 5 — Closed Beta & Soft Launch
+•	Recruit 20–40 testers.
+•	Feedback modal.
+•	Fix P0/P1 bugs.
+•	Publish Privacy/ToS.
+•	Soft launch via socials + The Come Up.
+✅ Done when: testers complete full flow → diagnostic → paywall → Day 1 program.
+ 
+COMMAND CHEATSHEET
+# Create app
+npx create-next-app@latest ufyp --typescript
+
+# Add Bootstrap
+pnpm add bootstrap react-bootstrap
+
+# Add core deps
+pnpm add @clerk/nextjs drizzle-orm stripe openai @supabase/supabase-js posthog-js
+
+# Dev
+pnpm dev
+ 
+SAFETY & ETHICS
+•	Bootstrap modal for crisis alerts.
+•	Content warnings & skip flows.
+•	Disclaimer: not therapy, emergency numbers (000, Lifeline 13 11 14, Beyond Blue 1300 22 4636).
+ 
+DEFINITION OF DONE (MVP)
+•	User can onboard with Bootstrap wizard.
+•	Complete diagnostic Q&A with free mini-summaries.
+•	Pay $10 → unlock Trauma Map & Report.
+•	Pay $29.95 → unlock 30-day program.
+•	Journaling + moods functional.
+•	Privacy, safety, disclaimers in place.
+•	App live on Vercel with Stripe test → closed beta ready.
+ 
+NEXT STEPS
+1.	Start Week 0.5 scaffold.
+2.	Use Vibe Prompts in Cursor/VS Code for each feature.
+3.	Commit early, deploy often.
+4.	Circle back weekly to PRD to check alignment with Blueprint.

@@ -1,0 +1,78 @@
+Unfuck Your Past – PRD
+1. Overview
+Unfuck Your Past is a self-healing web application that uses AI to guide users through self-discovery, trauma unpacking, and behaviour change.
+The journey:
+•	Free onboarding (10-step personalisation).
+•	Free diagnostic preview (3–10 adaptive questions).
+•	$10 paywall unlock for the full diagnostic report.
+•	$29.95 upsell for a structured 30-day “Unfuck Your Past” program.
+•	Future: subscription ($9.99/month) for ongoing modules and community features.
+ 
+2. Target Audience
+•	Adults seeking affordable, accessible mental-health style self-help.
+•	People interested in raw, AI-driven coaching without therapy waitlists.
+•	Needs: anonymity, personalisation, structured habit-building, and safe exploration.
+UX Considerations:
+•	Zero-friction entry (no signup upfront).
+•	Mobile-first responsive design.
+•	Emotional tone: empathetic yet raw, with safety-first disclaimers.
+•	Personalisation (voice, tone, rawness, depth, learning style).
+ 
+3. Core Features
+Milestone 1 – MVP (Diagnostic)
+•	Landing Page: Bootstrap-based, simple explanation + entry point.
+•	10-step onboarding wizard: tone, voice, rawness, safety, engagement style.
+•	Diagnostic Q&A: 3–10 adaptive questions, answered via text or voice.
+•	Mini-summaries: After each Q, “What this tells me” insight.
+•	Paywall ($10): Unlock full Diagnostic Report.
+•	Report Features:
+o	Why Your Past is Fucked breakdown.
+o	Trauma Map (visual diagram).
+o	Hierarchy of Avoidance.
+o	Core Blocker (primary issue keeping them stuck).
+Milestone 2 – 30-Day Program
+•	$29.95 upsell after diagnostic.
+•	Daily drip-fed tasks (journaling, breathwork, reframing).
+•	Weekly challenges (controlled avoidance exposure).
+•	Progress dashboard with streaks & milestones.
+•	Journaling + mood tracking (autosave, exportable).
+•	AI check-ins (encouragement or tough love).
+Excellence & Safety
+•	Crisis banners + skip/swap prompts.
+•	Accessibility compliance (WCAG AA).
+•	Disclaimer: Not therapy. Emergency links included.
+ 
+4. Tech Stack
+•	Frontend: Next.js + React + Bootstrap 5 (UI) + Tailwind + shadcn/ui.
+•	Backend: Next.js API routes.
+•	Database: Postgres (Supabase/Neon) with Drizzle ORM.
+•	Auth: Clerk (social/email login).
+•	Payments: Stripe Checkout (one-time + subscription).
+•	Storage: Supabase (journals, audio).
+•	Analytics: PostHog (funnels: onboarding → diagnostic → program).
+•	Infra: Vercel (CI/CD, deploy previews).
+•	AI: GPT-4o/4o-mini + STT for transcription.
+ 
+5. Monetisation
+•	Free: Onboarding + free diagnostic previews.
+•	$10: Diagnostic Report unlock.
+•	$29.95: 30-Day Program.
+•	Future: $9.99/month subscription with extended modules, therapist upsells, and community hub.
+ 
+6. Development Workflow (Solo Founder / Vibe Coding)
+•	Week 0.5: Scaffold app (Next.js + Bootstrap + Clerk + Stripe + Drizzle + PostHog).
+•	Week 1: Database schema + seed content (program days, trauma map examples).
+•	Week 2: Onboarding + Diagnostic engine (free summaries + paywall).
+•	Week 3: Payments + Program unlock (drip content, journaling, safety features).
+•	Week 4: UX polish + analytics tracking.
+•	Week 5: Closed beta (20–40 testers), soft launch via socials + The Come Up.
+ 
+7. Definition of Done (MVP)
+✅ User completes onboarding with personalisation.
+✅ User answers diagnostic Q&A, gets mini-summaries, and hits paywall.
+✅ $10 payment unlocks Trauma Map & Diagnostic Report.
+✅ $29.95 unlocks 30-day drip program.
+✅ Journaling + mood tracking functional (exportable).
+✅ Privacy, disclaimers, and crisis resources in place.
+✅ App live on Vercel with Stripe test + closed beta ready.
+
