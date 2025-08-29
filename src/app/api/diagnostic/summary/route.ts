@@ -6,14 +6,11 @@ import { eq, desc } from 'drizzle-orm'
 
 export async function POST(request: NextRequest) {
   try {
-    // Temporarily disable authentication for testing
-    // const { userId } = await auth()
-    // if (!userId) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
+    const { userId } = await auth()
     
-    // Use a test user ID for now
-    const userId = 'test-user-123'
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     // Get all user responses from the current session using Drizzle ORM
     const answersResult = await db.select({

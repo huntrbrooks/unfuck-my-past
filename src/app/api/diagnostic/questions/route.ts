@@ -6,14 +6,11 @@ import { eq } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
-    // Temporarily disable authentication for testing
-    // const { userId } = await auth()
-    // if (!userId) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
+    const { userId } = await auth()
     
-    // Use a test user ID for now
-    const userId = 'test-user-123'
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     // Get user preferences from database using Drizzle ORM
     const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1)

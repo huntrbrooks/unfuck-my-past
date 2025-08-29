@@ -22,6 +22,7 @@ export default function Navigation() {
             {isSignedIn && (
               <>
                 <Nav.Link as={Link} href="/dashboard">Dashboard</Nav.Link>
+                <Nav.Link as={Link} href="/program">30-Day Program</Nav.Link>
                 <Nav.Link as={Link} href="/onboarding">Continue Journey</Nav.Link>
               </>
             )}
