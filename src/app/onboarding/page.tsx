@@ -190,17 +190,6 @@ export default function Onboarding() {
   const currentStepData = onboardingSteps[currentStep]
   const progress = ((currentStep + 1) / onboardingSteps.length) * 100
 
-  // Show loading while Clerk is initializing
-  if (!isLoaded) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    )
-  }
-
   const handleOptionSelect = (value: string) => {
     if (currentStepData.multiSelect) {
       // Handle multi-select fields
@@ -316,6 +305,17 @@ export default function Onboarding() {
     } else {
       return onboardingData[currentStepData.field as keyof OnboardingData] === value
     }
+  }
+
+  // Show loading while Clerk is initializing
+  if (!isLoaded) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    )
   }
 
   return (
