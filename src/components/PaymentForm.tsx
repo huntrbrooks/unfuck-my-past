@@ -45,28 +45,9 @@ function CheckoutForm({ productType, amount, onSuccess, onCancel }: PaymentFormP
         return
       }
 
-      // Create payment intent
-      const createIntentResponse = await fetch('/api/payments/create-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ productType }),
-      })
-
-      if (!createIntentResponse.ok) {
-        const errorData = await createIntentResponse.json()
-        setError(errorData.error || 'Failed to create payment')
-        setLoading(false)
-        return
-      }
-
-      const { clientSecret } = await createIntentResponse.json()
-
-      // Confirm payment
+      // Confirm payment with existing client secret
       const { error: confirmError } = await stripe.confirmPayment({
         elements,
-        clientSecret,
         confirmParams: {
           return_url: `${window.location.origin}/payment-success`,
         },
@@ -164,6 +145,8 @@ export default function PaymentForm(props: PaymentFormProps) {
     const createIntent = async () => {
       try {
         setError('')
+        console.log('Creating payment intent for:', props.productType)
+        
         const response = await fetch('/api/payments/create-intent', {
           method: 'POST',
           headers: {
@@ -172,13 +155,17 @@ export default function PaymentForm(props: PaymentFormProps) {
           body: JSON.stringify({ productType: props.productType }),
         })
 
+        console.log('Payment intent response status:', response.status)
+
         if (!response.ok) {
           const errorData = await response.json()
+          console.error('Payment intent error:', errorData)
           throw new Error(errorData.error || 'Failed to create payment intent')
         }
 
-        const { clientSecret } = await response.json()
-        setClientSecret(clientSecret)
+        const data = await response.json()
+        console.log('Payment intent created successfully:', data)
+        setClientSecret(data.clientSecret)
       } catch (error) {
         console.error('Error creating payment intent:', error)
         setError(error instanceof Error ? error.message : 'Failed to load payment form')
