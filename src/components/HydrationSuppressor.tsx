@@ -15,7 +15,7 @@ export default function HydrationSuppressor({ children }: HydrationSuppressorPro
 
   // During SSR and initial hydration, render a minimal version
   if (!isHydrated) {
-    return <div style={{ visibility: 'hidden' }}>{children}</div>
+    return <div className="hydration-hidden">{children}</div>
   }
 
   // After hydration, render normally

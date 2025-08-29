@@ -66,8 +66,8 @@ export default function PaymentSuccess() {
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
-              <Card className="border-0 shadow-sm">
-                <Card.Body className="p-5 text-center">
+              <Card className="card-shadow">
+                <Card.Body className="p-5 text-center loading-spinner">
                   <Spinner animation="border" className="mb-3" />
                   <h3>Confirming your payment...</h3>
                   <p className="text-muted">Please wait while we process your payment.</p>
@@ -87,7 +87,7 @@ export default function PaymentSuccess() {
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
-              <Alert variant="danger">
+              <Alert variant="danger" className="alert-custom">
                 <Alert.Heading>Payment Error</Alert.Heading>
                 <p>{error}</p>
                 <Button variant="outline-danger" onClick={() => router.push('/diagnostic/results')}>
@@ -108,7 +108,7 @@ export default function PaymentSuccess() {
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
-              <Card className="border-0 shadow-sm border-success">
+              <Card className="card-shadow border-success">
                 <Card.Body className="p-5 text-center">
                   <div className="mb-4">
                     <span className="display-1">✅</span>

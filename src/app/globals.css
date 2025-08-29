@@ -36,6 +36,11 @@ body {
   min-height: 75vh;
 }
 
+/* Hydration Suppressor */
+.hydration-hidden {
+  visibility: hidden;
+}
+
 /* Feature Icons */
 .feature-icon {
   width: 60px;
