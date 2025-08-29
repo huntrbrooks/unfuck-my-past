@@ -1,42 +1,67 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Card, Button, Alert, Badge } from 'react-bootstrap'
-import { useSearchParams } from 'next/navigation'
+import { Container, Row, Col, Card, Button, Alert, Badge, Modal } from 'react-bootstrap'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Navigation from '../../../components/Navigation'
+import PaymentForm from '../../../components/PaymentForm'
 
 export default function DiagnosticResults() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const summary = searchParams.get('summary')
   const [loading, setLoading] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentType, setPaymentType] = useState<'diagnostic' | 'program' | null>(null)
+  const [userPurchases, setUserPurchases] = useState<string[]>([])
 
-  const handlePurchaseReport = async () => {
-    setLoading(true)
+  useEffect(() => {
+    // Check user's existing purchases
+    checkUserPurchases()
+  }, [])
+
+  const checkUserPurchases = async () => {
     try {
-      // TODO: Integrate with Stripe for $10 payment
-      console.log('Purchase diagnostic report for $10')
-      // For now, just redirect to dashboard
-      window.location.href = '/dashboard'
+      const response = await fetch('/api/payments/user-purchases')
+      if (response.ok) {
+        const data = await response.json()
+        setUserPurchases(data.purchases || [])
+      }
     } catch (error) {
-      console.error('Error processing purchase:', error)
-    } finally {
-      setLoading(false)
+      console.error('Error checking purchases:', error)
     }
   }
 
-  const handleStartProgram = async () => {
-    setLoading(true)
-    try {
-      // TODO: Integrate with Stripe for $29.95 payment
-      console.log('Purchase 30-day program for $29.95')
-      // For now, just redirect to dashboard
-      window.location.href = '/dashboard'
-    } catch (error) {
-      console.error('Error processing purchase:', error)
-    } finally {
-      setLoading(false)
-    }
+  const handlePurchase = (type: 'diagnostic' | 'program') => {
+    setPaymentType(type)
+    setShowPaymentModal(true)
   }
+
+  const handlePaymentSuccess = async () => {
+    setShowPaymentModal(false)
+    setLoading(true)
+    
+    // Refresh user purchases
+    await checkUserPurchases()
+    
+    // Redirect based on what was purchased
+    if (paymentType === 'program') {
+      router.push('/program')
+    } else {
+      // For diagnostic, stay on results page but show full report
+      router.refresh()
+    }
+    
+    setLoading(false)
+  }
+
+  const handlePaymentCancel = () => {
+    setShowPaymentModal(false)
+    setPaymentType(null)
+  }
+
+  const hasDiagnosticAccess = userPurchases.includes('diagnostic')
+  const hasProgramAccess = userPurchases.includes('program')
 
   if (!summary) {
     return (
@@ -109,15 +134,21 @@ export default function DiagnosticResults() {
                       <span className="h4 text-primary">$10</span>
                       <small className="text-muted d-block">One-time purchase</small>
                     </div>
-                    <Button 
-                      variant="outline-primary" 
-                      size="lg" 
-                      className="w-100"
-                      onClick={handlePurchaseReport}
-                      disabled={loading}
-                    >
-                      {loading ? 'Processing...' : 'Get Full Report'}
-                    </Button>
+                    {hasDiagnosticAccess ? (
+                      <Button variant="success" size="lg" className="w-100" disabled>
+                        ✅ Already Purchased
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline-primary" 
+                        size="lg" 
+                        className="w-100"
+                        onClick={() => handlePurchase('diagnostic')}
+                        disabled={loading}
+                      >
+                        {loading ? 'Processing...' : 'Get Full Report'}
+                      </Button>
+                    )}
                   </Card.Body>
                 </Card>
               </Col>
@@ -136,15 +167,21 @@ export default function DiagnosticResults() {
                       <span className="h4 text-primary">$29.95</span>
                       <small className="text-muted d-block">Complete program</small>
                     </div>
-                    <Button 
-                      variant="primary" 
-                      size="lg" 
-                      className="w-100"
-                      onClick={handleStartProgram}
-                      disabled={loading}
-                    >
-                      {loading ? 'Processing...' : 'Start Healing Journey'}
-                    </Button>
+                    {hasProgramAccess ? (
+                      <Button variant="success" size="lg" className="w-100" href="/program">
+                        ✅ Access Program
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="primary" 
+                        size="lg" 
+                        className="w-100"
+                        onClick={() => handlePurchase('program')}
+                        disabled={loading}
+                      >
+                        {loading ? 'Processing...' : 'Start Healing Journey'}
+                      </Button>
+                    )}
                   </Card.Body>
                 </Card>
               </Col>
@@ -189,8 +226,25 @@ export default function DiagnosticResults() {
           </Col>
         </Row>
       </Container>
+
+      {/* Payment Modal */}
+      <Modal show={showPaymentModal} onHide={handlePaymentCancel} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {paymentType === 'diagnostic' ? 'Purchase Diagnostic Report' : 'Purchase 30-Day Program'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {paymentType && (
+            <PaymentForm
+              productType={paymentType}
+              amount={paymentType === 'diagnostic' ? 1000 : 2995}
+              onSuccess={handlePaymentSuccess}
+              onCancel={handlePaymentCancel}
+            />
+          )}
+        </Modal.Body>
+      </Modal>
     </>
   )
 }
-
-

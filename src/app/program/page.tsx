@@ -31,10 +31,32 @@ export default function Program() {
   const [currentDay, setCurrentDay] = useState<ProgramDay | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [hasAccess, setHasAccess] = useState(false)
+  const [checkingAccess, setCheckingAccess] = useState(true)
 
   useEffect(() => {
-    loadProgramData()
+    checkProgramAccess()
   }, [])
+
+  const checkProgramAccess = async () => {
+    try {
+      const response = await fetch('/api/payments/user-purchases')
+      if (response.ok) {
+        const data = await response.json()
+        const hasProgramAccess = data.purchases.includes('program')
+        setHasAccess(hasProgramAccess)
+        
+        if (hasProgramAccess) {
+          loadProgramData()
+        }
+      }
+    } catch (error) {
+      console.error('Error checking program access:', error)
+      setError('Failed to check program access')
+    } finally {
+      setCheckingAccess(false)
+    }
+  }
 
   const loadProgramData = async () => {
     try {
@@ -114,6 +136,47 @@ export default function Program() {
       case 'action': return 'success'
       default: return 'secondary'
     }
+  }
+
+  if (checkingAccess) {
+    return (
+      <>
+        <Navigation />
+        <Container className="py-5">
+          <Row className="justify-content-center">
+            <Col lg={8}>
+              <Card className="border-0 shadow-sm">
+                <Card.Body className="p-5 text-center">
+                  <Spinner animation="border" className="mb-3" />
+                  <h3>Checking program access...</h3>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
+      </>
+    )
+  }
+
+  if (!hasAccess) {
+    return (
+      <>
+        <Navigation />
+        <Container className="py-5">
+          <Row className="justify-content-center">
+            <Col lg={8}>
+              <Alert variant="warning">
+                <Alert.Heading>Program Access Required</Alert.Heading>
+                <p>You need to purchase the 30-day program to access this content.</p>
+                <Button variant="primary" href="/diagnostic/results">
+                  Get Program Access
+                </Button>
+              </Alert>
+            </Col>
+          </Row>
+        </Container>
+      </>
+    )
   }
 
   if (loading) {
