@@ -131,3 +131,5 @@ Keep the tone ${userPreferences.tone} and depth ${userPreferences.depth}. Be ${u
     return await this.generateInsight(summaryPrompt, '', false) // Use GPT-4 for summaries
   }
 }
+
+
