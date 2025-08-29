@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Card, ProgressBar, Button, Form, Alert } from 'react-bootstrap'
+import { Container, Row, Col, Card, ProgressBar, Button, Form, Alert, ButtonGroup } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import SkeletonCard from '../../components/SkeletonCard'
+import VoiceRecorder from '../../components/VoiceRecorder'
 import { DiagnosticQuestion } from '../../lib/diagnostic-questions'
 
 interface DiagnosticResponse {
@@ -24,6 +25,8 @@ export default function Diagnostic() {
   const [loading, setLoading] = useState(false)
   const [generatingInsight, setGeneratingInsight] = useState(false)
   const [error, setError] = useState('')
+  const [inputMode, setInputMode] = useState<'text' | 'voice'>('text')
+  const [voiceError, setVoiceError] = useState<string | null>(null)
   const [userPreferences, setUserPreferences] = useState<any>(null)
 
   useEffect(() => {
@@ -96,6 +99,15 @@ export default function Diagnostic() {
     } finally {
       setGeneratingInsight(false)
     }
+  }
+
+  const handleVoiceTranscription = (transcript: string) => {
+    setCurrentResponse(transcript)
+    setVoiceError(null)
+  }
+
+  const handleVoiceError = (error: string) => {
+    setVoiceError(error)
   }
 
   const generateSummary = async () => {
@@ -192,7 +204,7 @@ export default function Diagnostic() {
                   )}
                 </div>
 
-                {/* Response Options or Text Input */}
+                {/* Response Options or Text/Voice Input */}
                 {currentQuestion?.options ? (
                   <div className="mb-4">
                     {currentQuestion.options.map((option, index) => (
@@ -208,16 +220,71 @@ export default function Diagnostic() {
                     ))}
                   </div>
                 ) : (
-                  <Form.Group className="mb-4">
-                    <Form.Control
-                      as="textarea"
-                      rows={4}
-                      placeholder="Share your thoughts here..."
-                      value={currentResponse}
-                      onChange={(e) => setCurrentResponse(e.target.value)}
-                      disabled={generatingInsight}
-                    />
-                  </Form.Group>
+                  <div className="mb-4">
+                    {/* Input Mode Toggle */}
+                    <div className="mb-3">
+                      <ButtonGroup className="w-100">
+                        <Button
+                          variant={inputMode === 'text' ? 'primary' : 'outline-primary'}
+                          onClick={() => setInputMode('text')}
+                          disabled={generatingInsight}
+                        >
+                          <i className="bi bi-pencil me-2"></i>
+                          Type
+                        </Button>
+                        <Button
+                          variant={inputMode === 'voice' ? 'primary' : 'outline-primary'}
+                          onClick={() => setInputMode('voice')}
+                          disabled={generatingInsight}
+                        >
+                          <i className="bi bi-mic me-2"></i>
+                          Voice
+                        </Button>
+                      </ButtonGroup>
+                    </div>
+
+                    {/* Voice Input */}
+                    {inputMode === 'voice' && (
+                      <div className="mb-3">
+                        <VoiceRecorder
+                          onTranscription={handleVoiceTranscription}
+                          onError={handleVoiceError}
+                          disabled={generatingInsight}
+                          placeholder="Click to start recording your response..."
+                          className="mb-3"
+                        />
+                        {voiceError && (
+                          <Alert variant="danger" dismissible onClose={() => setVoiceError(null)}>
+                            {voiceError}
+                          </Alert>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Text Input */}
+                    {inputMode === 'text' && (
+                      <Form.Group>
+                        <Form.Control
+                          as="textarea"
+                          rows={4}
+                          placeholder="Share your thoughts here..."
+                          value={currentResponse}
+                          onChange={(e) => setCurrentResponse(e.target.value)}
+                          disabled={generatingInsight}
+                        />
+                      </Form.Group>
+                    )}
+
+                    {/* Current Response Display */}
+                    {currentResponse && (
+                      <div className="mt-3">
+                        <Alert variant="info">
+                          <strong>Your Response:</strong>
+                          <div className="mt-2">{currentResponse}</div>
+                        </Alert>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Previous Insights */}

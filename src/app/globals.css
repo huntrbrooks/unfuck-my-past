@@ -573,11 +573,170 @@ body {
 }
 
 /* Print Styles */
+/* Voice Recorder Styles */
+.voice-recorder {
+  border: 2px dashed #dee2e6;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  transition: all 0.3s ease;
+}
+
+.voice-recorder:hover {
+  border-color: #007bff;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.voice-button {
+  min-width: 160px;
+  border-radius: 50px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.voice-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+}
+
+.transcript-display {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.transcript-content {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.transcript-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #495057;
+  margin-top: 0.5rem;
+  white-space: pre-wrap;
+}
+
+.interim-text {
+  color: #6c757d;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(220, 53, 69, 0.1);
+  border-radius: 8px;
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.pulse-dot {
+  width: 12px;
+  height: 12px;
+  background: #dc3545;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.voice-placeholder {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
+.voice-placeholder i {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+/* Dark mode support for voice recorder */
+[data-bs-theme="dark"] .voice-recorder {
+  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+  border-color: #4a5568;
+}
+
+[data-bs-theme="dark"] .voice-recorder:hover {
+  border-color: #3182ce;
+  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
+}
+
+[data-bs-theme="dark"] .transcript-display {
+  background: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+[data-bs-theme="dark"] .transcript-text {
+  color: #e2e8f0;
+}
+
+[data-bs-theme="dark"] .interim-text {
+  color: #a0aec0;
+}
+
+[data-bs-theme="dark"] .recording-indicator {
+  background: rgba(245, 101, 101, 0.2);
+  color: #f56565;
+}
+
+[data-bs-theme="dark"] .pulse-dot {
+  background: #f56565;
+}
+
+[data-bs-theme="dark"] .voice-placeholder {
+  color: #a0aec0;
+}
+
+/* Mobile responsive voice recorder */
+@media (max-width: 768px) {
+  .voice-recorder {
+    padding: 1rem;
+  }
+  
+  .voice-button {
+    min-width: 140px;
+    font-size: 0.9rem;
+  }
+  
+  .transcript-display {
+    padding: 0.75rem;
+  }
+  
+  .transcript-text {
+    font-size: 0.9rem;
+  }
+}
+
 @media print {
   .no-print {
     display: none !important;
   }
-  
+
   .print-only {
     display: block !important;
   }
