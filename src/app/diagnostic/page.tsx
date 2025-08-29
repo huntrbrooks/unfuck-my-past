@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, ProgressBar, Button, Form, Alert } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
-import Navigation from '../../components/Navigation'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import SkeletonCard from '../../components/SkeletonCard'
 import { DiagnosticQuestion } from '../../lib/diagnostic-questions'
@@ -131,7 +130,6 @@ export default function Diagnostic() {
   if (loading && questions.length === 0) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -153,7 +151,6 @@ export default function Diagnostic() {
   if (error) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -173,7 +170,6 @@ export default function Diagnostic() {
 
   return (
     <>
-      <Navigation />
       <Container className="py-5">
         <Row className="justify-content-center">
           <Col lg={8}>

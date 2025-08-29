@@ -4,7 +4,6 @@ import React, { useState } from 'react'
 import { Container, Row, Col, Card, ProgressBar, Button, Form } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
-import Navigation from '../../components/Navigation'
 
 interface OnboardingData {
   tone: string
@@ -320,7 +319,6 @@ export default function Onboarding() {
 
   return (
     <>
-      <Navigation />
       <Container className="py-5">
         <Row className="justify-content-center">
           <Col lg={8}>

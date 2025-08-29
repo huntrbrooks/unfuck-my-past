@@ -2,12 +2,10 @@
 
 import React from 'react'
 import { Container, Row, Col, Card, Button } from 'react-bootstrap'
-import Navigation from '../../components/Navigation'
 
 export default function HowItWorks() {
   return (
     <>
-      <Navigation />
       <Container className="py-5">
         <Row>
           <Col>

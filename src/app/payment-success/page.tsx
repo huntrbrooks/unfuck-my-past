@@ -3,7 +3,6 @@
 import React, { useEffect, useState, Suspense } from 'react'
 import { Container, Row, Col, Card, Button, Alert, Spinner } from 'react-bootstrap'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Navigation from '../../components/Navigation'
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams()
@@ -62,7 +61,6 @@ function PaymentSuccessContent() {
   if (loading) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -83,7 +81,6 @@ function PaymentSuccessContent() {
   if (error) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -102,10 +99,9 @@ function PaymentSuccessContent() {
   }
 
   if (success) {
-    return (
-      <>
-        <Navigation />
-        <Container className="py-5">
+      return (
+    <>
+      <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
               <Card className="card-shadow border-success">
@@ -136,7 +132,6 @@ export default function PaymentSuccess() {
   return (
     <Suspense fallback={
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>

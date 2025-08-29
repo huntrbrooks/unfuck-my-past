@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import { Container, Row, Col, Card, ProgressBar, Button, Badge, Alert } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
-import Navigation from '../../components/Navigation'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import SkeletonGrid from '../../components/SkeletonGrid'
 
@@ -143,7 +142,6 @@ export default function Program() {
   if (checkingAccess) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -165,7 +163,6 @@ export default function Program() {
   if (!hasAccess) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -186,7 +183,6 @@ export default function Program() {
   if (loading) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -208,7 +204,6 @@ export default function Program() {
   if (error) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -229,7 +224,6 @@ export default function Program() {
   if (!progress) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -249,7 +243,6 @@ export default function Program() {
 
   return (
     <>
-      <Navigation />
       <Container className="py-5">
         {/* Header */}
         <Row className="mb-5">

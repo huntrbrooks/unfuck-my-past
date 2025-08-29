@@ -3,7 +3,6 @@
 import React, { useState, useEffect, Suspense } from 'react'
 import { Container, Row, Col, Card, Button, Alert, Badge, Modal, Spinner } from 'react-bootstrap'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Navigation from '../../../components/Navigation'
 import PaymentForm from '../../../components/PaymentForm'
 
 function DiagnosticResultsContent() {
@@ -68,7 +67,6 @@ function DiagnosticResultsContent() {
   if (!summary) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -88,7 +86,6 @@ function DiagnosticResultsContent() {
 
   return (
     <>
-      <Navigation />
       <Container className="py-5">
         <Row className="justify-content-center">
           <Col lg={10}>
@@ -255,7 +252,6 @@ export default function DiagnosticResults() {
   return (
     <Suspense fallback={
       <>
-        <Navigation />
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
