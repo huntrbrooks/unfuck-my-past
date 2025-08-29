@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Card, Button, Alert, Badge, Modal } from 'react-bootstrap'
+import React, { useState, useEffect, Suspense } from 'react'
+import { Container, Row, Col, Card, Button, Alert, Badge, Modal, Spinner } from 'react-bootstrap'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navigation from '../../../components/Navigation'
 import PaymentForm from '../../../components/PaymentForm'
 
-export default function DiagnosticResults() {
+function DiagnosticResultsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const summary = searchParams.get('summary')
@@ -246,5 +246,29 @@ export default function DiagnosticResults() {
         </Modal.Body>
       </Modal>
     </>
+  )
+}
+
+export default function DiagnosticResults() {
+  return (
+    <Suspense fallback={
+      <>
+        <Navigation />
+        <Container className="py-5">
+          <Row className="justify-content-center">
+            <Col lg={8}>
+              <Card className="card-shadow">
+                <Card.Body className="p-5 text-center loading-spinner">
+                  <Spinner animation="border" className="mb-3" />
+                  <h3>Loading results...</h3>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
+      </>
+    }>
+      <DiagnosticResultsContent />
+    </Suspense>
   )
 }

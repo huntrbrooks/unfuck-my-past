@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { Container, Row, Col, Card, Button, Alert, Spinner } from 'react-bootstrap'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navigation from '../../components/Navigation'
 
-export default function PaymentSuccess() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -130,4 +130,28 @@ export default function PaymentSuccess() {
   }
 
   return null
+}
+
+export default function PaymentSuccess() {
+  return (
+    <Suspense fallback={
+      <>
+        <Navigation />
+        <Container className="py-5">
+          <Row className="justify-content-center">
+            <Col lg={8}>
+              <Card className="card-shadow">
+                <Card.Body className="p-5 text-center loading-spinner">
+                  <Spinner animation="border" className="mb-3" />
+                  <h3>Loading...</h3>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
+      </>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
+  )
 }
