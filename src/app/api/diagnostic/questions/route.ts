@@ -22,6 +22,30 @@ export async function GET(request: NextRequest) {
     const user = userResult[0]
     const safetyData = typeof user.safety === 'string' ? JSON.parse(user.safety) : user.safety
 
+    // Check if personalized questions exist
+    const personalizedQuestions = safetyData.personalizedQuestions
+    const diagnosticAnalysis = safetyData.diagnosticAnalysis
+
+    if (personalizedQuestions && diagnosticAnalysis) {
+      // Use personalized questions
+      return NextResponse.json({
+        questions: personalizedQuestions,
+        userPreferences: {
+          tone: user.tone || 'gentle',
+          voice: user.voice || 'friend',
+          rawness: user.rawness || 'moderate',
+          depth: user.depth || 'moderate',
+          learning: user.learning || 'text',
+          engagement: user.engagement || 'passive',
+          goals: safetyData.goals || [],
+          experience: safetyData.experience || 'beginner'
+        },
+        analysis: diagnosticAnalysis,
+        isPersonalized: true
+      })
+    }
+
+    // Fallback to adaptive questions if no personalized questions exist
     const userPreferences = {
       tone: user.tone || 'gentle',
       voice: user.voice || 'friend',
@@ -33,12 +57,12 @@ export async function GET(request: NextRequest) {
       experience: safetyData.experience || 'beginner'
     }
 
-    // Get adaptive questions based on preferences
     const questions = getAdaptiveQuestions(userPreferences, 5)
 
     return NextResponse.json({
       questions,
-      userPreferences
+      userPreferences,
+      isPersonalized: false
     })
 
   } catch (error) {

@@ -59,17 +59,18 @@ export class AIProgramGenerator {
   async generatePersonalizedProgram(
     diagnosticResponses: DiagnosticResponse[],
     userProfile: UserProfile,
-    summary: string
+    summary: string,
+    onboardingAnalysis?: any
   ): Promise<PersonalizedDay[]> {
     try {
       // First, try to analyze the diagnostic data with AI
       let analysis: ProgramAnalysis
       
       try {
-        analysis = await this.analyzeDiagnosticData(diagnosticResponses, userProfile, summary)
+        analysis = await this.analyzeDiagnosticData(diagnosticResponses, userProfile, summary, onboardingAnalysis)
       } catch (error) {
         console.log('AI analysis failed, using fallback analysis')
-        analysis = this.getFallbackAnalysis(diagnosticResponses, userProfile)
+        analysis = this.getFallbackAnalysis(diagnosticResponses, userProfile, onboardingAnalysis)
       }
       
       // Generate personalized program based on analysis
@@ -86,7 +87,8 @@ export class AIProgramGenerator {
   private async analyzeDiagnosticData(
     responses: DiagnosticResponse[],
     userProfile: UserProfile,
-    summary: string
+    summary: string,
+    onboardingAnalysis?: any
   ): Promise<ProgramAnalysis> {
     const prompt = `
 You are a trauma-informed therapist analyzing a client's diagnostic responses to create a personalized healing program.
@@ -97,6 +99,15 @@ CLIENT PROFILE:
 - Goals: ${userProfile.goals.join(', ')}
 - Experience Level: ${userProfile.experience}
 - Time Commitment: ${userProfile.timeCommitment}
+
+${onboardingAnalysis ? `
+ONBOARDING ANALYSIS:
+- Focus Areas: ${onboardingAnalysis.focusAreas?.join(', ') || 'Not specified'}
+- Communication Style: ${onboardingAnalysis.communicationStyle || 'Not specified'}
+- Intensity Level: ${onboardingAnalysis.intensityLevel || 'Not specified'}
+- Depth Level: ${onboardingAnalysis.depthLevel || 'Not specified'}
+- Custom Categories: ${onboardingAnalysis.customCategories?.join(', ') || 'Not specified'}
+` : ''}
 
 DIAGNOSTIC SUMMARY:
 ${summary}

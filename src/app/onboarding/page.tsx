@@ -1,4 +1,4 @@
-'use client'
+'iuse client'
 
 import React, { useState } from 'react'
 import { Container, Row, Col, Card, ProgressBar, Button, Form } from 'react-bootstrap'
@@ -265,6 +265,24 @@ export default function Onboarding() {
 
       // Clear any stored onboarding data
       localStorage.removeItem('onboardingData')
+      
+      // Generate personalized diagnostic questions
+      try {
+        const questionsResponse = await fetch('/api/diagnostic/generate-questions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+
+        if (questionsResponse.ok) {
+          console.log('Personalized questions generated successfully')
+        } else {
+          console.log('Failed to generate personalized questions, will use fallback')
+        }
+      } catch (error) {
+        console.log('Error generating personalized questions:', error)
+      }
       
       // Redirect to diagnostic
       router.push('/diagnostic')

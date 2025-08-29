@@ -1,0 +1,347 @@
+interface OnboardingData {
+  tone: string
+  voice: string
+  rawness: string
+  depth: string
+  learning: string
+  engagement: string
+  safety: {
+    crisisSupport: boolean
+    contentWarnings: boolean
+    skipTriggers: boolean
+  }
+  goals: string[]
+  experience: string
+  timeCommitment: string
+}
+
+interface DiagnosticQuestion {
+  id: number
+  category: 'trauma' | 'patterns' | 'relationships' | 'self-image' | 'coping' | 'goals' | 'custom'
+  question: string
+  followUp?: string
+  options?: string[]
+  adaptive?: {
+    tone: string[]
+    rawness: string[]
+    depth: string[]
+  }
+  aiPrompt?: string
+}
+
+interface OnboardingAnalysis {
+  recommendedQuestionCount: number
+  focusAreas: string[]
+  communicationStyle: string
+  intensityLevel: string
+  depthLevel: string
+  safetyConsiderations: string[]
+  customCategories: string[]
+}
+
+export class AIOnboardingAnalyzer {
+  private openaiKey: string
+
+  constructor() {
+    this.openaiKey = process.env.OPENAI_API_KEY || ''
+  }
+
+  async analyzeOnboardingAndGenerateQuestions(
+    onboardingData: OnboardingData
+  ): Promise<{
+    analysis: OnboardingAnalysis
+    questions: DiagnosticQuestion[]
+  }> {
+    try {
+      // First, analyze the onboarding data
+      const analysis = await this.analyzeOnboardingData(onboardingData)
+      
+      // Generate personalized questions based on analysis
+      const questions = await this.generatePersonalizedQuestions(onboardingData, analysis)
+      
+      return { analysis, questions }
+    } catch (error) {
+      console.error('Error analyzing onboarding and generating questions:', error)
+      // Return fallback analysis and questions
+      return {
+        analysis: this.getFallbackAnalysis(onboardingData),
+        questions: this.getFallbackQuestions(onboardingData)
+      }
+    }
+  }
+
+  private async analyzeOnboardingData(onboardingData: OnboardingData): Promise<OnboardingAnalysis> {
+    const prompt = `
+You are a trauma-informed therapist analyzing a client's onboarding preferences to create a personalized diagnostic experience.
+
+ONBOARDING DATA:
+- Communication Style: ${onboardingData.tone} tone, ${onboardingData.voice} voice
+- Content Intensity: ${onboardingData.rawness} rawness
+- Exploration Depth: ${onboardingData.depth} depth
+- Learning Style: ${onboardingData.learning}
+- Engagement Level: ${onboardingData.engagement}
+- Goals: ${onboardingData.goals.join(', ')}
+- Experience Level: ${onboardingData.experience}
+- Time Commitment: ${onboardingData.timeCommitment}
+- Safety: Crisis Support: ${onboardingData.safety.crisisSupport}, Content Warnings: ${onboardingData.safety.contentWarnings}, Skip Triggers: ${onboardingData.safety.skipTriggers}
+
+ANALYZE AND PROVIDE:
+1. Recommended number of diagnostic questions (3-15 based on engagement, time, and depth)
+2. Primary focus areas for this client
+3. Optimal communication style
+4. Appropriate intensity level
+5. Suitable depth level
+6. Safety considerations
+7. Custom question categories based on their goals
+
+Respond in JSON format:
+{
+  "recommendedQuestionCount": 8,
+  "focusAreas": ["area1", "area2"],
+  "communicationStyle": "description",
+  "intensityLevel": "mild/moderate/intense",
+  "depthLevel": "surface/moderate/deep/profound",
+  "safetyConsiderations": ["consideration1", "consideration2"],
+  "customCategories": ["category1", "category2"]
+}
+`
+
+    if (!this.openaiKey) {
+      throw new Error('OpenAI API key is missing')
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.openaiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a trauma-informed therapist specializing in personalized diagnostic experiences. Provide analysis in the exact JSON format requested.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1500
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to analyze onboarding data')
+    }
+
+    const data = await response.json()
+    const analysisText = data.choices[0].message.content
+    
+    try {
+      return JSON.parse(analysisText)
+    } catch (error) {
+      console.error('Failed to parse analysis JSON:', error)
+      throw new Error('Invalid analysis response format')
+    }
+  }
+
+  private async generatePersonalizedQuestions(
+    onboardingData: OnboardingData,
+    analysis: OnboardingAnalysis
+  ): Promise<DiagnosticQuestion[]> {
+    const questions: DiagnosticQuestion[] = []
+    
+    // Generate questions based on recommended count
+    for (let i = 1; i <= analysis.recommendedQuestionCount; i++) {
+      const question = await this.generateQuestion(i, onboardingData, analysis)
+      questions.push(question)
+    }
+    
+    return questions
+  }
+
+  private async generateQuestion(
+    questionNumber: number,
+    onboardingData: OnboardingData,
+    analysis: OnboardingAnalysis
+  ): Promise<DiagnosticQuestion> {
+    const prompt = `
+Generate diagnostic question ${questionNumber} of ${analysis.recommendedQuestionCount} for a trauma healing assessment.
+
+CLIENT PROFILE:
+- Communication: ${onboardingData.tone} tone, ${onboardingData.voice} voice
+- Intensity: ${onboardingData.rawness}
+- Depth: ${onboardingData.depth}
+- Goals: ${onboardingData.goals.join(', ')}
+- Experience: ${onboardingData.experience}
+
+ANALYSIS:
+- Focus Areas: ${analysis.focusAreas.join(', ')}
+- Communication Style: ${analysis.communicationStyle}
+- Intensity Level: ${analysis.intensityLevel}
+- Depth Level: ${analysis.depthLevel}
+- Custom Categories: ${analysis.customCategories.join(', ')}
+
+QUESTION ${questionNumber} SPECIFICATIONS:
+- Should match their communication style
+- Appropriate for their intensity level
+- Suitable for their depth preference
+- Focus on their specific goals
+- Trauma-informed and safe
+
+Respond in JSON format:
+{
+  "id": ${questionNumber},
+  "category": "trauma/patterns/relationships/self-image/coping/goals/custom",
+  "question": "The main question",
+  "followUp": "Optional follow-up question",
+  "options": ["option1", "option2"] (only if multiple choice is appropriate),
+  "adaptive": {
+    "tone": ["tone1", "tone2"],
+    "rawness": ["rawness1", "rawness2"],
+    "depth": ["depth1", "depth2"]
+  },
+  "aiPrompt": "Specific instructions for AI analysis of responses"
+}
+`
+
+    if (!this.openaiKey) {
+      throw new Error('OpenAI API key is missing')
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.openaiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a trauma-informed therapist creating personalized diagnostic questions. Generate engaging, safe, and effective questions in the exact JSON format requested.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.8,
+        max_tokens: 1000
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to generate question ${questionNumber}`)
+    }
+
+    const data = await response.json()
+    const questionText = data.choices[0].message.content
+    
+    try {
+      return JSON.parse(questionText)
+    } catch (error) {
+      console.error(`Failed to parse question ${questionNumber} JSON:`, error)
+      return this.getFallbackQuestion(questionNumber, onboardingData, analysis)
+    }
+  }
+
+  private getFallbackAnalysis(onboardingData: OnboardingData): OnboardingAnalysis {
+    // Determine question count based on engagement and time commitment
+    let questionCount = 8 // default
+    if (onboardingData.engagement === 'passive') questionCount = 5
+    if (onboardingData.engagement === 'challenging') questionCount = 12
+    if (onboardingData.timeCommitment === '15min') questionCount = 5
+    if (onboardingData.timeCommitment === '60min') questionCount = 15
+
+    // Determine focus areas based on goals
+    const focusAreas = onboardingData.goals.length > 0 ? onboardingData.goals : ['general healing']
+
+    return {
+      recommendedQuestionCount: questionCount,
+      focusAreas,
+      communicationStyle: `${onboardingData.tone} and ${onboardingData.voice}`,
+      intensityLevel: onboardingData.rawness,
+      depthLevel: onboardingData.depth,
+      safetyConsiderations: [
+        'self-compassion',
+        'gradual progress',
+        'professional support if needed'
+      ],
+      customCategories: onboardingData.goals
+    }
+  }
+
+  private getFallbackQuestions(onboardingData: OnboardingData): DiagnosticQuestion[] {
+    const analysis = this.getFallbackAnalysis(onboardingData)
+    const questions: DiagnosticQuestion[] = []
+
+    for (let i = 1; i <= analysis.recommendedQuestionCount; i++) {
+      questions.push(this.getFallbackQuestion(i, onboardingData, analysis))
+    }
+
+    return questions
+  }
+
+  private getFallbackQuestion(
+    questionNumber: number,
+    onboardingData: OnboardingData,
+    analysis: OnboardingAnalysis
+  ): DiagnosticQuestion {
+    const categories = ['trauma', 'patterns', 'relationships', 'self-image', 'coping', 'goals']
+    const category = categories[(questionNumber - 1) % categories.length]
+
+    const questionTemplates = {
+      trauma: [
+        "What's the most challenging experience you've had to overcome?",
+        "How do you typically respond when you feel overwhelmed?",
+        "What triggers your strongest emotional reactions?"
+      ],
+      patterns: [
+        "What's a behavior you keep repeating even though you know it's not good for you?",
+        "What patterns do you notice in your relationships?",
+        "How do you typically handle stress or difficult situations?"
+      ],
+      relationships: [
+        "What's your biggest challenge in relationships?",
+        "How do you typically communicate when you're upset?",
+        "What do you need most from the people in your life?"
+      ],
+      'self-image': [
+        "What would you change about yourself if you could?",
+        "How do you see yourself compared to others?",
+        "What are your biggest strengths and weaknesses?"
+      ],
+      coping: [
+        "How do you usually deal with difficult emotions?",
+        "What helps you feel better when you're struggling?",
+        "What coping strategies have you tried in the past?"
+      ],
+      goals: [
+        "What's the biggest thing holding you back from the life you want?",
+        "What would success look like for you?",
+        "What's one change you'd like to make in your life?"
+      ]
+    }
+
+    const template = questionTemplates[category as keyof typeof questionTemplates]
+    const question = template[questionNumber % template.length]
+
+    return {
+      id: questionNumber,
+      category: category as any,
+      question,
+      followUp: `What do you think keeps you stuck in this area?`,
+      adaptive: {
+        tone: [onboardingData.tone],
+        rawness: [onboardingData.rawness],
+        depth: [onboardingData.depth]
+      },
+      aiPrompt: `Analyze this response for ${category} patterns and provide trauma-informed insights.`
+    }
+  }
+}

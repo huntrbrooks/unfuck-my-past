@@ -68,6 +68,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Get onboarding analysis
+    const onboardingAnalysis = safetyData.diagnosticAnalysis
+
     // Format responses for AI
     const diagnosticResponses = responsesResult.map((response, index) => ({
       question: `Question ${response.questionId}`,
@@ -94,7 +97,8 @@ export async function POST(request: NextRequest) {
     const personalizedProgram = await programGenerator.generatePersonalizedProgram(
       diagnosticResponses,
       userProfile,
-      diagnosticSummary
+      diagnosticSummary,
+      onboardingAnalysis
     )
 
     // Save the personalized program to the database
