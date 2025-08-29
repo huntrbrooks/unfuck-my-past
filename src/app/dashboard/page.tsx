@@ -4,6 +4,7 @@ import React from 'react'
 import { Container, Row, Col, Card, Button } from 'react-bootstrap'
 import { useUser } from '@clerk/nextjs'
 import DataExport from '../../components/DataExport'
+import DiagnosticReport from '../../components/DiagnosticReport'
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser()
@@ -77,6 +78,7 @@ export default function Dashboard() {
 
         <Row className="mt-4">
           <Col lg={8}>
+            <DiagnosticReport className="mb-4" />
             <DataExport />
           </Col>
           

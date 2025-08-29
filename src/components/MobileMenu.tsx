@@ -72,6 +72,9 @@ export default function MobileMenu({ className = '' }: MobileMenuProps) {
                 <Nav.Link as={Link} href="/onboarding" onClick={handleClose}>
                   Continue Journey
                 </Nav.Link>
+                <Nav.Link as={Link} href="/diagnostic" onClick={handleClose}>
+                  Diagnostic
+                </Nav.Link>
               </>
             )}
           </Nav>

@@ -4,6 +4,44 @@ import { db, users, answers } from '../../../../db'
 import { AIService } from '../../../../lib/ai-service'
 import { eq, desc } from 'drizzle-orm'
 
+export async function GET(request: NextRequest) {
+  try {
+    const { userId } = await auth()
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get user preferences and existing summary
+    const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+
+    if (!userResult || userResult.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const user = userResult[0]
+    const safetyData = typeof user.safety === 'string' ? JSON.parse(user.safety) : user.safety
+
+    // Check if there's an existing diagnostic summary
+    if (safetyData.diagnosticSummary) {
+      return NextResponse.json({
+        summary: safetyData.diagnosticSummary.content,
+        model: safetyData.diagnosticSummary.model,
+        timestamp: safetyData.diagnosticSummary.timestamp
+      })
+    }
+
+    return NextResponse.json({ summary: '' })
+
+  } catch (error) {
+    console.error('Error fetching diagnostic summary:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch diagnostic summary' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
