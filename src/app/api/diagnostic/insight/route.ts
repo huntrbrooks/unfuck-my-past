@@ -4,69 +4,111 @@ import { db, users, answers } from '../../../../db'
 import { AIService } from '../../../../lib/ai-service'
 import { generateAIPrompt } from '../../../../lib/diagnostic-questions'
 import { eq } from 'drizzle-orm'
+import { validateObject, sanitizeObject, DIAGNOSTIC_RESPONSE_SCHEMA, globalRateLimiter } from '../../../../lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const clientIP = request.headers.get('x-forwarded-for') || 
+                    request.headers.get('x-real-ip') || 
+                    'unknown'
+    if (!globalRateLimiter.isAllowed(clientIP)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
+    // Authentication
     const { userId } = await auth()
-    
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { question, response, useClaude = false } = body
-
-    if (!question || !response) {
-      return NextResponse.json({ error: 'Question and response are required' }, { status: 400 })
+    // Parse and validate request body
+    let body
+    try {
+      body = await request.json()
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      )
     }
 
-    // Get user preferences for AI prompt generation using Drizzle ORM
-    const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+    // Sanitize input
+    const sanitizedBody = sanitizeObject(body)
 
-    if (!userResult || userResult.length === 0) {
-      return NextResponse.json({ error: 'User preferences not found' }, { status: 404 })
+    // Validate input
+    const validation = validateObject(sanitizedBody, DIAGNOSTIC_RESPONSE_SCHEMA)
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: validation.errors
+        },
+        { status: 400 }
+      )
     }
 
-    const user = userResult[0]
-    const safetyData = typeof user.safety === 'string' ? JSON.parse(user.safety) : user.safety
+    const { question, response, useClaude = false } = sanitizedBody
 
-    const userPreferences = {
-      tone: user.tone || 'gentle',
-      voice: user.voice || 'friend',
-      rawness: user.rawness || 'moderate',
-      depth: user.depth || 'moderate',
-      learning: user.learning || 'text',
-      engagement: user.engagement || 'passive',
-      goals: safetyData.goals || [],
-      experience: safetyData.experience || 'beginner'
+    try {
+      // Get user preferences for AI prompt generation using Drizzle ORM
+      const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+
+      if (!userResult || userResult.length === 0) {
+        return NextResponse.json({ error: 'User preferences not found' }, { status: 404 })
+      }
+
+      const user = userResult[0]
+      const safetyData = typeof user.safety === 'string' ? JSON.parse(user.safety) : user.safety
+
+      const userPreferences = {
+        tone: user.tone || 'gentle',
+        voice: user.voice || 'friend',
+        rawness: user.rawness || 'moderate',
+        depth: user.depth || 'moderate',
+        learning: user.learning || 'text',
+        engagement: user.engagement || 'passive',
+        goals: safetyData.goals || [],
+        experience: safetyData.experience || 'beginner'
+      }
+
+      // Generate AI prompt
+      const prompt = generateAIPrompt(question, userPreferences)
+
+      // Generate insight using AI
+      const aiService = new AIService()
+      const insight = await aiService.generateInsight(prompt, response, useClaude)
+
+      // Save the response and insight to database using Drizzle ORM
+      await db.insert(answers).values({
+        userId: userId,
+        questionId: question.id,
+        modality: 'text',
+        content: response,
+        summary: insight.insight
+      })
+
+      return NextResponse.json({
+        insight: insight.insight,
+        model: insight.model,
+        timestamp: insight.timestamp
+      })
+
+    } catch (dbError) {
+      console.error('Database error in diagnostic insight:', dbError)
+      return NextResponse.json(
+        { error: 'Failed to process diagnostic response. Please try again.' },
+        { status: 500 }
+      )
     }
-
-    // Generate AI prompt
-    const prompt = generateAIPrompt(question, userPreferences)
-
-    // Generate insight using AI
-    const aiService = new AIService()
-    const insight = await aiService.generateInsight(prompt, response, useClaude)
-
-    // Save the response and insight to database using Drizzle ORM
-    await db.insert(answers).values({
-      userId: userId,
-      questionId: question.id,
-      modality: 'text',
-      content: response,
-      summary: insight.insight
-    })
-
-    return NextResponse.json({
-      insight: insight.insight,
-      model: insight.model,
-      timestamp: insight.timestamp
-    })
 
   } catch (error) {
-    console.error('Error generating insight:', error)
+    console.error('Unexpected error in diagnostic insight:', error)
     return NextResponse.json(
-      { error: 'Failed to generate insight' },
+      { error: 'An unexpected error occurred. Please try again.' },
       { status: 500 }
     )
   }

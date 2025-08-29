@@ -2,12 +2,17 @@
 
 import React, { useState, useEffect } from 'react'
 import { Button, Alert, Spinner, Card, Form } from 'react-bootstrap'
+import { validateObject, sanitizeObject, PAYMENT_SCHEMA, PATTERNS } from '../lib/validation'
 
 interface PaymentFormProps {
   productType: 'diagnostic' | 'program'
   amount: number
   onSuccess: () => void
   onCancel: () => void
+}
+
+interface FormErrors {
+  [key: string]: string
 }
 
 export default function PaymentForm({ productType, amount, onSuccess, onCancel }: PaymentFormProps) {
@@ -17,6 +22,7 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
   const [expiryDate, setExpiryDate] = useState('')
   const [cvc, setCvc] = useState('')
   const [name, setName] = useState('')
+  const [errors, setErrors] = useState<FormErrors>({})
 
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -25,16 +31,119 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
     }).format(amount / 100)
   }
 
+  // Real-time validation
+  const validateField = (fieldName: string, value: string) => {
+    const fieldErrors: FormErrors = { ...errors }
+    
+    switch (fieldName) {
+      case 'name':
+        if (!value.trim()) {
+          fieldErrors.name = 'Name is required'
+        } else if (!PATTERNS.NAME.test(value.trim())) {
+          fieldErrors.name = 'Please enter a valid name (2-50 characters, letters only)'
+        } else {
+          delete fieldErrors.name
+        }
+        break
+        
+      case 'cardNumber':
+        if (!value.trim()) {
+          fieldErrors.cardNumber = 'Card number is required'
+        } else if (!PATTERNS.CARD_NUMBER.test(value.replace(/\s/g, ''))) {
+          fieldErrors.cardNumber = 'Please enter a valid 16-digit card number'
+        } else {
+          delete fieldErrors.cardNumber
+        }
+        break
+        
+      case 'expiryDate':
+        if (!value.trim()) {
+          fieldErrors.expiryDate = 'Expiry date is required'
+        } else if (!PATTERNS.EXPIRY_DATE.test(value)) {
+          fieldErrors.expiryDate = 'Please enter expiry date in MM/YY format'
+        } else {
+          // Check if card is expired
+          const [month, year] = value.split('/')
+          const expiryDate = new Date(2000 + parseInt(year), parseInt(month) - 1)
+          const now = new Date()
+          if (expiryDate < now) {
+            fieldErrors.expiryDate = 'Card has expired'
+          } else {
+            delete fieldErrors.expiryDate
+          }
+        }
+        break
+        
+      case 'cvc':
+        if (!value.trim()) {
+          fieldErrors.cvc = 'CVC is required'
+        } else if (!PATTERNS.CVC.test(value)) {
+          fieldErrors.cvc = 'Please enter a valid 3-4 digit CVC'
+        } else {
+          delete fieldErrors.cvc
+        }
+        break
+    }
+    
+    setErrors(fieldErrors)
+    return Object.keys(fieldErrors).length === 0
+  }
+
+  const handleFieldChange = (fieldName: string, value: string) => {
+    // Update the field value
+    switch (fieldName) {
+      case 'name':
+        setName(value)
+        break
+      case 'cardNumber':
+        setCardNumber(value.replace(/\s/g, ''))
+        break
+      case 'expiryDate':
+        setExpiryDate(value)
+        break
+      case 'cvc':
+        setCvc(value)
+        break
+    }
+    
+    // Validate the field
+    validateField(fieldName, value)
+  }
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    setError('')
 
-    if (!cardNumber || !expiryDate || !cvc || !name) {
-      setError('Please fill in all payment details')
+    // Validate all fields
+    const allValid = ['name', 'cardNumber', 'expiryDate', 'cvc'].every(field => {
+      const value = field === 'name' ? name : 
+                   field === 'cardNumber' ? cardNumber :
+                   field === 'expiryDate' ? expiryDate : cvc
+      return validateField(field, value)
+    })
+
+    if (!allValid) {
+      setError('Please fix the errors above before submitting')
+      return
+    }
+
+    // Prepare form data
+    const formData = {
+      name: name.trim(),
+      cardNumber: cardNumber.replace(/\s/g, ''),
+      expiryDate: expiryDate.trim(),
+      cvc: cvc.trim(),
+      productType
+    }
+
+    // Server-side validation
+    const validation = validateObject(formData, PAYMENT_SCHEMA)
+    if (!validation.isValid) {
+      setError(`Validation failed: ${validation.errors.join(', ')}`)
       return
     }
 
     setLoading(true)
-    setError('')
 
     try {
       console.log('Creating payment intent...')
@@ -119,10 +228,14 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
               type="text"
               placeholder="John Doe"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => handleFieldChange('name', e.target.value)}
+              isInvalid={!!errors.name}
               required
               className="form-control-custom"
             />
+            <Form.Control.Feedback type="invalid">
+              {errors.name}
+            </Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="mb-3">
@@ -130,12 +243,16 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
             <Form.Control
               type="text"
               placeholder="4242 4242 4242 4242"
-              value={cardNumber}
-              onChange={(e) => setCardNumber(e.target.value.replace(/\s/g, ''))}
-              maxLength={16}
+              value={cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
+              onChange={(e) => handleFieldChange('cardNumber', e.target.value)}
+              maxLength={19}
+              isInvalid={!!errors.cardNumber}
               required
               className="form-control-custom"
             />
+            <Form.Control.Feedback type="invalid">
+              {errors.cardNumber}
+            </Form.Control.Feedback>
             <Form.Text className="text-muted">
               For testing, use: 4242 4242 4242 4242
             </Form.Text>
@@ -149,11 +266,15 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
                   type="text"
                   placeholder="MM/YY"
                   value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
+                  onChange={(e) => handleFieldChange('expiryDate', e.target.value)}
                   maxLength={5}
+                  isInvalid={!!errors.expiryDate}
                   required
                   className="form-control-custom"
                 />
+                <Form.Control.Feedback type="invalid">
+                  {errors.expiryDate}
+                </Form.Control.Feedback>
               </Form.Group>
             </div>
             <div className="col-md-6">
@@ -163,11 +284,15 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
                   type="text"
                   placeholder="123"
                   value={cvc}
-                  onChange={(e) => setCvc(e.target.value)}
+                  onChange={(e) => handleFieldChange('cvc', e.target.value)}
                   maxLength={4}
+                  isInvalid={!!errors.cvc}
                   required
                   className="form-control-custom"
                 />
+                <Form.Control.Feedback type="invalid">
+                  {errors.cvc}
+                </Form.Control.Feedback>
               </Form.Group>
             </div>
           </div>
@@ -184,7 +309,7 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
             <Button
               type="submit"
               variant="primary"
-              disabled={loading}
+              disabled={loading || Object.keys(errors).length > 0}
               className="flex-fill"
             >
               {loading ? (

@@ -6,6 +6,7 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import './globals.css'
 import BootstrapClient from '../components/BootstrapClient'
 import HydrationSuppressor from '../components/HydrationSuppressor'
+import ErrorBoundary from '../components/ErrorBoundary'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,9 +25,11 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className}>
           <BootstrapClient />
-          <HydrationSuppressor>
-            {children}
-          </HydrationSuppressor>
+          <ErrorBoundary>
+            <HydrationSuppressor>
+              {children}
+            </HydrationSuppressor>
+          </ErrorBoundary>
         </body>
       </html>
     </ClerkProvider>
