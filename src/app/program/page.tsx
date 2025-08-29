@@ -14,22 +14,30 @@ interface ProgramProgress {
   streak: number
 }
 
-interface ProgramDay {
+interface PersonalizedDay {
   day: number
   title: string
-  content: string
-  metadata: {
-    category: string
-    duration: number
-    difficulty: string
+  focus: string
+  content: {
+    introduction: string
+    guidedPractice: string
+    challenge: string
+    journalingPrompt: string
+    reflection: string
     tools: string[]
+  }
+  metadata: {
+    category: 'awareness' | 'processing' | 'integration' | 'action'
+    duration: number
+    difficulty: 'easy' | 'moderate' | 'challenging'
+    traumaFocus: string[]
   }
 }
 
 export default function Program() {
   const router = useRouter()
   const [progress, setProgress] = useState<ProgramProgress | null>(null)
-  const [currentDay, setCurrentDay] = useState<ProgramDay | null>(null)
+  const [currentDay, setCurrentDay] = useState<PersonalizedDay | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [hasAccess, setHasAccess] = useState(false)
@@ -71,12 +79,36 @@ export default function Program() {
       const progressData = await progressResponse.json()
       setProgress(progressData)
 
-      // Load current day content
+      // Load personalized program
       if (progressData.currentDay <= 30) {
-        const dayResponse = await fetch(`/api/program/day/${progressData.currentDay}`)
-        if (dayResponse.ok) {
-          const dayData = await dayResponse.json()
-          setCurrentDay(dayData)
+        const programResponse = await fetch('/api/program/generate')
+        if (programResponse.ok) {
+          const programData = await programResponse.json()
+          const currentDayData = programData.program.find((day: PersonalizedDay) => day.day === progressData.currentDay)
+          
+          if (currentDayData) {
+            setCurrentDay(currentDayData)
+          } else {
+            setError('Failed to load current day content')
+          }
+        } else {
+          // If no personalized program exists, generate one
+          const generateResponse = await fetch('/api/program/generate', {
+            method: 'POST'
+          })
+          
+          if (generateResponse.ok) {
+            const generateData = await generateResponse.json()
+            const currentDayData = generateData.program.find((day: PersonalizedDay) => day.day === progressData.currentDay)
+            
+            if (currentDayData) {
+              setCurrentDay(currentDayData)
+            } else {
+              setError('Failed to load current day content')
+            }
+          } else {
+            setError('Failed to generate personalized program')
+          }
         }
       }
     } catch (error) {
@@ -106,12 +138,16 @@ export default function Program() {
       const result = await response.json()
       setProgress(result.progress)
       
-      // Reload current day content
+      // Reload current day content from personalized program
       if (result.progress.currentDay <= 30) {
-        const dayResponse = await fetch(`/api/program/day/${result.progress.currentDay}`)
-        if (dayResponse.ok) {
-          const dayData = await dayResponse.json()
-          setCurrentDay(dayData)
+        const programResponse = await fetch('/api/program/generate')
+        if (programResponse.ok) {
+          const programData = await programResponse.json()
+          const currentDayData = programData.program.find((day: PersonalizedDay) => day.day === result.progress.currentDay)
+          
+          if (currentDayData) {
+            setCurrentDay(currentDayData)
+          }
         }
       }
     } catch (error) {
@@ -254,6 +290,39 @@ export default function Program() {
           </Col>
         </Row>
 
+        {/* Generate Personalized Program */}
+        <Row className="mb-4">
+          <Col>
+            <Card className="card-shadow border-primary">
+              <Card.Body className="text-center">
+                <h4 className="mb-3">🎯 Your Personalized Healing Program</h4>
+                <p className="mb-4">
+                  Based on your diagnostic responses, we'll create a unique 30-day program 
+                  tailored specifically to your trauma patterns and healing goals.
+                </p>
+                <Button 
+                  variant="primary" 
+                  size="lg" 
+                  onClick={loadProgramData}
+                  disabled={loading}
+                  className="btn-custom-lg"
+                >
+                  {loading ? (
+                    <>
+                      <LoadingSpinner size="sm" text="Generating your program..." />
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-magic me-2"></i>
+                      Generate My Program
+                    </>
+                  )}
+                </Button>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+
         {/* Progress Overview */}
         <Row className="mb-5">
           <Col lg={8}>
@@ -334,7 +403,28 @@ export default function Program() {
                 </Card.Header>
                 <Card.Body className="program-day-body">
                   <div className="mb-4">
-                    <p className="lead">{currentDay.content}</p>
+                    <h5>Introduction</h5>
+                    <p>{currentDay.content.introduction}</p>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h5>Guided Practice</h5>
+                    <p>{currentDay.content.guidedPractice}</p>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h5>Daily Challenge</h5>
+                    <p>{currentDay.content.challenge}</p>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h5>Journaling Prompt</h5>
+                    <p>{currentDay.content.journalingPrompt}</p>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h5>Reflection</h5>
+                    <p>{currentDay.content.reflection}</p>
                   </div>
                   
                   <div className="mb-4">
@@ -349,7 +439,7 @@ export default function Program() {
                     
                     <div>
                       <small className="text-muted">Tools: </small>
-                      {currentDay.metadata.tools.map((tool, index) => (
+                      {currentDay.content.tools.map((tool: string, index: number) => (
                         <Badge key={index} bg="outline-secondary" className="me-1 badge-custom">
                           {tool}
                         </Badge>
@@ -385,7 +475,7 @@ export default function Program() {
                   <div>
                     <strong>Tools:</strong>
                     <ul className="list-unstyled mt-2">
-                      {currentDay.metadata.tools.map((tool, index) => (
+                      {currentDay.content.tools.map((tool: string, index: number) => (
                         <li key={index} className="mb-1">
                           <small>• {tool}</small>
                         </li>
