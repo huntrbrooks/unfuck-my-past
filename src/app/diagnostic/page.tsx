@@ -62,7 +62,7 @@ export default function Diagnostic() {
         body: JSON.stringify({
           question: currentQuestion,
           response: currentResponse,
-          useClaude: Math.random() > 0.5 // Randomly choose between GPT-4 and Claude
+          useClaude: false // Use OpenAI only for now
         }),
       })
 

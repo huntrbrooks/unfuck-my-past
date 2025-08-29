@@ -425,3 +425,4 @@ export function getProgramProgress(userId: string, completedDays: number[]): {
     streak
   }
 }
+

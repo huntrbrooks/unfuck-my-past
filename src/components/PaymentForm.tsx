@@ -30,53 +30,61 @@ function CheckoutForm({ productType, amount, onSuccess, onCancel }: PaymentFormP
     event.preventDefault()
 
     if (!stripe || !elements) {
+      setError('Payment system not ready. Please try again.')
       return
     }
 
     setLoading(true)
     setError('')
 
-    const { error: submitError } = await elements.submit()
-    if (submitError) {
-      setError(submitError.message || 'Payment failed')
+    try {
+      const { error: submitError } = await elements.submit()
+      if (submitError) {
+        setError(submitError.message || 'Payment failed')
+        setLoading(false)
+        return
+      }
+
+      // Create payment intent
+      const createIntentResponse = await fetch('/api/payments/create-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productType }),
+      })
+
+      if (!createIntentResponse.ok) {
+        const errorData = await createIntentResponse.json()
+        setError(errorData.error || 'Failed to create payment')
+        setLoading(false)
+        return
+      }
+
+      const { clientSecret } = await createIntentResponse.json()
+
+      // Confirm payment
+      const { error: confirmError } = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/payment-success`,
+        },
+      })
+
+      if (confirmError) {
+        setError(confirmError.message || 'Payment failed')
+        setLoading(false)
+        return
+      }
+
+      // Payment succeeded
+      onSuccess()
+    } catch (error) {
+      console.error('Payment error:', error)
+      setError('An unexpected error occurred. Please try again.')
       setLoading(false)
-      return
     }
-
-    // Create payment intent
-    const createIntentResponse = await fetch('/api/payments/create-intent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ productType }),
-    })
-
-    if (!createIntentResponse.ok) {
-      setError('Failed to create payment')
-      setLoading(false)
-      return
-    }
-
-    const { clientSecret } = await createIntentResponse.json()
-
-    // Confirm payment
-    const { error: confirmError } = await stripe.confirmPayment({
-      elements,
-      clientSecret,
-      confirmParams: {
-        return_url: `${window.location.origin}/payment-success`,
-      },
-    })
-
-    if (confirmError) {
-      setError(confirmError.message || 'Payment failed')
-      setLoading(false)
-      return
-    }
-
-    // Payment succeeded
-    onSuccess()
   }
 
   const formatAmount = (amount: number) => {
@@ -149,11 +157,13 @@ function CheckoutForm({ productType, amount, onSuccess, onCancel }: PaymentFormP
 
 export default function PaymentForm(props: PaymentFormProps) {
   const [clientSecret, setClientSecret] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     // Create payment intent when component mounts
     const createIntent = async () => {
       try {
+        setError('')
         const response = await fetch('/api/payments/create-intent', {
           method: 'POST',
           headers: {
@@ -162,17 +172,35 @@ export default function PaymentForm(props: PaymentFormProps) {
           body: JSON.stringify({ productType: props.productType }),
         })
 
-        if (response.ok) {
-          const { clientSecret } = await response.json()
-          setClientSecret(clientSecret)
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to create payment intent')
         }
+
+        const { clientSecret } = await response.json()
+        setClientSecret(clientSecret)
       } catch (error) {
         console.error('Error creating payment intent:', error)
+        setError(error instanceof Error ? error.message : 'Failed to load payment form')
       }
     }
 
     createIntent()
   }, [props.productType])
+
+  if (error) {
+    return (
+      <div className="text-center py-5">
+        <Alert variant="danger">
+          <Alert.Heading>Payment Error</Alert.Heading>
+          <p>{error}</p>
+          <Button variant="outline-danger" onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </Alert>
+      </div>
+    )
+  }
 
   if (!clientSecret) {
     return (

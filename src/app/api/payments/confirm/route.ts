@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { db, purchases, users } from '../../../db'
-import { verifyPaymentIntent } from '../../../lib/stripe'
-import { eq } from 'drizzle-orm'
+import { db, purchases, users } from '../../../../db'
+import { verifyPaymentIntent } from '../../../../lib/stripe'
+import { eq, and } from 'drizzle-orm'
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,8 +36,7 @@ export async function POST(request: NextRequest) {
     // Check if user already has this product
     const existingPurchase = await db.select()
       .from(purchases)
-      .where(eq(purchases.userId, userId))
-      .where(eq(purchases.product, productType))
+      .where(and(eq(purchases.userId, userId), eq(purchases.product, productType)))
       .limit(1)
 
     if (existingPurchase.length > 0) {

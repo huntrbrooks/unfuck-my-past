@@ -2,7 +2,7 @@ import Stripe from 'stripe'
 
 // Initialize Stripe with secret key
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-08-27.basil',
 })
 
 // Product configurations
@@ -21,42 +21,6 @@ export const PRODUCTS = {
   }
 }
 
-// Create or get Stripe products
-export async function getOrCreateProduct(productConfig: typeof PRODUCTS.DIAGNOSTIC_REPORT) {
-  try {
-    // Try to find existing product
-    const products = await stripe.products.list({
-      limit: 100,
-    })
-    
-    const existingProduct = products.data.find(p => p.id === productConfig.productId)
-    
-    if (existingProduct) {
-      return existingProduct
-    }
-    
-    // Create new product if it doesn't exist
-    const product = await stripe.products.create({
-      id: productConfig.productId,
-      name: productConfig.name,
-      description: productConfig.description,
-    })
-    
-    // Create price for the product
-    await stripe.prices.create({
-      product: product.id,
-      unit_amount: productConfig.price,
-      currency: 'usd',
-      recurring: null, // One-time payment
-    })
-    
-    return product
-  } catch (error) {
-    console.error('Error creating/getting product:', error)
-    throw error
-  }
-}
-
 // Create payment intent
 export async function createPaymentIntent(
   productType: 'diagnostic' | 'program',
@@ -67,17 +31,14 @@ export async function createPaymentIntent(
     : PRODUCTS.THIRTY_DAY_PROGRAM
 
   try {
-    // Get or create product
-    await getOrCreateProduct(productConfig)
-    
-    // Create payment intent
+    // Create payment intent directly without product creation
     const paymentIntent = await stripe.paymentIntents.create({
       amount: productConfig.price,
       currency: 'usd',
       metadata: {
         userId,
         productType,
-        productId: productConfig.productId
+        productName: productConfig.name
       },
       automatic_payment_methods: {
         enabled: true,
