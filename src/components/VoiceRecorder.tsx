@@ -110,7 +110,7 @@ export default function VoiceRecorder({
       setInterimTranscript('')
       setRecordingTime(0)
       setIsRecording(true)
-      setIsProcessing(true)
+      setIsProcessing(false) // Don't set processing to true when starting
       
       recognitionRef.current.start()
 
@@ -133,12 +133,14 @@ export default function VoiceRecorder({
   }
 
   const stopRecording = () => {
+    console.log('Stop recording called, recognitionRef:', !!recognitionRef.current)
     if (!recognitionRef.current) return
 
     try {
+      console.log('Stopping recording...')
+      setIsProcessing(true) // Set processing when stopping
       recognitionRef.current.stop()
       setIsRecording(false)
-      setIsProcessing(true)
 
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
@@ -215,18 +217,30 @@ export default function VoiceRecorder({
             <Button
               variant="danger"
               size="lg"
-              onClick={stopRecording}
-              disabled={isProcessing}
+              onClick={() => {
+                console.log('Stop button clicked, isProcessing:', isProcessing, 'disabled:', disabled)
+                stopRecording()
+              }}
+              disabled={isProcessing || disabled}
               className="voice-button"
             >
-              <i className="bi bi-stop-fill me-2"></i>
-              Stop Recording
+              {isProcessing ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Stopping...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-stop-fill me-2"></i>
+                  Stop Recording
+                </>
+              )}
             </Button>
             <Button
               variant="outline-secondary"
               size="lg"
               onClick={clearTranscript}
-              disabled={isProcessing}
+              disabled={isProcessing || disabled}
             >
               <i className="bi bi-x-circle me-2"></i>
               Clear
