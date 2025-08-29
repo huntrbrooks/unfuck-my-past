@@ -37,8 +37,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No diagnostic responses found' }, { status: 404 })
     }
 
-    // Get diagnostic summary
-    const diagnosticSummary = safetyData.diagnosticSummary?.content || 'No summary available'
+    // Get diagnostic summary - try multiple sources
+    let diagnosticSummary = 'No summary available'
+    
+    // Try to get from safety data first
+    if (safetyData.diagnosticSummary?.content) {
+      diagnosticSummary = safetyData.diagnosticSummary.content
+    } else if (safetyData.diagnosticSummary) {
+      diagnosticSummary = typeof safetyData.diagnosticSummary === 'string' 
+        ? safetyData.diagnosticSummary 
+        : JSON.stringify(safetyData.diagnosticSummary)
+    }
+    
+    // If still no summary, try to get from diagnostic summary API
+    if (diagnosticSummary === 'No summary available') {
+      try {
+        const summaryResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/diagnostic/summary`, {
+          headers: {
+            'Authorization': `Bearer ${process.env.CLERK_SECRET_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (summaryResponse.ok) {
+          const summaryData = await summaryResponse.json()
+          diagnosticSummary = summaryData.summary || 'No summary available'
+        }
+      } catch (error) {
+        console.log('Could not fetch diagnostic summary from API')
+      }
+    }
 
     // Format responses for AI
     const diagnosticResponses = responsesResult.map((response, index) => ({
@@ -91,8 +119,16 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error generating personalized program:', error)
+    
+    // Return a more specific error message
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    
     return NextResponse.json(
-      { error: 'Failed to generate personalized program' },
+      { 
+        error: 'Failed to generate personalized program',
+        details: errorMessage,
+        fallback: 'A basic program will be generated instead'
+      },
       { status: 500 }
     )
   }

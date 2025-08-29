@@ -50,6 +50,10 @@ export class AIProgramGenerator {
 
   constructor() {
     this.openaiKey = process.env.OPENAI_API_KEY || ''
+    
+    if (!this.openaiKey) {
+      console.error('OpenAI API key is missing')
+    }
   }
 
   async generatePersonalizedProgram(
@@ -58,8 +62,15 @@ export class AIProgramGenerator {
     summary: string
   ): Promise<PersonalizedDay[]> {
     try {
-      // First, analyze the diagnostic data
-      const analysis = await this.analyzeDiagnosticData(diagnosticResponses, userProfile, summary)
+      // First, try to analyze the diagnostic data with AI
+      let analysis: ProgramAnalysis
+      
+      try {
+        analysis = await this.analyzeDiagnosticData(diagnosticResponses, userProfile, summary)
+      } catch (error) {
+        console.log('AI analysis failed, using fallback analysis')
+        analysis = this.getFallbackAnalysis(diagnosticResponses, userProfile)
+      }
       
       // Generate personalized program based on analysis
       const program = await this.createProgramDays(analysis, userProfile)
@@ -67,7 +78,8 @@ export class AIProgramGenerator {
       return program
     } catch (error) {
       console.error('Error generating personalized program:', error)
-      throw new Error('Failed to generate personalized program')
+      // Return a basic fallback program
+      return this.getFallbackProgram(userProfile)
     }
   }
 
@@ -109,6 +121,13 @@ Respond in JSON format:
 }
 `
 
+    if (!this.openaiKey) {
+      throw new Error('OpenAI API key is missing')
+    }
+
+    console.log('Sending analysis request to OpenAI...')
+    console.log('Prompt length:', prompt.length)
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -132,8 +151,12 @@ Respond in JSON format:
       })
     })
 
+    console.log('OpenAI response status:', response.status)
+    
     if (!response.ok) {
-      throw new Error('Failed to analyze diagnostic data')
+      const errorText = await response.text()
+      console.error('OpenAI API error:', errorText)
+      throw new Error(`Failed to analyze diagnostic data: ${response.status} ${errorText}`)
     }
 
     const data = await response.json()
@@ -220,6 +243,12 @@ Respond in JSON format:
 }
 `
 
+    if (!this.openaiKey) {
+      throw new Error('OpenAI API key is missing')
+    }
+
+    console.log(`Generating content for day ${day}...`)
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -243,8 +272,12 @@ Respond in JSON format:
       })
     })
 
+    console.log(`Day ${day} OpenAI response status:`, response.status)
+    
     if (!response.ok) {
-      throw new Error(`Failed to generate content for day ${day}`)
+      const errorText = await response.text()
+      console.error(`OpenAI API error for day ${day}:`, errorText)
+      throw new Error(`Failed to generate content for day ${day}: ${response.status} ${errorText}`)
     }
 
     const data = await response.json()
@@ -293,6 +326,105 @@ Respond in JSON format:
     if (day <= 14) return 'moderate'
     if (day <= 21) return 'moderate'
     return 'challenging'
+  }
+
+  private getFallbackAnalysis(
+    responses: DiagnosticResponse[],
+    userProfile: UserProfile
+  ): ProgramAnalysis {
+    // Extract common themes from responses
+    const responseText = responses.map(r => r.response).join(' ')
+    const insightText = responses.map(r => r.insight).join(' ')
+    
+    // Simple keyword analysis
+    const keywords = {
+      trauma: ['trauma', 'pain', 'hurt', 'abuse', 'neglect'],
+      patterns: ['pattern', 'repeat', 'cycle', 'habit'],
+      relationships: ['relationship', 'partner', 'family', 'friend'],
+      self: ['self', 'confidence', 'worth', 'value'],
+      coping: ['cope', 'deal', 'handle', 'manage']
+    }
+    
+    const detectedPatterns: string[] = []
+    Object.entries(keywords).forEach(([category, words]) => {
+      const count = words.filter(word => 
+        responseText.toLowerCase().includes(word) || 
+        insightText.toLowerCase().includes(word)
+      ).length
+      if (count > 0) {
+        detectedPatterns.push(category)
+      }
+    })
+    
+    return {
+      primaryTraumaPatterns: detectedPatterns.length > 0 ? detectedPatterns : ['general healing'],
+      coreIssues: ['self-awareness', 'emotional processing', 'behavioral change'],
+      healingGoals: userProfile.goals.length > 0 ? userProfile.goals : ['personal growth'],
+      recommendedApproach: `${userProfile.tone} and ${userProfile.voice} approach`,
+      safetyConsiderations: ['self-compassion', 'gradual progress', 'professional support if needed']
+    }
+  }
+
+  private getFallbackProgram(userProfile: UserProfile): PersonalizedDay[] {
+    const program: PersonalizedDay[] = []
+    
+    for (let day = 1; day <= 30; day++) {
+      const phase = this.getPhaseForDay(day)
+      const duration = this.getDurationForDay(day)
+      const difficulty = this.getDifficultyForDay(day)
+      
+      const dayContent: PersonalizedDay = {
+        day,
+        title: `Day ${day}: ${this.getFallbackFocus(day)}`,
+        focus: this.getFallbackFocus(day),
+        content: {
+          introduction: `Welcome to Day ${day} of your healing journey. Today we focus on ${this.getFallbackFocus(day).toLowerCase()}.`,
+          guidedPractice: `Take ${duration} minutes to ${this.getFallbackPractice(day)}.`,
+          challenge: this.getFallbackChallenge(day),
+          journalingPrompt: this.getFallbackJournalingPrompt(day),
+          reflection: `What did you learn about yourself today? How can you apply this tomorrow?`,
+          tools: ['Journaling', 'Mindfulness', 'Breathing', 'Self-reflection']
+        },
+        metadata: {
+          category: phase as any,
+          duration,
+          difficulty: difficulty as any,
+          traumaFocus: ['general healing', 'self-awareness']
+        }
+      }
+      
+      program.push(dayContent)
+    }
+    
+    return program
+  }
+
+  private getFallbackFocus(day: number): string {
+    if (day <= 7) return 'Building Self-Awareness'
+    if (day <= 14) return 'Processing Emotions'
+    if (day <= 21) return 'Integrating Insights'
+    return 'Taking Action'
+  }
+
+  private getFallbackPractice(day: number): string {
+    if (day <= 7) return 'observe your thoughts and feelings without judgment'
+    if (day <= 14) return 'explore one challenging emotion in detail'
+    if (day <= 21) return 'practice self-compassion and acceptance'
+    return 'take one small step toward your healing goals'
+  }
+
+  private getFallbackChallenge(day: number): string {
+    if (day <= 7) return 'Notice three moments today when you feel triggered or uncomfortable'
+    if (day <= 14) return 'Practice responding differently to one challenging situation'
+    if (day <= 21) return 'Share one insight with someone you trust'
+    return 'Commit to one action that aligns with your healing goals'
+  }
+
+  private getFallbackJournalingPrompt(day: number): string {
+    if (day <= 7) return 'What patterns do you notice in your thoughts and behaviors?'
+    if (day <= 14) return 'What emotions are you avoiding or suppressing?'
+    if (day <= 21) return 'How can you be kinder to yourself today?'
+    return 'What would your future self thank you for doing today?'
   }
 
   private getFallbackDayContent(
