@@ -10,8 +10,11 @@ import {
   useElements,
 } from '@stripe/react-stripe-js'
 
-// Load Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+// Load Stripe with proper error handling
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!).catch((error) => {
+  console.error('Failed to load Stripe:', error)
+  return null
+})
 
 interface PaymentFormProps {
   productType: 'diagnostic' | 'program'
@@ -38,13 +41,16 @@ function CheckoutForm({ productType, amount, onSuccess, onCancel }: PaymentFormP
     setError('')
 
     try {
+      console.log('Submitting payment...')
       const { error: submitError } = await elements.submit()
       if (submitError) {
+        console.error('Submit error:', submitError)
         setError(submitError.message || 'Payment failed')
         setLoading(false)
         return
       }
 
+      console.log('Payment submitted, confirming...')
       // Confirm payment with existing client secret
       const { error: confirmError } = await stripe.confirmPayment({
         elements,
@@ -54,11 +60,13 @@ function CheckoutForm({ productType, amount, onSuccess, onCancel }: PaymentFormP
       })
 
       if (confirmError) {
+        console.error('Confirm error:', confirmError)
         setError(confirmError.message || 'Payment failed')
         setLoading(false)
         return
       }
 
+      console.log('Payment confirmed successfully')
       // Payment succeeded
       onSuccess()
     } catch (error) {
@@ -103,7 +111,9 @@ function CheckoutForm({ productType, amount, onSuccess, onCancel }: PaymentFormP
             </Alert>
           )}
 
-          <PaymentElement />
+          <div className="mb-3">
+            <PaymentElement />
+          </div>
 
           <div className="d-flex gap-2 mt-4">
             <Button
@@ -139,9 +149,34 @@ function CheckoutForm({ productType, amount, onSuccess, onCancel }: PaymentFormP
 export default function PaymentForm(props: PaymentFormProps) {
   const [clientSecret, setClientSecret] = useState('')
   const [error, setError] = useState('')
+  const [stripeLoaded, setStripeLoaded] = useState(false)
 
   useEffect(() => {
-    // Create payment intent when component mounts
+    console.log('PaymentForm mounted, checking Stripe...')
+    console.log('Publishable key:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 20) + '...')
+    
+    // Check if Stripe is loaded
+    stripePromise.then((stripe) => {
+      console.log('Stripe loaded:', !!stripe)
+      if (stripe) {
+        setStripeLoaded(true)
+      } else {
+        setError('Failed to load payment system')
+      }
+    }).catch((error) => {
+      console.error('Stripe loading error:', error)
+      setError('Failed to load payment system')
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!stripeLoaded) {
+      console.log('Stripe not loaded yet, skipping payment intent creation')
+      return
+    }
+
+    console.log('Stripe loaded, creating payment intent...')
+    // Create payment intent when component mounts and Stripe is loaded
     const createIntent = async () => {
       try {
         setError('')
@@ -173,7 +208,7 @@ export default function PaymentForm(props: PaymentFormProps) {
     }
 
     createIntent()
-  }, [props.productType])
+  }, [props.productType, stripeLoaded])
 
   if (error) {
     return (
@@ -189,15 +224,18 @@ export default function PaymentForm(props: PaymentFormProps) {
     )
   }
 
-  if (!clientSecret) {
+  if (!stripeLoaded || !clientSecret) {
     return (
       <div className="text-center py-5">
         <Spinner animation="border" />
-        <p className="mt-3">Loading payment form...</p>
+        <p className="mt-3">
+          {!stripeLoaded ? 'Loading payment system...' : 'Creating payment form...'}
+        </p>
       </div>
     )
   }
 
+  console.log('Rendering Elements with client secret:', clientSecret.substring(0, 20) + '...')
   return (
     <Elements stripe={stripePromise} options={{ clientSecret }}>
       <CheckoutForm {...props} />
