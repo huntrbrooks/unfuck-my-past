@@ -44,8 +44,8 @@ export default function Program() {
     try {
       const response = await fetch('/api/payments/user-purchases')
       if (response.ok) {
-        const data = await response.json()
-        const hasProgramAccess = data.purchases.includes('program')
+        const purchases = await response.json()
+        const hasProgramAccess = Array.isArray(purchases) && purchases.some((p: any) => p.product === 'program' && p.active === true)
         setHasAccess(hasProgramAccess)
         
         if (hasProgramAccess) {

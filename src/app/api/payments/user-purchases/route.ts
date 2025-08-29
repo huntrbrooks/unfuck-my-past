@@ -20,12 +20,13 @@ export async function GET(request: NextRequest) {
     .from(purchases)
     .where(and(eq(purchases.userId, userId), eq(purchases.active, true)))
 
-    const purchasesList = userPurchases.map((p: any) => p.product)
+    const purchasesList = userPurchases.map((p: any) => ({
+      product: p.product,
+      active: p.active,
+      createdAt: p.createdAt
+    }))
 
-    return NextResponse.json({
-      purchases: purchasesList,
-      count: purchasesList.length
-    })
+    return NextResponse.json(purchasesList)
 
   } catch (error) {
     console.error('Error getting user purchases:', error)

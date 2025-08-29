@@ -33,7 +33,11 @@ export default function DiagnosticReport({ className = '' }: DiagnosticReportPro
       const purchasesResponse = await fetch('/api/payments/user-purchases')
       if (purchasesResponse.ok) {
         const purchases = await purchasesResponse.json()
-        const hasDiagnostic = purchases.some((p: any) => p.product === 'diagnostic' && p.active)
+        
+        // Ensure purchases is an array
+        const purchasesArray = Array.isArray(purchases) ? purchases : []
+        
+        const hasDiagnostic = purchasesArray.some((p: any) => p.product === 'diagnostic' && p.active === true)
         setHasPurchased(hasDiagnostic)
         
         if (hasDiagnostic) {

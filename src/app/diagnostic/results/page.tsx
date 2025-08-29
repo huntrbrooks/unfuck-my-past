@@ -24,8 +24,10 @@ function DiagnosticResultsContent() {
     try {
       const response = await fetch('/api/payments/user-purchases')
       if (response.ok) {
-        const data = await response.json()
-        setUserPurchases(data.purchases || [])
+        const purchases = await response.json()
+        // Extract product names from the purchases array
+        const productNames = Array.isArray(purchases) ? purchases.map((p: any) => p.product) : []
+        setUserPurchases(productNames)
       }
     } catch (error) {
       console.error('Error checking purchases:', error)
