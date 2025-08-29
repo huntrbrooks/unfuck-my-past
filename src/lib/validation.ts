@@ -128,7 +128,14 @@ export const PAYMENT_SCHEMA: ValidationSchema = {
 }
 
 export const DIAGNOSTIC_RESPONSE_SCHEMA: ValidationSchema = {
-  question: { required: true },
+  question: { 
+    required: true, 
+    custom: (value) => {
+      if (!value || typeof value !== 'object') return 'Question must be an object'
+      if (!value.id || !value.question) return 'Question must have id and question properties'
+      return true
+    }
+  },
   response: { required: true, minLength: 10, maxLength: 2000 },
   useClaude: { custom: (value) => typeof value === 'boolean' ? true : 'useClaude must be a boolean' }
 }
