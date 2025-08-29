@@ -17,9 +17,9 @@ export default function HowItWorks() {
 
         <Row className="mb-5">
           <Col md={4} className="mb-4">
-            <Card className="h-100 border-0 shadow-sm text-center">
+            <Card className="h-100 card-shadow text-center">
               <Card.Body className="p-4">
-                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                <div className="feature-icon feature-icon-primary">
                   <span className="fs-4">🎯</span>
                 </div>
                 <Card.Title>1. Personalize</Card.Title>
@@ -33,9 +33,9 @@ export default function HowItWorks() {
           </Col>
 
           <Col md={4} className="mb-4">
-            <Card className="h-100 border-0 shadow-sm text-center">
+            <Card className="h-100 card-shadow text-center">
               <Card.Body className="p-4">
-                <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                <div className="feature-icon feature-icon-success">
                   <span className="fs-4">🤖</span>
                 </div>
                 <Card.Title>2. Diagnose</Card.Title>
@@ -48,9 +48,9 @@ export default function HowItWorks() {
           </Col>
 
           <Col md={4} className="mb-4">
-            <Card className="h-100 border-0 shadow-sm text-center">
+            <Card className="h-100 card-shadow text-center">
               <Card.Body className="p-4">
-                <div className="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                <div className="feature-icon feature-icon-warning">
                   <span className="fs-4">📈</span>
                 </div>
                 <Card.Title>3. Transform</Card.Title>
@@ -65,7 +65,7 @@ export default function HowItWorks() {
 
         <Row className="mb-5">
           <Col lg={8} className="mx-auto">
-            <Card className="border-0 shadow-sm">
+            <Card className="card-shadow">
               <Card.Body className="p-5">
                 <h2 className="h3 mb-4">What You'll Get</h2>
                 
@@ -97,7 +97,7 @@ export default function HowItWorks() {
 
         <Row>
           <Col className="text-center">
-            <Button variant="primary" size="lg" href="/onboarding">
+            <Button variant="primary" size="lg" href="/onboarding" className="btn-custom-lg">
               Start Your Journey
             </Button>
           </Col>

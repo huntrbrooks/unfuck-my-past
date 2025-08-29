@@ -86,17 +86,17 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
   }
 
   return (
-    <Card className="border-0 shadow-sm">
-      <Card.Header className="bg-primary text-white">
+    <Card className="payment-form-card">
+      <Card.Header className="payment-header">
         <h4 className="mb-0">
           {productType === 'diagnostic' ? 'Full Diagnostic Report' : '30-Day Healing Program'}
         </h4>
       </Card.Header>
-      <Card.Body className="p-4">
+      <Card.Body className="payment-body">
         <div className="mb-4">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="mb-0">Total Amount</h5>
-            <h4 className="mb-0 text-primary">{formatAmount(amount)}</h4>
+            <h4 className="mb-0 text-primary-custom">{formatAmount(amount)}</h4>
           </div>
           <p className="text-muted mb-0">
             {productType === 'diagnostic' 
@@ -107,7 +107,7 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
         </div>
 
         {error && (
-          <Alert variant="danger" className="mb-3">
+          <Alert variant="danger" className="mb-3 alert-custom">
             {error}
           </Alert>
         )}
@@ -121,6 +121,7 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              className="form-control-custom"
             />
           </Form.Group>
 
@@ -133,6 +134,7 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
               onChange={(e) => setCardNumber(e.target.value.replace(/\s/g, ''))}
               maxLength={16}
               required
+              className="form-control-custom"
             />
             <Form.Text className="text-muted">
               For testing, use: 4242 4242 4242 4242
@@ -150,6 +152,7 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
                   onChange={(e) => setExpiryDate(e.target.value)}
                   maxLength={5}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </div>
@@ -163,6 +166,7 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
                   onChange={(e) => setCvc(e.target.value)}
                   maxLength={4}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </div>

@@ -70,7 +70,7 @@ export default function DiagnosticResults() {
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
-              <Alert variant="warning">
+              <Alert variant="warning" className="alert-custom">
                 <Alert.Heading>No Results Found</Alert.Heading>
                 <p>It looks like you haven't completed the diagnostic assessment yet.</p>
                 <Button variant="primary" href="/diagnostic">
@@ -99,13 +99,13 @@ export default function DiagnosticResults() {
             </div>
 
             {/* Summary Card */}
-            <Card className="border-0 shadow-sm mb-5">
-              <Card.Header className="bg-primary text-white">
+            <Card className="card-shadow mb-5">
+              <Card.Header className="payment-header">
                 <h3 className="h4 mb-0">AI-Powered Analysis</h3>
               </Card.Header>
               <Card.Body className="p-4">
                 <div className="mb-3">
-                  <Badge bg="info" className="me-2">GPT-4 Analysis</Badge>
+                  <Badge bg="info" className="me-2 badge-custom">GPT-4 Analysis</Badge>
                   <small className="text-muted">Generated just for you</small>
                 </div>
                 <div className="diagnostic-summary">
@@ -121,9 +121,9 @@ export default function DiagnosticResults() {
             {/* Next Steps */}
             <Row className="mb-5">
               <Col md={6} className="mb-4">
-                <Card className="h-100 border-0 shadow-sm">
+                <Card className="h-100 card-shadow">
                   <Card.Body className="p-4 text-center">
-                    <div className="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                    <div className="feature-icon feature-icon-warning">
                       <span className="fs-4">📋</span>
                     </div>
                     <h4 className="h5 mb-3">Full Diagnostic Report</h4>
@@ -131,7 +131,7 @@ export default function DiagnosticResults() {
                       Get your complete trauma mapping, detailed pattern analysis, and personalized recommendations.
                     </p>
                     <div className="mb-3">
-                      <span className="h4 text-primary">$10</span>
+                      <span className="h4 text-primary-custom">$10</span>
                       <small className="text-muted d-block">One-time purchase</small>
                     </div>
                     {hasDiagnosticAccess ? (
@@ -154,9 +154,9 @@ export default function DiagnosticResults() {
               </Col>
 
               <Col md={6} className="mb-4">
-                <Card className="h-100 border-0 shadow-sm border-primary">
+                <Card className="h-100 card-shadow border-primary-custom">
                   <Card.Body className="p-4 text-center">
-                    <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                    <div className="feature-icon feature-icon-primary">
                       <span className="fs-4">🚀</span>
                     </div>
                     <h4 className="h5 mb-3">30-Day Healing Program</h4>
@@ -164,7 +164,7 @@ export default function DiagnosticResults() {
                       Daily tasks, journaling prompts, mood tracking, and AI-powered guidance to transform your life.
                     </p>
                     <div className="mb-3">
-                      <span className="h4 text-primary">$29.95</span>
+                      <span className="h4 text-primary-custom">$29.95</span>
                       <small className="text-muted d-block">Complete program</small>
                     </div>
                     {hasProgramAccess ? (
@@ -188,7 +188,7 @@ export default function DiagnosticResults() {
             </Row>
 
             {/* What's Included */}
-            <Card className="border-0 shadow-sm mb-5">
+            <Card className="card-shadow mb-5">
               <Card.Header className="bg-light">
                 <h4 className="h5 mb-0">What's Included in the Program</h4>
               </Card.Header>
@@ -215,7 +215,7 @@ export default function DiagnosticResults() {
             </Card>
 
             {/* Safety Notice */}
-            <Alert variant="info">
+            <Alert variant="info" className="alert-custom">
               <Alert.Heading>Important Safety Information</Alert.Heading>
               <p className="mb-0">
                 This assessment is designed to provide insights and support, but it's not a substitute for professional therapy. 

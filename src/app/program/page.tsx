@@ -145,8 +145,8 @@ export default function Program() {
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
-              <Card className="border-0 shadow-sm">
-                <Card.Body className="p-5 text-center">
+              <Card className="card-shadow">
+                <Card.Body className="p-5 text-center loading-spinner">
                   <Spinner animation="border" className="mb-3" />
                   <h3>Checking program access...</h3>
                 </Card.Body>
@@ -165,7 +165,7 @@ export default function Program() {
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
-              <Alert variant="warning">
+              <Alert variant="warning" className="alert-custom">
                 <Alert.Heading>Program Access Required</Alert.Heading>
                 <p>You need to purchase the 30-day program to access this content.</p>
                 <Button variant="primary" href="/diagnostic/results">
@@ -186,8 +186,8 @@ export default function Program() {
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
-              <Card className="border-0 shadow-sm">
-                <Card.Body className="p-5 text-center">
+              <Card className="card-shadow">
+                <Card.Body className="p-5 text-center loading-spinner">
                   <Spinner animation="border" className="mb-3" />
                   <h3>Loading your program...</h3>
                 </Card.Body>
@@ -206,7 +206,7 @@ export default function Program() {
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
-              <Alert variant="danger">
+              <Alert variant="danger" className="alert-custom">
                 <Alert.Heading>Error</Alert.Heading>
                 <p>{error}</p>
                 <Button variant="outline-danger" onClick={loadProgramData}>
@@ -227,7 +227,7 @@ export default function Program() {
         <Container className="py-5">
           <Row className="justify-content-center">
             <Col lg={8}>
-              <Alert variant="warning">
+              <Alert variant="warning" className="alert-custom">
                 <Alert.Heading>Program Not Available</Alert.Heading>
                 <p>You need to purchase the 30-day program to access this content.</p>
                 <Button variant="primary" href="/diagnostic/results">
@@ -258,24 +258,23 @@ export default function Program() {
         {/* Progress Overview */}
         <Row className="mb-5">
           <Col lg={8}>
-            <Card className="border-0 shadow-sm">
-              <Card.Body className="p-4">
+            <Card className="card-shadow">
+              <Card.Body className="progress-overview">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h3 className="h4 mb-0">Progress Overview</h3>
-                  <Badge bg="primary" className="fs-6">
+                  <Badge bg="primary" className="fs-6 badge-custom">
                     {progress.percentage}% Complete
                   </Badge>
                 </div>
                 
                 <ProgressBar 
                   now={progress.percentage} 
-                  className="mb-3" 
-                  style={{ height: '10px' }}
+                  className="mb-3 progress-custom" 
                 />
                 
-                <Row className="text-center">
+                <Row className="progress-stats">
                   <Col>
-                    <div className="h4 text-primary mb-1">{progress.completed}</div>
+                    <div className="h4 text-primary-custom mb-1">{progress.completed}</div>
                     <small className="text-muted">Days Completed</small>
                   </Col>
                   <Col>
@@ -296,8 +295,8 @@ export default function Program() {
           </Col>
           
           <Col lg={4}>
-            <Card className="border-0 shadow-sm h-100">
-              <Card.Body className="p-4">
+            <Card className="card-shadow h-100">
+              <Card.Body className="quick-stats">
                 <h4 className="h5 mb-3">Quick Stats</h4>
                 <div className="mb-3">
                   <small className="text-muted d-block">Current Streak</small>
@@ -325,26 +324,26 @@ export default function Program() {
         {currentDay && (
           <Row className="mb-5">
             <Col lg={8}>
-              <Card className="border-0 shadow-sm">
-                <Card.Header className="bg-primary text-white">
+              <Card className="card-shadow">
+                <Card.Header className="program-day-header">
                   <div className="d-flex justify-content-between align-items-center">
                     <h3 className="h4 mb-0">Day {currentDay.day}: {currentDay.title}</h3>
-                    <Badge bg="light" text="dark">
+                    <Badge bg="light" text="dark" className="badge-custom">
                       {currentDay.metadata.duration} min
                     </Badge>
                   </div>
                 </Card.Header>
-                <Card.Body className="p-4">
+                <Card.Body className="program-day-body">
                   <div className="mb-4">
                     <p className="lead">{currentDay.content}</p>
                   </div>
                   
                   <div className="mb-4">
                     <div className="d-flex gap-2 mb-2">
-                      <Badge bg={getCategoryColor(currentDay.metadata.category)}>
+                      <Badge bg={getCategoryColor(currentDay.metadata.category)} className="badge-custom">
                         {currentDay.metadata.category}
                       </Badge>
-                      <Badge bg={getDifficultyColor(currentDay.metadata.difficulty)}>
+                      <Badge bg={getDifficultyColor(currentDay.metadata.difficulty)} className="badge-custom">
                         {currentDay.metadata.difficulty}
                       </Badge>
                     </div>
@@ -352,7 +351,7 @@ export default function Program() {
                     <div>
                       <small className="text-muted">Tools: </small>
                       {currentDay.metadata.tools.map((tool, index) => (
-                        <Badge key={index} bg="outline-secondary" className="me-1">
+                        <Badge key={index} bg="outline-secondary" className="me-1 badge-custom">
                           {tool}
                         </Badge>
                       ))}
@@ -363,7 +362,7 @@ export default function Program() {
                     variant="primary" 
                     size="lg" 
                     onClick={completeDay}
-                    className="w-100"
+                    className="w-100 btn-custom-lg"
                   >
                     Complete Day {currentDay.day}
                   </Button>
@@ -372,8 +371,8 @@ export default function Program() {
             </Col>
             
             <Col lg={4}>
-              <Card className="border-0 shadow-sm">
-                <Card.Body className="p-4">
+              <Card className="card-shadow">
+                <Card.Body className="program-day-focus">
                   <h4 className="h5 mb-3">Today's Focus</h4>
                   <div className="mb-3">
                     <strong>Category:</strong> {currentDay.metadata.category}
@@ -404,7 +403,7 @@ export default function Program() {
         {progress.completed === 30 && (
           <Row className="mb-5">
             <Col>
-              <Card className="border-0 shadow-sm border-success">
+              <Card className="card-shadow border-success">
                 <Card.Body className="p-5 text-center">
                   <div className="mb-4">
                     <span className="display-1">🎉</span>
@@ -414,7 +413,7 @@ export default function Program() {
                     You've completed all 30 days of your healing journey. 
                     This is just the beginning of your transformation.
                   </p>
-                  <Button variant="success" size="lg" href="/dashboard">
+                  <Button variant="success" size="lg" href="/dashboard" className="btn-custom-lg">
                     Continue Your Journey
                   </Button>
                 </Card.Body>

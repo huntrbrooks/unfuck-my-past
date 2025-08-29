@@ -18,7 +18,7 @@ export default function Home() {
             variant="warning" 
             dismissible 
             onClose={() => setShowSafetyAlert(false)}
-            className="mb-0"
+            className="mb-0 alert-custom"
           >
             <strong>⚠️ Important:</strong> This is not therapy. If you're in crisis, 
             please call 000 (Australia) or Lifeline 13 11 14.
@@ -26,9 +26,9 @@ export default function Home() {
         )}
 
         {/* Hero Section */}
-        <section className="healing-gradient text-white py-5">
+        <section className="hero-section">
         <Container>
-          <Row className="align-items-center min-vh-75">
+          <Row className="hero-content">
             <Col lg={6}>
               <h1 className="display-4 fw-bold mb-4">
                 Unfuck Your Past
@@ -39,16 +39,16 @@ export default function Home() {
                 what's holding you back.
               </p>
               <div className="d-flex gap-3">
-                <Button variant="light" size="lg" href="/onboarding">
+                <Button variant="light" size="lg" href="/onboarding" className="btn-custom-lg">
                   Start Free Assessment
                 </Button>
-                <Button variant="outline-light" size="lg" href="/how-it-works">
+                <Button variant="outline-light" size="lg" href="/how-it-works" className="btn-custom-lg">
                   How It Works
                 </Button>
               </div>
             </Col>
             <Col lg={6} className="text-center">
-              <div className="bg-white bg-opacity-10 rounded p-4">
+              <div className="hero-features">
                 <h3>What You'll Get</h3>
                 <ul className="list-unstyled">
                   <li className="mb-2">✅ 10-step personalization</li>
@@ -67,9 +67,9 @@ export default function Home() {
         <Container>
           <Row>
             <Col md={4} className="mb-4">
-              <Card className="h-100 border-0 shadow-sm">
+              <Card className="h-100 card-shadow">
                 <Card.Body className="text-center">
-                  <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                  <div className="feature-icon feature-icon-primary">
                     <span className="fs-4">🎯</span>
                   </div>
                   <Card.Title>Personalized Approach</Card.Title>
@@ -81,9 +81,9 @@ export default function Home() {
               </Card>
             </Col>
             <Col md={4} className="mb-4">
-              <Card className="h-100 border-0 shadow-sm">
+              <Card className="h-100 card-shadow">
                 <Card.Body className="text-center">
-                  <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                  <div className="feature-icon feature-icon-success">
                     <span className="fs-4">🤖</span>
                   </div>
                   <Card.Title>AI-Powered Insights</Card.Title>
@@ -95,9 +95,9 @@ export default function Home() {
               </Card>
             </Col>
             <Col md={4} className="mb-4">
-              <Card className="h-100 border-0 shadow-sm">
+              <Card className="h-100 card-shadow">
                 <Card.Body className="text-center">
-                  <div className="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                  <div className="feature-icon feature-icon-warning">
                     <span className="fs-4">📈</span>
                   </div>
                   <Card.Title>Proven Results</Card.Title>
@@ -122,7 +122,7 @@ export default function Home() {
                 Join thousands who've already transformed their lives. 
                 Start with our free assessment - no commitment required.
               </p>
-              <Button variant="primary" size="lg" href="/onboarding">
+              <Button variant="primary" size="lg" href="/onboarding" className="btn-custom-lg">
                 Begin Free Assessment
               </Button>
             </Col>
