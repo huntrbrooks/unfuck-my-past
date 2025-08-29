@@ -5,7 +5,7 @@ import { eq, and } from 'drizzle-orm'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { day: string } }
+  { params }: { params: Promise<{ day: string }> }
 ) {
   try {
     const { userId } = await auth()
@@ -14,7 +14,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const dayNumber = parseInt(params.day)
+    const { day } = await params
+    const dayNumber = parseInt(day)
     if (isNaN(dayNumber) || dayNumber < 1 || dayNumber > 30) {
       return NextResponse.json({ error: 'Invalid day number' }, { status: 400 })
     }

@@ -37,7 +37,7 @@ export default function Navigation() {
                   <div className="d-flex gap-2">
                     <Button 
                       variant="outline-light" 
-                      as={Link} 
+                      as={Link as any} 
                       href="/sign-in"
                       size="sm"
                     >
@@ -45,7 +45,7 @@ export default function Navigation() {
                     </Button>
                     <Button 
                       variant="primary" 
-                      as={Link} 
+                      as={Link as any} 
                       href="/sign-up"
                       size="sm"
                     >
