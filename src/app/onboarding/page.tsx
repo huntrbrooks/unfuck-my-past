@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Container, Row, Col, Card, ProgressBar, Button, Form } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
 import Navigation from '../../components/Navigation'
 
 interface OnboardingData {
@@ -100,10 +101,9 @@ const onboardingSteps = [
     title: "Safety & support",
     question: "What safety measures do you need?",
     options: [
-      { value: "crisis", label: "Crisis support resources" },
-      { value: "warnings", label: "Content warnings" },
-      { value: "skip", label: "Skip triggering content" },
-      { value: "pace", label: "Go at my own pace" }
+      { value: "crisisSupport", label: "Crisis support resources" },
+      { value: "contentWarnings", label: "Content warnings" },
+      { value: "skipTriggers", label: "Skip triggering content" }
     ],
     field: "safety",
     multiSelect: true
@@ -149,26 +149,52 @@ const onboardingSteps = [
 
 export default function Onboarding() {
   const router = useRouter()
+  const { isSignedIn, isLoaded } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
-  const [onboardingData, setOnboardingData] = useState<OnboardingData>({
-    tone: '',
-    voice: '',
-    rawness: '',
-    depth: '',
-    learning: '',
-    engagement: '',
-    safety: {
-      crisisSupport: false,
-      contentWarnings: false,
-      skipTriggers: false
-    },
-    goals: [],
-    experience: '',
-    timeCommitment: ''
+  const [onboardingData, setOnboardingData] = useState<OnboardingData>(() => {
+    // Try to restore onboarding data from localStorage
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('onboardingData')
+      if (stored) {
+        try {
+          return JSON.parse(stored)
+        } catch (e) {
+          console.error('Failed to parse stored onboarding data:', e)
+        }
+      }
+    }
+    
+    return {
+      tone: '',
+      voice: '',
+      rawness: '',
+      depth: '',
+      learning: '',
+      engagement: '',
+      safety: {
+        crisisSupport: false,
+        contentWarnings: false,
+        skipTriggers: false
+      },
+      goals: [],
+      experience: '',
+      timeCommitment: ''
+    }
   })
 
   const currentStepData = onboardingSteps[currentStep]
   const progress = ((currentStep + 1) / onboardingSteps.length) * 100
+
+  // Show loading while Clerk is initializing
+  if (!isLoaded) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    )
+  }
 
   const handleOptionSelect = (value: string) => {
     if (currentStepData.multiSelect) {
@@ -214,6 +240,15 @@ export default function Onboarding() {
   }
 
   const handleComplete = async () => {
+    // Check if user is signed in
+    if (!isSignedIn) {
+      // Store onboarding data in localStorage temporarily
+      localStorage.setItem('onboardingData', JSON.stringify(onboardingData))
+      // Redirect to sign in
+      router.push('/sign-in?redirect=/onboarding')
+      return
+    }
+
     try {
       // Save onboarding data to database
       const response = await fetch('/api/onboarding', {
@@ -225,14 +260,18 @@ export default function Onboarding() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to save onboarding data')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to save onboarding data')
       }
 
+      // Clear any stored onboarding data
+      localStorage.removeItem('onboardingData')
+      
       // Redirect to diagnostic
       router.push('/diagnostic')
     } catch (error) {
       console.error('Error saving onboarding data:', error)
-      // TODO: Show error message to user
+      alert(`Error: ${error instanceof Error ? error.message : 'Failed to save onboarding data'}`)
     }
   }
 

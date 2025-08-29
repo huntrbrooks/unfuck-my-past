@@ -20,7 +20,9 @@ export async function POST(request: NextRequest) {
     // Authentication
     const { userId } = await auth()
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ 
+        error: 'Please sign in to save your onboarding preferences. You can complete the onboarding process after signing in.' 
+      }, { status: 401 })
     }
 
     // Parse and validate request body

@@ -5,10 +5,6 @@ const nextConfig = {
   },
   // Suppress hydration warnings in development
   reactStrictMode: true,
-  // Add experimental features to help with hydration
-  experimental: {
-    suppressHydrationWarning: true,
-  },
 }
 
 module.exports = nextConfig

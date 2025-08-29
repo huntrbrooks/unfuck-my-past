@@ -113,8 +113,8 @@ export const ONBOARDING_SCHEMA: ValidationSchema = {
     required: true,
     custom: (value) => {
       if (!value || typeof value !== 'object') return 'Safety preferences are required'
-      const safetyKeys = Object.keys(value)
-      return safetyKeys.length > 0 ? true : 'At least one safety preference must be selected'
+      const { crisisSupport, contentWarnings, skipTriggers } = value
+      return (crisisSupport || contentWarnings || skipTriggers) ? true : 'At least one safety preference must be selected'
     }
   }
 }
