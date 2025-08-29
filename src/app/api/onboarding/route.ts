@@ -39,9 +39,13 @@ export async function POST(request: NextRequest) {
     // Sanitize input
     const sanitizedBody = sanitizeObject(body)
 
+    // Debug: Log the data being validated
+    console.log('Onboarding data received:', JSON.stringify(sanitizedBody, null, 2))
+
     // Validate input
     const validation = validateObject(sanitizedBody, ONBOARDING_SCHEMA)
     if (!validation.isValid) {
+      console.log('Validation errors:', validation.errors)
       return NextResponse.json(
         { 
           error: 'Validation failed',

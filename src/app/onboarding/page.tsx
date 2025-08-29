@@ -225,6 +225,9 @@ export default function Onboarding() {
   }
 
   const handleNext = () => {
+    console.log('Current step data:', currentStepData)
+    console.log('Current onboarding data:', onboardingData)
+    
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1)
     } else {
@@ -240,6 +243,9 @@ export default function Onboarding() {
   }
 
   const handleComplete = async () => {
+    // Debug: Log the data being sent
+    console.log('Onboarding data being sent:', JSON.stringify(onboardingData, null, 2))
+    
     // Check if user is signed in
     if (!isSignedIn) {
       // Store onboarding data in localStorage temporarily
@@ -341,7 +347,7 @@ export default function Onboarding() {
                     onClick={handleNext}
                     disabled={
                       currentStepData.multiSelect 
-                        ? (currentStepData.field === 'safety' && !Object.values(onboardingData.safety).some(Boolean)) ||
+                        ? (currentStepData.field === 'safety' && !(onboardingData.safety.crisisSupport || onboardingData.safety.contentWarnings || onboardingData.safety.skipTriggers)) ||
                           (currentStepData.field === 'goals' && onboardingData.goals.length === 0)
                         : !onboardingData[currentStepData.field as keyof OnboardingData]
                     }
