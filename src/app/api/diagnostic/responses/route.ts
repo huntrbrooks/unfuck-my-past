@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, answers } from '../../../db'
+import { db, answers } from '../../../../db'
 import { auth } from '@clerk/nextjs/server'
 import { eq } from 'drizzle-orm'
 
@@ -14,9 +14,9 @@ export async function GET(request: NextRequest) {
     // Fetch user's diagnostic responses
     const userAnswers = await db
       .select({
-        question: answers.question,
-        response: answers.response,
-        insight: answers.insight,
+        questionId: answers.questionId,
+        response: answers.content,
+        insight: answers.summary,
         timestamp: answers.createdAt
       })
       .from(answers)
@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
 
     // Format the responses
     const formattedResponses = userAnswers.map(answer => ({
-      question: answer.question,
-      response: answer.response,
-      insight: answer.insight,
+      question: `Question ${answer.questionId}`,
+      response: answer.response || '',
+      insight: answer.insight || '',
       timestamp: answer.timestamp?.toISOString() || new Date().toISOString()
     }))
 
