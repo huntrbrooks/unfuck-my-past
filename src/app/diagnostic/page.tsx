@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Card, ProgressBar, Button, Form, Alert, Spinner } from 'react-bootstrap'
+import { Container, Row, Col, Card, ProgressBar, Button, Form, Alert } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 import Navigation from '../../components/Navigation'
+import LoadingSpinner from '../../components/LoadingSpinner'
+import SkeletonCard from '../../components/SkeletonCard'
 import { DiagnosticQuestion } from '../../lib/diagnostic-questions'
 
 interface DiagnosticResponse {
@@ -134,9 +136,11 @@ export default function Diagnostic() {
           <Row className="justify-content-center">
             <Col lg={8}>
               <Card className="border-0 shadow-sm">
-                <Card.Body className="p-5 text-center">
-                  <Spinner animation="border" className="mb-3" />
-                  <h3>Loading your personalized questions...</h3>
+                <Card.Body className="p-5">
+                  <LoadingSpinner 
+                    size="lg" 
+                    text="Loading your personalized questions..." 
+                  />
                 </Card.Body>
               </Card>
             </Col>
@@ -201,6 +205,7 @@ export default function Diagnostic() {
                         variant={currentResponse === option ? "primary" : "outline-primary"}
                         className="w-100 text-start p-3 mb-2"
                         onClick={() => setCurrentResponse(option)}
+                        disabled={generatingInsight}
                       >
                         {option}
                       </Button>
@@ -253,8 +258,7 @@ export default function Diagnostic() {
                   >
                     {generatingInsight ? (
                       <>
-                        <Spinner animation="border" size="sm" className="me-2" />
-                        Analyzing...
+                        <LoadingSpinner size="sm" text="Analyzing..." />
                       </>
                     ) : currentQuestionIndex === questions.length - 1 ? (
                       'Complete Assessment'

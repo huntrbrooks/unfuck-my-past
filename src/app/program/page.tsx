@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Container, Row, Col, Card, ProgressBar, Button, Badge, Alert, Spinner } from 'react-bootstrap'
+import { Container, Row, Col, Card, ProgressBar, Button, Badge, Alert } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 import Navigation from '../../components/Navigation'
+import LoadingSpinner from '../../components/LoadingSpinner'
+import SkeletonGrid from '../../components/SkeletonGrid'
 
 interface ProgramProgress {
   completed: number
@@ -146,9 +148,11 @@ export default function Program() {
           <Row className="justify-content-center">
             <Col lg={8}>
               <Card className="card-shadow">
-                <Card.Body className="p-5 text-center loading-spinner">
-                  <Spinner animation="border" className="mb-3" />
-                  <h3>Checking program access...</h3>
+                <Card.Body className="p-5">
+                  <LoadingSpinner 
+                    size="lg" 
+                    text="Checking program access..." 
+                  />
                 </Card.Body>
               </Card>
             </Col>
@@ -187,9 +191,11 @@ export default function Program() {
           <Row className="justify-content-center">
             <Col lg={8}>
               <Card className="card-shadow">
-                <Card.Body className="p-5 text-center loading-spinner">
-                  <Spinner animation="border" className="mb-3" />
-                  <h3>Loading your program...</h3>
+                <Card.Body className="p-5">
+                  <LoadingSpinner 
+                    size="lg" 
+                    text="Loading your program..." 
+                  />
                 </Card.Body>
               </Card>
             </Col>

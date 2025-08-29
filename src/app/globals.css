@@ -251,6 +251,104 @@ body {
   min-height: 200px;
 }
 
+/* Skeleton Loading */
+.skeleton-card {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Theme Toggle */
+.theme-toggle {
+  transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+}
+
+.theme-icon {
+  font-size: 1.1em;
+}
+
+/* Dark Mode Styles */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #1a1a1a;
+  --bs-body-color: #e9ecef;
+  --bs-border-color: #495057;
+  --bs-card-bg: #2d2d2d;
+  --bs-card-border-color: #495057;
+}
+
+[data-bs-theme="dark"] .card {
+  background-color: var(--bs-card-bg);
+  border-color: var(--bs-card-border-color);
+}
+
+[data-bs-theme="dark"] .card-shadow {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+}
+
+[data-bs-theme="dark"] .progress-overview,
+[data-bs-theme="dark"] .quick-stats,
+[data-bs-theme="dark"] .program-day-focus {
+  background-color: #2d2d2d;
+  border: 1px solid #495057;
+}
+
+[data-bs-theme="dark"] .text-muted {
+  color: #adb5bd !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+  background-color: #2d2d2d !important;
+}
+
+[data-bs-theme="dark"] .border-light {
+  border-color: #495057 !important;
+}
+
+[data-bs-theme="dark"] .form-control {
+  background-color: #2d2d2d;
+  border-color: #495057;
+  color: #e9ecef;
+}
+
+[data-bs-theme="dark"] .form-control:focus {
+  background-color: #2d2d2d;
+  border-color: #86b7fe;
+  color: #e9ecef;
+}
+
+[data-bs-theme="dark"] .btn-outline-light {
+  color: #e9ecef;
+  border-color: #6c757d;
+}
+
+[data-bs-theme="dark"] .btn-outline-light:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+[data-bs-theme="dark"] .navbar {
+  background-color: #212529 !important;
+}
+
+[data-bs-theme="dark"] .hero-section {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+}
+
+[data-bs-theme="dark"] .hero-features {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .hero-content {
@@ -265,6 +363,10 @@ body {
   .btn-custom-lg {
     padding: 0.5rem 1rem;
     font-size: 1rem;
+  }
+  
+  .theme-label {
+    display: none;
   }
 }
 

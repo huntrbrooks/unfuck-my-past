@@ -3,6 +3,7 @@
 import { useAuth } from "@clerk/nextjs";
 import { Navbar, Nav, Container, Button } from "react-bootstrap";
 import UserButton from "./UserButton";
+import ThemeToggle from "./ThemeToggle";
 import Link from "next/link";
 
 export default function Navigation() {
@@ -29,6 +30,10 @@ export default function Navigation() {
           </Nav>
           
           <Nav className="ms-auto">
+            <Nav.Item className="d-flex align-items-center me-3">
+              <ThemeToggle variant="ghost" size="sm" />
+            </Nav.Item>
+            
             {isLoaded && (
               <>
                 {isSignedIn ? (
