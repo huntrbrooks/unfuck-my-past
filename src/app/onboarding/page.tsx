@@ -157,7 +157,12 @@ export default function Onboarding() {
       const stored = localStorage.getItem('onboardingData')
       if (stored) {
         try {
-          return JSON.parse(stored)
+          const parsed = JSON.parse(stored)
+          // Ensure goals is always an array
+          if (parsed.goals && !Array.isArray(parsed.goals)) {
+            parsed.goals = Object.values(parsed.goals)
+          }
+          return parsed
         } catch (e) {
           console.error('Failed to parse stored onboarding data:', e)
         }
@@ -280,6 +285,25 @@ export default function Onboarding() {
       alert(`Error: ${error instanceof Error ? error.message : 'Failed to save onboarding data'}`)
     }
   }
+
+  // Clear any corrupted localStorage data on component mount
+  React.useEffect(() => {
+    const stored = localStorage.getItem('onboardingData')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        if (parsed.goals && !Array.isArray(parsed.goals)) {
+          // Clear corrupted data
+          localStorage.removeItem('onboardingData')
+          console.log('Cleared corrupted onboarding data from localStorage')
+        }
+      } catch (e) {
+        // Clear invalid data
+        localStorage.removeItem('onboardingData')
+        console.log('Cleared invalid onboarding data from localStorage')
+      }
+    }
+  }, [])
 
   const isOptionSelected = (value: string) => {
     if (currentStepData.multiSelect) {

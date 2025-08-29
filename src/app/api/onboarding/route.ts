@@ -39,6 +39,11 @@ export async function POST(request: NextRequest) {
     // Sanitize input
     const sanitizedBody = sanitizeObject(body)
 
+    // Fix goals array if it's an object (localStorage issue)
+    if (sanitizedBody.goals && !Array.isArray(sanitizedBody.goals)) {
+      sanitizedBody.goals = Object.values(sanitizedBody.goals)
+    }
+
     // Debug: Log the data being validated
     console.log('Onboarding data received:', JSON.stringify(sanitizedBody, null, 2))
 
