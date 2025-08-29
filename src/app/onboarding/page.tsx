@@ -1,4 +1,4 @@
-'iuse client'
+'use client'
 
 import React, { useState } from 'react'
 import { Container, Row, Col, Card, ProgressBar, Button, Form } from 'react-bootstrap'
