@@ -252,6 +252,7 @@ export default function Diagnostic() {
                           disabled={generatingInsight}
                           placeholder="Click to start recording your response..."
                           className="mb-3"
+                          allowEdit={true}
                         />
                         {voiceError && (
                           <Alert variant="danger" dismissible onClose={() => setVoiceError(null)}>

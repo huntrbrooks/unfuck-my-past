@@ -635,6 +635,26 @@ body {
   opacity: 0.7;
 }
 
+.edit-transcript-display {
+  background: white;
+  border: 2px solid #28a745;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
+}
+
+.edit-transcript-content {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
 .recording-indicator {
   display: flex;
   align-items: center;
@@ -705,6 +725,17 @@ body {
 
 [data-bs-theme="dark"] .interim-text {
   color: #a0aec0;
+}
+
+[data-bs-theme="dark"] .edit-transcript-display {
+  background: #2d3748;
+  border-color: #48bb78;
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+  color: #e2e8f0;
+}
+
+[data-bs-theme="dark"] .edit-transcript-content {
+  color: #e2e8f0;
 }
 
 [data-bs-theme="dark"] .recording-indicator {

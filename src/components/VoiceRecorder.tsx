@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Button, Alert, Spinner } from 'react-bootstrap'
+import { Button, Alert, Spinner, Form } from 'react-bootstrap'
 
 interface VoiceRecorderProps {
   onTranscription: (text: string) => void
@@ -9,6 +9,7 @@ interface VoiceRecorderProps {
   disabled?: boolean
   placeholder?: string
   className?: string
+  allowEdit?: boolean
 }
 
 interface Recognition extends EventTarget {
@@ -35,7 +36,8 @@ export default function VoiceRecorder({
   onError, 
   disabled = false,
   placeholder = "Click to start recording...",
-  className = ''
+  className = '',
+  allowEdit = true
 }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -43,6 +45,8 @@ export default function VoiceRecorder({
   const [interimTranscript, setInterimTranscript] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [recordingTime, setRecordingTime] = useState(0)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedText, setEditedText] = useState('')
   
   const recognitionRef = useRef<Recognition | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -133,11 +137,9 @@ export default function VoiceRecorder({
   }
 
   const stopRecording = () => {
-    console.log('Stop recording called, recognitionRef:', !!recognitionRef.current)
     if (!recognitionRef.current) return
 
     try {
-      console.log('Stopping recording...')
       setIsProcessing(true) // Set processing when stopping
       recognitionRef.current.stop()
       setIsRecording(false)
@@ -150,7 +152,12 @@ export default function VoiceRecorder({
       // Process the final transcript
       const finalText = transcript + interimTranscript
       if (finalText.trim()) {
-        onTranscription(finalText.trim())
+        setEditedText(finalText.trim())
+        if (allowEdit) {
+          setIsEditing(true)
+        } else {
+          onTranscription(finalText.trim())
+        }
       }
       
       setInterimTranscript('')
@@ -168,6 +175,21 @@ export default function VoiceRecorder({
     setTranscript('')
     setInterimTranscript('')
     setError(null)
+  }
+
+  const handleEditSave = () => {
+    if (editedText.trim()) {
+      onTranscription(editedText.trim())
+    }
+    setIsEditing(false)
+    setEditedText('')
+  }
+
+  const handleEditCancel = () => {
+    setIsEditing(false)
+    setEditedText('')
+    setTranscript('')
+    setInterimTranscript('')
   }
 
   const isSupported = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
@@ -217,10 +239,7 @@ export default function VoiceRecorder({
             <Button
               variant="danger"
               size="lg"
-              onClick={() => {
-                console.log('Stop button clicked, isProcessing:', isProcessing, 'disabled:', disabled)
-                stopRecording()
-              }}
+              onClick={stopRecording}
               disabled={isProcessing || disabled}
               className="voice-button"
             >
@@ -249,7 +268,7 @@ export default function VoiceRecorder({
         )}
       </div>
 
-      {(transcript || interimTranscript) && (
+      {(transcript || interimTranscript) && !isEditing && (
         <div className="transcript-display">
           <div className="transcript-content">
             <strong>Your Response:</strong>
@@ -258,6 +277,41 @@ export default function VoiceRecorder({
               {interimTranscript && (
                 <span className="interim-text">{interimTranscript}</span>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isEditing && (
+        <div className="edit-transcript-display">
+          <div className="edit-transcript-content">
+            <strong>Edit Your Response:</strong>
+            <Form.Control
+              as="textarea"
+              rows={4}
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+              placeholder="Edit your transcribed text here..."
+              className="mt-2"
+            />
+            <div className="edit-actions mt-3">
+              <Button
+                variant="success"
+                size="sm"
+                onClick={handleEditSave}
+                className="me-2"
+              >
+                <i className="bi bi-check-circle me-1"></i>
+                Save & Use
+              </Button>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={handleEditCancel}
+              >
+                <i className="bi bi-x-circle me-1"></i>
+                Cancel
+              </Button>
             </div>
           </div>
         </div>
