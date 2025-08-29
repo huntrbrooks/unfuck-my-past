@@ -42,6 +42,7 @@ export default function VoiceRecorder({
   const [transcript, setTranscript] = useState('')
   const [interimTranscript, setInterimTranscript] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [recordingTime, setRecordingTime] = useState(0)
   
   const recognitionRef = useRef<Recognition | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -107,13 +108,20 @@ export default function VoiceRecorder({
       setError(null)
       setTranscript('')
       setInterimTranscript('')
+      setRecordingTime(0)
       setIsRecording(true)
       setIsProcessing(true)
       
       recognitionRef.current.start()
 
+      // Start timer
+      const timer = setInterval(() => {
+        setRecordingTime(prev => prev + 1)
+      }, 1000)
+
       // Auto-stop after 2 minutes
       timeoutRef.current = setTimeout(() => {
+        clearInterval(timer)
         stopRecording()
       }, 120000) // 2 minutes
 
@@ -144,6 +152,7 @@ export default function VoiceRecorder({
       }
       
       setInterimTranscript('')
+      setRecordingTime(0)
       setIsProcessing(false)
 
     } catch (err) {
@@ -181,40 +190,48 @@ export default function VoiceRecorder({
       )}
 
       <div className="voice-controls mb-3">
-        <Button
-          variant={isRecording ? "danger" : "primary"}
-          size="lg"
-          onClick={isRecording ? stopRecording : startRecording}
-          disabled={disabled || isProcessing}
-          className="voice-button"
-        >
-          {isProcessing ? (
-            <>
-              <Spinner animation="border" size="sm" className="me-2" />
-              Processing...
-            </>
-          ) : isRecording ? (
-            <>
-              <i className="bi bi-mic-mute-fill me-2"></i>
-              Stop Recording
-            </>
-          ) : (
-            <>
-              <i className="bi bi-mic-fill me-2"></i>
-              Start Recording
-            </>
-          )}
-        </Button>
-
-        {(transcript || interimTranscript) && (
+        {!isRecording ? (
           <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={clearTranscript}
-            className="ms-2"
+            variant="primary"
+            size="lg"
+            onClick={startRecording}
+            disabled={disabled || isProcessing}
+            className="voice-button"
           >
-            Clear
+            {isProcessing ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-mic-fill me-2"></i>
+                Start Recording
+              </>
+            )}
           </Button>
+        ) : (
+          <div className="d-flex gap-2">
+            <Button
+              variant="danger"
+              size="lg"
+              onClick={stopRecording}
+              disabled={isProcessing}
+              className="voice-button"
+            >
+              <i className="bi bi-stop-fill me-2"></i>
+              Stop Recording
+            </Button>
+            <Button
+              variant="outline-secondary"
+              size="lg"
+              onClick={clearTranscript}
+              disabled={isProcessing}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Clear
+            </Button>
+          </div>
         )}
       </div>
 
@@ -235,7 +252,9 @@ export default function VoiceRecorder({
       {isRecording && (
         <div className="recording-indicator">
           <div className="pulse-dot"></div>
-          <span className="ms-2">Recording... Speak now</span>
+          <span className="ms-2">
+            Recording... {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+          </span>
         </div>
       )}
 

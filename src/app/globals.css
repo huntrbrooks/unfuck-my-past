@@ -587,6 +587,14 @@ body {
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
 }
 
+.voice-controls {
+  margin-bottom: 1rem;
+}
+
+.voice-controls .d-flex {
+  justify-content: center;
+}
+
 .voice-button {
   min-width: 160px;
   border-radius: 50px;
