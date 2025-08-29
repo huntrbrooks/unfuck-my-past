@@ -5,6 +5,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './globals.css'
 import BootstrapClient from '../components/BootstrapClient'
+import HydrationSuppressor from '../components/HydrationSuppressor'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,7 +24,9 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className}>
           <BootstrapClient />
-          {children}
+          <HydrationSuppressor>
+            {children}
+          </HydrationSuppressor>
         </body>
       </html>
     </ClerkProvider>
