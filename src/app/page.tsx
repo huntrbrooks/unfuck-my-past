@@ -3,14 +3,12 @@
 import React from 'react'
 import { Container, Row, Col, Button, Card, Alert } from 'react-bootstrap'
 import { useState } from 'react'
-import Navigation from '../components/Navigation'
 
 export default function Home() {
   const [showSafetyAlert, setShowSafetyAlert] = useState(true)
 
   return (
     <>
-      <Navigation />
       <main>
         {/* Safety Banner */}
         {showSafetyAlert && (

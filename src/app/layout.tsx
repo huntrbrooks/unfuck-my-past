@@ -8,6 +8,8 @@ import BootstrapClient from '../components/BootstrapClient'
 import HydrationSuppressor from '../components/HydrationSuppressor'
 import ErrorBoundary from '../components/ErrorBoundary'
 import ThemeProvider from '../components/ThemeProvider'
+import ResponsiveNavigation from '../components/ResponsiveNavigation'
+import AnalyticsProvider from '../components/AnalyticsProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -28,9 +30,12 @@ export default function RootLayout({
           <BootstrapClient />
           <ErrorBoundary>
             <ThemeProvider>
-              <HydrationSuppressor>
-                {children}
-              </HydrationSuppressor>
+              <AnalyticsProvider>
+                <ResponsiveNavigation />
+                <HydrationSuppressor>
+                  {children}
+                </HydrationSuppressor>
+              </AnalyticsProvider>
             </ThemeProvider>
           </ErrorBoundary>
         </body>

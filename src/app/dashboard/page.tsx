@@ -3,7 +3,7 @@
 import React from 'react'
 import { Container, Row, Col, Card, Button } from 'react-bootstrap'
 import { useUser } from '@clerk/nextjs'
-import Navigation from '../../components/Navigation'
+import DataExport from '../../components/DataExport'
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser()
@@ -11,7 +11,6 @@ export default function Dashboard() {
   if (!isLoaded) {
     return (
       <>
-        <Navigation />
         <Container className="py-5">
           <div className="text-center">
             <div className="spinner-border" role="status">
@@ -25,7 +24,6 @@ export default function Dashboard() {
 
   return (
     <>
-      <Navigation />
       <Container className="py-5">
         <Row>
           <Col>
@@ -72,6 +70,31 @@ export default function Dashboard() {
                 <Button variant="outline-primary" href="/mood">
                   Log Mood
                 </Button>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+
+        <Row className="mt-4">
+          <Col lg={8}>
+            <DataExport />
+          </Col>
+          
+          <Col lg={4}>
+            <Card className="h-100">
+              <Card.Body>
+                <Card.Title>Quick Actions</Card.Title>
+                <div className="d-grid gap-2">
+                  <Button variant="outline-secondary" href="/program">
+                    30-Day Program
+                  </Button>
+                  <Button variant="outline-secondary" href="/diagnostic">
+                    Take Diagnostic
+                  </Button>
+                  <Button variant="outline-secondary" href="/how-it-works">
+                    How It Works
+                  </Button>
+                </div>
               </Card.Body>
             </Card>
           </Col>

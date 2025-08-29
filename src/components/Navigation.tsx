@@ -6,11 +6,15 @@ import UserButton from "./UserButton";
 import ThemeToggle from "./ThemeToggle";
 import Link from "next/link";
 
-export default function Navigation() {
+interface NavigationProps {
+  className?: string
+}
+
+export default function Navigation({ className = '' }: NavigationProps) {
   const { isSignedIn, isLoaded } = useAuth();
 
   return (
-    <Navbar bg="dark" variant="dark" expand="lg" className="py-3">
+    <Navbar bg="dark" variant="dark" expand="lg" className={`py-3 ${className}`}>
       <Container>
         <Navbar.Brand as={Link} href="/" className="fw-bold">
           Unfuck Your Past

@@ -29,6 +29,7 @@ export default function LoadingSpinner({
         variant={variant}
         size={sizeMap[size]}
         className="mb-2"
+        role="status"
       />
       {text && <p className="text-muted mb-0">{text}</p>}
     </div>
