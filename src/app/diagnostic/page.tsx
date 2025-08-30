@@ -33,9 +33,10 @@ export default function Diagnostic() {
   useEffect(() => {
     // Only load questions if we don't have any and we're not already loading
     if (questions.length === 0 && !isLoadingQuestions && !loading) {
+      console.log('Initial load: questions.length =', questions.length, 'isLoadingQuestions =', isLoadingQuestions, 'loading =', loading)
       loadQuestions()
     }
-  }, [])
+  }, [questions.length, isLoadingQuestions, loading])
 
   useEffect(() => {
     console.log('Questions state changed:', {
@@ -78,9 +79,12 @@ export default function Diagnostic() {
       }
       
       // Only update questions if we don't have any or if we're getting new ones
-      if (questions.length === 0 || data.questions.length > 0) {
+      if (questions.length === 0 || (data.questions.length > 0 && data.questions.length >= questions.length)) {
+        console.log('Updating questions:', questions.length, '->', data.questions.length)
         setQuestions(data.questions)
         setUserPreferences(data.userPreferences)
+      } else {
+        console.log('Skipping question update: current =', questions.length, 'new =', data.questions.length)
       }
       console.log('Successfully loaded questions:', data.questions.length, 'isPersonalized:', data.isPersonalized)
       console.log('First question:', data.questions[0])

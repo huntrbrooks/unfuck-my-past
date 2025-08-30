@@ -53,13 +53,26 @@ export async function GET(request: NextRequest) {
       const now = new Date()
       const timeDiff = now.getTime() - generationTime.getTime()
       
-      // If questions were generated in the last 30 seconds, wait a bit
-      if (timeDiff < 30000) {
-        console.log('Questions were recently generated, waiting...')
-        return NextResponse.json(
-          { error: 'Questions are being generated, please try again in a moment' },
-          { status: 429 }
-        )
+      // If questions were generated in the last 60 seconds, return existing questions
+      if (timeDiff < 60000) {
+        console.log('Questions were recently generated, returning existing questions...')
+        if (personalizedQuestions && personalizedQuestions.length > 0) {
+          return NextResponse.json({
+            questions: personalizedQuestions,
+            userPreferences: {
+              tone: user.tone || 'gentle',
+              voice: user.voice || 'friend',
+              rawness: user.rawness || 'moderate',
+              depth: user.depth || 'moderate',
+              learning: user.learning || 'text',
+              engagement: user.engagement || 'passive',
+              goals: safetyData.goals || [],
+              experience: safetyData.experience || 'beginner'
+            },
+            analysis: diagnosticAnalysis,
+            isPersonalized: true
+          })
+        }
       }
     }
 
