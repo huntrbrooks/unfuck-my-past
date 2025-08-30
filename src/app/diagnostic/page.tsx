@@ -33,12 +33,23 @@ export default function Diagnostic() {
     loadQuestions()
   }, [])
 
+  useEffect(() => {
+    console.log('Questions state changed:', {
+      questionsLength: questions.length,
+      currentQuestionIndex,
+      currentQuestion: questions[currentQuestionIndex]
+    })
+  }, [questions, currentQuestionIndex])
+
   const loadQuestions = async () => {
     setLoading(true)
     try {
       const response = await fetch('/api/diagnostic/questions')
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+        if (response.status === 401) {
+          throw new Error('Please sign in to access your personalized diagnostic questions')
+        }
         throw new Error(errorData.error || 'Failed to load questions')
       }
       const data = await response.json()
@@ -47,9 +58,11 @@ export default function Diagnostic() {
         throw new Error('No questions available. Please try again.')
       }
       
+      console.log('API Response data:', data)
       setQuestions(data.questions)
       setUserPreferences(data.userPreferences)
       console.log('Loaded questions:', data.questions.length, 'isPersonalized:', data.isPersonalized)
+      console.log('First question:', data.questions[0])
     } catch (error) {
       setError(`Failed to load diagnostic questions: ${error instanceof Error ? error.message : 'Unknown error'}`)
       console.error('Error loading questions:', error)
@@ -260,6 +273,11 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
                   <Button variant="outline-secondary" onClick={testAIServices}>
                     Test AI Services
                   </Button>
+                  {error.includes('sign in') && (
+                    <Button variant="primary" onClick={() => router.push('/sign-in?redirect=/diagnostic')}>
+                      Sign In
+                    </Button>
+                  )}
                 </div>
               </Alert>
             </Col>
