@@ -9,8 +9,8 @@ export class AIService {
   private claudeKey: string
 
   constructor() {
-    this.openaiKey = process.env.OPENAI_API_KEY || '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'
-    this.claudeKey = process.env.CLAUDE_API_KEY || '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'
+    this.openaiKey = process.env.OPENAI_API_KEY || ''
+    this.claudeKey = process.env.CLAUDE_API_KEY || ''
   }
 
   async generateInsight(prompt: string, userResponse: string, useClaude: boolean = false): Promise<AIResponse> {
