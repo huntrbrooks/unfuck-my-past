@@ -90,6 +90,41 @@ export default function Diagnostic() {
     }
   }
 
+  const testAIServices = async () => {
+    try {
+      console.log('Testing AI services...')
+      const response = await fetch('/api/test-ai')
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to test AI services:', errorData)
+        return
+      }
+
+      const data = await response.json()
+      console.log('AI services test results:', data)
+      
+      // Show results in alert
+      const results = data.results
+      const message = `
+AI Services Test Results:
+
+OpenAI: ${results.openai.available ? '✅ Working' : '❌ Failed'}
+${results.openai.error ? `Error: ${results.openai.error}` : ''}
+${results.openai.response ? `Response: ${results.openai.response}` : ''}
+
+Claude: ${results.claude.available ? '✅ Working' : '❌ Failed'}
+${results.claude.error ? `Error: ${results.claude.error}` : ''}
+${results.claude.response ? `Response: ${results.claude.response}` : ''}
+      `.trim()
+      
+      alert(message)
+    } catch (error) {
+      console.error('Error testing AI services:', error)
+      alert('Failed to test AI services')
+    }
+  }
+
   const handleSubmitResponse = async () => {
     if (!currentResponse.trim()) return
 
@@ -219,6 +254,9 @@ export default function Diagnostic() {
                   </Button>
                   <Button variant="outline-primary" onClick={generatePersonalizedQuestions}>
                     Generate Personalized Questions
+                  </Button>
+                  <Button variant="outline-secondary" onClick={testAIServices}>
+                    Test AI Services
                   </Button>
                 </div>
               </Alert>
