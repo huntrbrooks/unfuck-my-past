@@ -1,3 +1,5 @@
+
+
 interface OnboardingData {
   tone: string
   voice: string
@@ -44,6 +46,7 @@ export class AIOnboardingAnalyzer {
   private claudeKey: string
 
   constructor() {
+    // SECURITY: Never log API keys - only load from environment variables
     this.openaiKey = process.env.OPENAI_API_KEY || ''
     this.claudeKey = process.env.CLAUDE_API_KEY || ''
   }
