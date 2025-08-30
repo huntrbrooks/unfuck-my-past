@@ -89,20 +89,19 @@ export default function Diagnostic() {
       
       const data = await response.json()
       console.log('API Response data:', data)
+      console.log('Questions in response:', data.questions?.length || 0)
+      console.log('First question:', data.questions?.[0])
       
       if (!data.questions || data.questions.length === 0) {
         throw new Error('No questions available. Please try again.')
       }
       
-      // Only update questions if we don't have any or if we're getting new ones
-      if (questions.length === 0 || (data.questions.length > 0 && data.questions.length >= questions.length)) {
-        console.log('Updating questions:', questions.length, '->', data.questions.length)
-        setQuestions(data.questions)
-        setUserPreferences(data.userPreferences)
-        setQuestionsLoaded(true) // Mark questions as loaded
-      } else {
-        console.log('Skipping question update: current =', questions.length, 'new =', data.questions.length)
-      }
+      // Always update questions if we get them from the API
+      console.log('Updating questions:', questions.length, '->', data.questions.length)
+      setQuestions(data.questions)
+      setUserPreferences(data.userPreferences)
+      setQuestionsLoaded(true) // Mark questions as loaded
+      console.log('Questions state updated successfully')
       console.log('Successfully loaded questions:', data.questions.length, 'isPersonalized:', data.isPersonalized)
       console.log('First question:', data.questions[0])
     } catch (error) {
@@ -273,8 +272,12 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
     currentQuestionIndex,
     currentQuestion: currentQuestion?.question,
     loading,
-    error
+    error,
+    questionsLoaded,
+    isLoadingQuestions
   })
+  
+  console.log('Current question object:', currentQuestion)
 
   if (loading && questions.length === 0) {
     return (
