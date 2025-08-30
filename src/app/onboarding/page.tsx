@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Container, Row, Col, Card, ProgressBar, Button, Form } from 'react-bootstrap'
+import { Container, Row, Col, Card, ProgressBar, Button, Form, Alert } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 
@@ -150,6 +150,8 @@ export default function Onboarding() {
   const router = useRouter()
   const { isSignedIn, isLoaded } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [onboardingData, setOnboardingData] = useState<OnboardingData>(() => {
     // Try to restore onboarding data from localStorage
     if (typeof window !== 'undefined') {
@@ -249,6 +251,8 @@ export default function Onboarding() {
     }
 
     try {
+      setLoading(true)
+      
       // Save onboarding data to database
       const response = await fetch('/api/onboarding', {
         method: 'POST',
@@ -266,29 +270,31 @@ export default function Onboarding() {
       // Clear any stored onboarding data
       localStorage.removeItem('onboardingData')
       
-      // Generate personalized diagnostic questions
-      try {
-        const questionsResponse = await fetch('/api/diagnostic/generate-questions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        })
-
+      // Generate personalized diagnostic questions (non-blocking)
+      fetch('/api/diagnostic/generate-questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(questionsResponse => {
         if (questionsResponse.ok) {
           console.log('Personalized questions generated successfully')
         } else {
           console.log('Failed to generate personalized questions, will use fallback')
         }
-      } catch (error) {
+      })
+      .catch(error => {
         console.log('Error generating personalized questions:', error)
-      }
+      })
       
-      // Redirect to diagnostic
+      // Redirect to diagnostic immediately (don't wait for questions generation)
       router.push('/diagnostic')
     } catch (error) {
       console.error('Error saving onboarding data:', error)
-      alert(`Error: ${error instanceof Error ? error.message : 'Failed to save onboarding data'}`)
+      setError(`Error: ${error instanceof Error ? error.message : 'Failed to save onboarding data'}`)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -351,6 +357,13 @@ export default function Onboarding() {
                   <ProgressBar now={progress} className="mb-3" />
                 </div>
 
+                {/* Error Display */}
+                {error && (
+                  <Alert variant="danger" dismissible onClose={() => setError('')} className="mb-4">
+                    {error}
+                  </Alert>
+                )}
+
                 {/* Step Content */}
                 <div className="text-center mb-4">
                   <h2 className="h3 mb-3">{currentStepData.title}</h2>
@@ -386,13 +399,21 @@ export default function Onboarding() {
                     variant="primary"
                     onClick={handleNext}
                     disabled={
-                      currentStepData.multiSelect 
+                      loading ||
+                      (currentStepData.multiSelect 
                         ? (currentStepData.field === 'safety' && !(onboardingData.safety.crisisSupport || onboardingData.safety.contentWarnings || onboardingData.safety.skipTriggers)) ||
                           (currentStepData.field === 'goals' && onboardingData.goals.length === 0)
-                        : !onboardingData[currentStepData.field as keyof OnboardingData]
+                        : !onboardingData[currentStepData.field as keyof OnboardingData])
                     }
                   >
-                    {currentStep === onboardingSteps.length - 1 ? 'Complete' : 'Next'}
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        {currentStep === onboardingSteps.length - 1 ? 'Completing...' : 'Loading...'}
+                      </>
+                    ) : (
+                      currentStep === onboardingSteps.length - 1 ? 'Complete' : 'Next'
+                    )}
                   </Button>
                 </div>
               </Card.Body>
