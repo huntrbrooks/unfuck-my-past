@@ -47,57 +47,76 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    console.log('No personalized questions found, triggering generation...')
+    console.log('No personalized questions found, generating them now...')
     
-    // Try to generate personalized questions immediately
+    // Generate personalized questions directly here
     try {
-      const generateResponse = await fetch(`${request.nextUrl.origin}/api/diagnostic/generate-questions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-
-      if (generateResponse.ok) {
-        console.log('Successfully generated personalized questions')
-        // Return the newly generated questions
-        const generateData = await generateResponse.json()
-        
-        // Fetch the updated user data to get the new questions
-        const updatedUserResult = await db.select().from(users).where(eq(users.id, userId)).limit(1)
-        const updatedUser = updatedUserResult[0]
-        const updatedSafetyData = typeof updatedUser.safety === 'string' ? JSON.parse(updatedUser.safety) : updatedUser.safety
-        
-        if (updatedSafetyData.personalizedQuestions && updatedSafetyData.personalizedQuestions.length > 0) {
-          return NextResponse.json({
-            questions: updatedSafetyData.personalizedQuestions,
-            userPreferences: {
-              tone: user.tone || 'gentle',
-              voice: user.voice || 'friend',
-              rawness: user.rawness || 'moderate',
-              depth: user.depth || 'moderate',
-              learning: user.learning || 'text',
-              engagement: user.engagement || 'passive',
-              goals: safetyData.goals || [],
-              experience: safetyData.experience || 'beginner'
-            },
-            analysis: updatedSafetyData.diagnosticAnalysis,
-            isPersonalized: true
-          })
+      const { AIOnboardingAnalyzer } = await import('../../../../lib/ai-onboarding-analyzer')
+      
+      // Extract onboarding data from user preferences
+      const onboardingData = {
+        tone: user.tone || 'gentle',
+        voice: user.voice || 'friend',
+        rawness: user.rawness || 'moderate',
+        depth: user.depth || 'moderate',
+        learning: user.learning || 'text',
+        engagement: user.engagement || 'passive',
+        goals: safetyData.goals || [],
+        experience: safetyData.experience || 'beginner',
+        timeCommitment: safetyData.timeCommitment || '30min',
+        safety: {
+          crisisSupport: safetyData.crisisSupport || false,
+          contentWarnings: safetyData.contentWarnings || false,
+          skipTriggers: safetyData.skipTriggers || false
         }
       }
+
+      console.log('Generating personalized questions with data:', onboardingData)
+      
+      const analyzer = new AIOnboardingAnalyzer()
+      const { analysis, questions } = await analyzer.analyzeOnboardingAndGenerateQuestions(onboardingData)
+
+      console.log('Successfully generated questions:', questions.length)
+
+      // Save the analysis and questions to the database
+      const updatedSafety = {
+        ...safetyData,
+        diagnosticAnalysis: analysis,
+        personalizedQuestions: questions,
+        questionGenerationTimestamp: new Date().toISOString()
+      }
+
+      await db.update(users)
+        .set({ safety: updatedSafety })
+        .where(eq(users.id, userId))
+
+      console.log('Successfully saved personalized questions to database')
+
+      return NextResponse.json({
+        questions,
+        userPreferences: {
+          tone: user.tone || 'gentle',
+          voice: user.voice || 'friend',
+          rawness: user.rawness || 'moderate',
+          depth: user.depth || 'moderate',
+          learning: user.learning || 'text',
+          engagement: user.engagement || 'passive',
+          goals: safetyData.goals || [],
+          experience: safetyData.experience || 'beginner'
+        },
+        analysis,
+        isPersonalized: true
+      })
     } catch (generateError) {
       console.error('Failed to generate personalized questions:', generateError)
+      return NextResponse.json(
+        { 
+          error: 'Failed to generate personalized questions. Please try again.',
+          details: generateError instanceof Error ? generateError.message : 'Unknown error'
+        },
+        { status: 500 }
+      )
     }
-
-    // If generation fails, return error instead of fallback questions
-    return NextResponse.json(
-      { 
-        error: 'Failed to generate personalized questions. Please try again.',
-        details: 'AI generation failed, no fallback questions available'
-      },
-      { status: 500 }
-    )
 
   } catch (error) {
     console.error('Error getting diagnostic questions:', error)
