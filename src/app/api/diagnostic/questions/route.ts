@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, users } from '../../../../db'
-import { getAdaptiveQuestions } from '../../../../lib/diagnostic-questions'
 import { eq } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
@@ -48,27 +47,57 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    console.log('Using fallback adaptive questions')
-    // Fallback to adaptive questions if no personalized questions exist
-    const userPreferences = {
-      tone: user.tone || 'gentle',
-      voice: user.voice || 'friend',
-      rawness: user.rawness || 'moderate',
-      depth: user.depth || 'moderate',
-      learning: user.learning || 'text',
-      engagement: user.engagement || 'passive',
-      goals: safetyData.goals || [],
-      experience: safetyData.experience || 'beginner'
+    console.log('No personalized questions found, triggering generation...')
+    
+    // Try to generate personalized questions immediately
+    try {
+      const generateResponse = await fetch(`${request.nextUrl.origin}/api/diagnostic/generate-questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (generateResponse.ok) {
+        console.log('Successfully generated personalized questions')
+        // Return the newly generated questions
+        const generateData = await generateResponse.json()
+        
+        // Fetch the updated user data to get the new questions
+        const updatedUserResult = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+        const updatedUser = updatedUserResult[0]
+        const updatedSafetyData = typeof updatedUser.safety === 'string' ? JSON.parse(updatedUser.safety) : updatedUser.safety
+        
+        if (updatedSafetyData.personalizedQuestions && updatedSafetyData.personalizedQuestions.length > 0) {
+          return NextResponse.json({
+            questions: updatedSafetyData.personalizedQuestions,
+            userPreferences: {
+              tone: user.tone || 'gentle',
+              voice: user.voice || 'friend',
+              rawness: user.rawness || 'moderate',
+              depth: user.depth || 'moderate',
+              learning: user.learning || 'text',
+              engagement: user.engagement || 'passive',
+              goals: safetyData.goals || [],
+              experience: safetyData.experience || 'beginner'
+            },
+            analysis: updatedSafetyData.diagnosticAnalysis,
+            isPersonalized: true
+          })
+        }
+      }
+    } catch (generateError) {
+      console.error('Failed to generate personalized questions:', generateError)
     }
 
-    const questions = getAdaptiveQuestions(userPreferences, 5)
-    console.log('Generated fallback questions:', questions.length)
-
-    return NextResponse.json({
-      questions,
-      userPreferences,
-      isPersonalized: false
-    })
+    // If generation fails, return error instead of fallback questions
+    return NextResponse.json(
+      { 
+        error: 'Failed to generate personalized questions. Please try again.',
+        details: 'AI generation failed, no fallback questions available'
+      },
+      { status: 500 }
+    )
 
   } catch (error) {
     console.error('Error getting diagnostic questions:', error)

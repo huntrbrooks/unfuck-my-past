@@ -50,12 +50,6 @@ export default function Diagnostic() {
       setQuestions(data.questions)
       setUserPreferences(data.userPreferences)
       console.log('Loaded questions:', data.questions.length, 'isPersonalized:', data.isPersonalized)
-      
-      // If not personalized, try to generate personalized questions
-      if (!data.isPersonalized) {
-        console.log('Questions not personalized, attempting to generate personalized questions...')
-        await generatePersonalizedQuestions()
-      }
     } catch (error) {
       setError(`Failed to load diagnostic questions: ${error instanceof Error ? error.message : 'Unknown error'}`)
       console.error('Error loading questions:', error)
