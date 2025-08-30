@@ -11,6 +11,12 @@ export async function GET(request: NextRequest) {
 
     const openaiKey = process.env.OPENAI_API_KEY
     const claudeKey = process.env.CLAUDE_API_KEY
+    
+    // Debug: Log API key status (without exposing the actual keys)
+    console.log('API Key Status:', {
+      openai: openaiKey ? `Present (${openaiKey.length} chars)` : 'Missing',
+      claude: claudeKey ? `Present (${claudeKey.length} chars)` : 'Missing'
+    })
 
     const results = {
       openai: { available: false, error: null as string | null, response: null as string | null },
