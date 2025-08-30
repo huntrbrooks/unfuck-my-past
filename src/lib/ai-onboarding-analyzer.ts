@@ -53,15 +53,20 @@ export class AIOnboardingAnalyzer {
     questions: DiagnosticQuestion[]
   }> {
     try {
+      console.log('Starting AI onboarding analysis...')
+      
       // First, analyze the onboarding data
       const analysis = await this.analyzeOnboardingData(onboardingData)
+      console.log('Analysis completed:', analysis)
       
       // Generate personalized questions based on analysis
       const questions = await this.generatePersonalizedQuestions(onboardingData, analysis)
+      console.log('Questions generated:', questions.length)
       
       return { analysis, questions }
     } catch (error) {
       console.error('Error analyzing onboarding and generating questions:', error)
+      console.log('Using fallback analysis and questions')
       // Return fallback analysis and questions
       return {
         analysis: this.getFallbackAnalysis(onboardingData),

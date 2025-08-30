@@ -38,13 +38,20 @@ export default function Diagnostic() {
     try {
       const response = await fetch('/api/diagnostic/questions')
       if (!response.ok) {
-        throw new Error('Failed to load questions')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load questions')
       }
       const data = await response.json()
+      
+      if (!data.questions || data.questions.length === 0) {
+        throw new Error('No questions available. Please try again.')
+      }
+      
       setQuestions(data.questions)
       setUserPreferences(data.userPreferences)
+      console.log('Loaded questions:', data.questions.length, 'isPersonalized:', data.isPersonalized)
     } catch (error) {
-      setError('Failed to load diagnostic questions. Please try again.')
+      setError(`Failed to load diagnostic questions: ${error instanceof Error ? error.message : 'Unknown error'}`)
       console.error('Error loading questions:', error)
     } finally {
       setLoading(false)
@@ -121,15 +128,20 @@ export default function Diagnostic() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to generate summary')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to generate summary')
       }
 
       const summaryData = await response.json()
       
+      if (!summaryData.summary) {
+        throw new Error('No summary generated. Please try again.')
+      }
+      
       // Redirect to results page with summary
       router.push(`/diagnostic/results?summary=${encodeURIComponent(summaryData.summary)}`)
     } catch (error) {
-      setError('Failed to generate summary. Please try again.')
+      setError(`Failed to generate summary: ${error instanceof Error ? error.message : 'Unknown error'}`)
       console.error('Error generating summary:', error)
     } finally {
       setLoading(false)

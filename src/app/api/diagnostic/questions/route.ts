@@ -22,11 +22,14 @@ export async function GET(request: NextRequest) {
     const user = userResult[0]
     const safetyData = typeof user.safety === 'string' ? JSON.parse(user.safety) : user.safety
 
+    console.log('User safety data:', JSON.stringify(safetyData, null, 2))
+
     // Check if personalized questions exist
     const personalizedQuestions = safetyData.personalizedQuestions
     const diagnosticAnalysis = safetyData.diagnosticAnalysis
 
-    if (personalizedQuestions && diagnosticAnalysis) {
+    if (personalizedQuestions && diagnosticAnalysis && personalizedQuestions.length > 0) {
+      console.log('Using personalized questions:', personalizedQuestions.length)
       // Use personalized questions
       return NextResponse.json({
         questions: personalizedQuestions,
@@ -45,6 +48,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    console.log('Using fallback adaptive questions')
     // Fallback to adaptive questions if no personalized questions exist
     const userPreferences = {
       tone: user.tone || 'gentle',
@@ -58,6 +62,7 @@ export async function GET(request: NextRequest) {
     }
 
     const questions = getAdaptiveQuestions(userPreferences, 5)
+    console.log('Generated fallback questions:', questions.length)
 
     return NextResponse.json({
       questions,
