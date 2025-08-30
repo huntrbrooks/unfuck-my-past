@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     const claudeKey = process.env.CLAUDE_API_KEY
 
     const results = {
-      openai: { available: false, error: null },
-      claude: { available: false, error: null }
+      openai: { available: false, error: null as string | null, response: null as string | null },
+      claude: { available: false, error: null as string | null, response: null as string | null }
     }
 
     // Test OpenAI

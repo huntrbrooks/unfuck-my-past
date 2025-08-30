@@ -73,7 +73,7 @@ export class AIProgramGenerator {
         analysis = await this.analyzeDiagnosticData(diagnosticResponses, userProfile, summary, onboardingAnalysis)
       } catch (error) {
         console.log('AI analysis failed, using fallback analysis')
-        analysis = this.getFallbackAnalysis(diagnosticResponses, userProfile, onboardingAnalysis)
+        analysis = this.getFallbackAnalysis(diagnosticResponses, userProfile)
       }
       
       // Generate personalized program based on analysis
