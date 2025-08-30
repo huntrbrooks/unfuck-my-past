@@ -210,7 +210,15 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
   }
 
   const currentQuestion = questions[currentQuestionIndex]
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100
+  const progress = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0
+
+  console.log('Diagnostic page state:', {
+    questionsLength: questions.length,
+    currentQuestionIndex,
+    currentQuestion: currentQuestion?.question,
+    loading,
+    error
+  })
 
   if (loading && questions.length === 0) {
     return (
@@ -261,6 +269,37 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
     )
   }
 
+  // If we have no questions and no error, show a message
+  if (!loading && questions.length === 0 && !error) {
+    return (
+      <>
+        <Container className="py-5">
+          <Row className="justify-content-center">
+            <Col lg={8}>
+              <Alert variant="warning">
+                <Alert.Heading>No Questions Available</Alert.Heading>
+                <p>No diagnostic questions were found. This might be because:</p>
+                <ul>
+                  <li>You haven't completed the onboarding process</li>
+                  <li>The AI service failed to generate questions</li>
+                  <li>There was an issue loading your personalized questions</li>
+                </ul>
+                <div className="d-flex gap-2">
+                  <Button variant="outline-primary" onClick={loadQuestions}>
+                    Try Loading Again
+                  </Button>
+                  <Button variant="outline-secondary" onClick={generatePersonalizedQuestions}>
+                    Generate New Questions
+                  </Button>
+                </div>
+              </Alert>
+            </Col>
+          </Row>
+        </Container>
+      </>
+    )
+  }
+
   return (
     <>
       <Container className="py-5">
@@ -279,9 +318,17 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
 
                 {/* Question */}
                 <div className="mb-4">
-                  <h3 className="mb-3">{currentQuestion?.question}</h3>
-                  {currentQuestion?.followUp && (
-                    <p className="text-muted mb-3">{currentQuestion.followUp}</p>
+                  {currentQuestion ? (
+                    <>
+                      <h3 className="mb-3">{currentQuestion.question}</h3>
+                      {currentQuestion.followUp && (
+                        <p className="text-muted mb-3">{currentQuestion.followUp}</p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <LoadingSpinner size="md" text="Loading question..." />
+                    </div>
                   )}
                 </div>
 
