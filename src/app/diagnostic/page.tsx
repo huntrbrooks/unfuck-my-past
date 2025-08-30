@@ -37,7 +37,7 @@ export default function Diagnostic() {
       console.log('Initial load: questions.length =', questions.length, 'isLoadingQuestions =', isLoadingQuestions, 'loading =', loading, 'questionsLoaded =', questionsLoaded)
       loadQuestions()
     }
-  }, [questions.length, isLoadingQuestions, loading, questionsLoaded])
+  }, []) // Only run once on mount
 
   useEffect(() => {
     console.log('Questions state changed:', {
@@ -45,14 +45,26 @@ export default function Diagnostic() {
       currentQuestionIndex,
       currentQuestion: questions[currentQuestionIndex],
       isLoadingQuestions,
-      loading
+      loading,
+      questionsLoaded
     })
-  }, [questions, currentQuestionIndex, isLoadingQuestions, loading])
+    
+    // Prevent questions from being cleared once loaded
+    if (questionsLoaded && questions.length === 0) {
+      console.log('WARNING: Questions were cleared after being loaded, this should not happen')
+    }
+  }, [questions, currentQuestionIndex, isLoadingQuestions, loading, questionsLoaded])
 
   const loadQuestions = async () => {
     // Prevent multiple simultaneous requests
     if (isLoadingQuestions) {
       console.log('Questions already loading, skipping duplicate request')
+      return
+    }
+    
+    // Prevent loading if questions are already loaded
+    if (questionsLoaded && questions.length > 0) {
+      console.log('Questions already loaded, skipping request')
       return
     }
     
@@ -68,6 +80,9 @@ export default function Diagnostic() {
         const errorData = await response.json().catch(() => ({}))
         if (response.status === 401) {
           throw new Error('Please sign in to access your personalized diagnostic questions')
+        }
+        if (response.status === 429) {
+          throw new Error('Questions are being generated, please wait a moment and try again')
         }
         throw new Error(errorData.error || 'Failed to load questions')
       }

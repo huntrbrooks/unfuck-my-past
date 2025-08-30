@@ -119,6 +119,11 @@ export async function GET(request: NextRequest) {
           isPersonalized: true
         })
       }
+      // If no existing questions and generation is in progress, wait
+      return NextResponse.json(
+        { error: 'Questions are being generated, please try again in a moment' },
+        { status: 429 }
+      )
     }
 
     console.log('No personalized questions found, generating them now...')
