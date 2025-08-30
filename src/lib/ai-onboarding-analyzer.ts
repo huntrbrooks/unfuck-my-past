@@ -41,9 +41,11 @@ interface OnboardingAnalysis {
 
 export class AIOnboardingAnalyzer {
   private openaiKey: string
+  private claudeKey: string
 
   constructor() {
     this.openaiKey = process.env.OPENAI_API_KEY || ''
+    this.claudeKey = process.env.CLAUDE_API_KEY || ''
   }
 
   async analyzeOnboardingAndGenerateQuestions(
@@ -111,46 +113,103 @@ Respond in JSON format:
 }
 `
 
-    if (!this.openaiKey) {
-      throw new Error('OpenAI API key is missing')
-    }
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.openaiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a trauma-informed therapist specializing in personalized diagnostic experiences. Provide analysis in the exact JSON format requested.'
+    // Try OpenAI first
+    if (this.openaiKey) {
+      try {
+        console.log('Attempting OpenAI analysis...')
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.openaiKey}`,
+            'Content-Type': 'application/json',
           },
-          {
-            role: 'user',
-            content: prompt
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a trauma-informed therapist specializing in personalized diagnostic experiences. Provide analysis in the exact JSON format requested.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 1500
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const analysisText = data.choices[0].message.content
+          
+          try {
+            const analysis = JSON.parse(analysisText)
+            console.log('OpenAI analysis successful')
+            return analysis
+          } catch (parseError) {
+            console.log('OpenAI response parsing failed, trying Claude...')
+            throw new Error('Failed to parse OpenAI response')
           }
-        ],
-        temperature: 0.7,
-        max_tokens: 1500
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to analyze onboarding data')
+        } else {
+          console.log('OpenAI request failed, trying Claude...')
+          throw new Error('OpenAI request failed')
+        }
+      } catch (openaiError) {
+        console.log('OpenAI error:', openaiError)
+        // Fall through to Claude
+      }
     }
 
-    const data = await response.json()
-    const analysisText = data.choices[0].message.content
-    
-    try {
-      return JSON.parse(analysisText)
-    } catch (error) {
-      console.error('Failed to parse analysis JSON:', error)
-      throw new Error('Invalid analysis response format')
+    // Try Claude as fallback
+    if (this.claudeKey) {
+      try {
+        console.log('Attempting Claude analysis...')
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.claudeKey}`,
+            'Content-Type': 'application/json',
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-3-sonnet-20240229',
+            max_tokens: 1500,
+            messages: [
+              {
+                role: 'user',
+                content: prompt
+              }
+            ]
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const analysisText = data.content[0].text
+          
+          try {
+            const analysis = JSON.parse(analysisText)
+            console.log('Claude analysis successful')
+            return analysis
+          } catch (parseError) {
+            console.log('Claude response parsing failed, using fallback...')
+            throw new Error('Failed to parse Claude response')
+          }
+        } else {
+          console.log('Claude request failed, using fallback...')
+          throw new Error('Claude request failed')
+        }
+      } catch (claudeError) {
+        console.log('Claude error:', claudeError)
+        // Fall through to fallback
+      }
     }
+
+    // If both AI services fail, use fallback
+    console.log('Both OpenAI and Claude failed, using fallback analysis')
+    return this.getFallbackAnalysis(onboardingData)
   }
 
   private async generatePersonalizedQuestions(
@@ -213,46 +272,103 @@ Respond in JSON format:
 }
 `
 
-    if (!this.openaiKey) {
-      throw new Error('OpenAI API key is missing')
-    }
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.openaiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a trauma-informed therapist creating personalized diagnostic questions. Generate engaging, safe, and effective questions in the exact JSON format requested.'
+    // Try OpenAI first
+    if (this.openaiKey) {
+      try {
+        console.log(`Attempting OpenAI question ${questionNumber}...`)
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.openaiKey}`,
+            'Content-Type': 'application/json',
           },
-          {
-            role: 'user',
-            content: prompt
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a trauma-informed therapist creating personalized diagnostic questions. Generate engaging, safe, and effective questions in the exact JSON format requested.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: 0.8,
+            max_tokens: 1000
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const questionText = data.choices[0].message.content
+          
+          try {
+            const question = JSON.parse(questionText)
+            console.log(`OpenAI question ${questionNumber} successful`)
+            return question
+          } catch (parseError) {
+            console.log(`OpenAI question ${questionNumber} parsing failed, trying Claude...`)
+            throw new Error('Failed to parse OpenAI response')
           }
-        ],
-        temperature: 0.8,
-        max_tokens: 1000
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to generate question ${questionNumber}`)
+        } else {
+          console.log(`OpenAI question ${questionNumber} failed, trying Claude...`)
+          throw new Error('OpenAI request failed')
+        }
+      } catch (openaiError) {
+        console.log(`OpenAI question ${questionNumber} error:`, openaiError)
+        // Fall through to Claude
+      }
     }
 
-    const data = await response.json()
-    const questionText = data.choices[0].message.content
-    
-    try {
-      return JSON.parse(questionText)
-    } catch (error) {
-      console.error(`Failed to parse question ${questionNumber} JSON:`, error)
-      return this.getFallbackQuestion(questionNumber, onboardingData, analysis)
+    // Try Claude as fallback
+    if (this.claudeKey) {
+      try {
+        console.log(`Attempting Claude question ${questionNumber}...`)
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.claudeKey}`,
+            'Content-Type': 'application/json',
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-3-sonnet-20240229',
+            max_tokens: 1000,
+            messages: [
+              {
+                role: 'user',
+                content: prompt
+              }
+            ]
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const questionText = data.content[0].text
+          
+          try {
+            const question = JSON.parse(questionText)
+            console.log(`Claude question ${questionNumber} successful`)
+            return question
+          } catch (parseError) {
+            console.log(`Claude question ${questionNumber} parsing failed, using fallback...`)
+            throw new Error('Failed to parse Claude response')
+          }
+        } else {
+          console.log(`Claude question ${questionNumber} failed, using fallback...`)
+          throw new Error('Claude request failed')
+        }
+      } catch (claudeError) {
+        console.log(`Claude question ${questionNumber} error:`, claudeError)
+        // Fall through to fallback
+      }
     }
+
+    // If both AI services fail, use fallback
+    console.log(`Both OpenAI and Claude failed for question ${questionNumber}, using fallback`)
+    return this.getFallbackQuestion(questionNumber, onboardingData, analysis)
   }
 
   private getFallbackAnalysis(onboardingData: OnboardingData): OnboardingAnalysis {

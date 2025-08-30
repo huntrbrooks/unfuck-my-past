@@ -14,35 +14,50 @@ export class AIService {
   }
 
   async generateInsight(prompt: string, userResponse: string, useClaude: boolean = false): Promise<AIResponse> {
-    try {
-      // If Claude is requested but key is invalid, fallback to OpenAI
-      if (useClaude && (!this.claudeKey || this.claudeKey.includes('invalid'))) {
-        console.log('Claude API key invalid, falling back to OpenAI')
-        return await this.generateOpenAIInsight(prompt, userResponse)
+    // Try OpenAI first (unless Claude is specifically requested)
+    if (!useClaude && this.openaiKey) {
+      try {
+        console.log('Attempting OpenAI insight...')
+        const result = await this.generateOpenAIInsight(prompt, userResponse)
+        console.log('OpenAI insight successful')
+        return result
+      } catch (openaiError) {
+        console.log('OpenAI insight failed, trying Claude...')
+        // Fall through to Claude
       }
-      
-      if (useClaude) {
-        return await this.generateClaudeInsight(prompt, userResponse)
-      } else {
-        return await this.generateOpenAIInsight(prompt, userResponse)
+    }
+
+    // Try Claude (either as primary or fallback)
+    if (this.claudeKey && !this.claudeKey.includes('invalid')) {
+      try {
+        console.log('Attempting Claude insight...')
+        const result = await this.generateClaudeInsight(prompt, userResponse)
+        console.log('Claude insight successful')
+        return result
+      } catch (claudeError) {
+        console.log('Claude insight failed, trying OpenAI fallback...')
+        // Fall through to OpenAI fallback
       }
-    } catch (error) {
-      console.error('AI service error:', error)
-      // Fallback to OpenAI if Claude fails
-      if (useClaude) {
-        console.log('Claude failed, falling back to OpenAI')
-        try {
-          return await this.generateOpenAIInsight(prompt, userResponse)
-        } catch (fallbackError) {
-          console.error('OpenAI fallback also failed:', fallbackError)
-        }
+    }
+
+    // Try OpenAI as final fallback
+    if (this.openaiKey) {
+      try {
+        console.log('Attempting OpenAI fallback insight...')
+        const result = await this.generateOpenAIInsight(prompt, userResponse)
+        console.log('OpenAI fallback insight successful')
+        return result
+      } catch (fallbackError) {
+        console.log('OpenAI fallback also failed')
       }
-      
-      return {
-        insight: "I'm having trouble analyzing your response right now. Let's continue with the next question.",
-        model: useClaude ? 'claude' : 'gpt-4',
-        timestamp: new Date().toISOString()
-      }
+    }
+
+    // If all AI services fail, return a generic response
+    console.log('All AI services failed, using generic insight')
+    return {
+      insight: "I'm having trouble analyzing your response right now. Let's continue with the next question.",
+      model: 'fallback',
+      timestamp: new Date().toISOString()
     }
   }
 

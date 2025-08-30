@@ -47,12 +47,14 @@ interface ProgramAnalysis {
 
 export class AIProgramGenerator {
   private openaiKey: string
+  private claudeKey: string
 
   constructor() {
     this.openaiKey = process.env.OPENAI_API_KEY || ''
+    this.claudeKey = process.env.CLAUDE_API_KEY || ''
     
-    if (!this.openaiKey) {
-      console.error('OpenAI API key is missing')
+    if (!this.openaiKey && !this.claudeKey) {
+      console.error('No AI API keys found')
     }
   }
 
@@ -132,53 +134,103 @@ Respond in JSON format:
 }
 `
 
-    if (!this.openaiKey) {
-      throw new Error('OpenAI API key is missing')
-    }
-
-    console.log('Sending analysis request to OpenAI...')
-    console.log('Prompt length:', prompt.length)
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.openaiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a trauma-informed therapist specializing in personalized healing programs. Provide analysis in the exact JSON format requested.'
+    // Try OpenAI first
+    if (this.openaiKey) {
+      try {
+        console.log('Attempting OpenAI analysis...')
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.openaiKey}`,
+            'Content-Type': 'application/json',
           },
-          {
-            role: 'user',
-            content: prompt
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a trauma-informed therapist specializing in personalized healing programs. Provide analysis in the exact JSON format requested.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const analysisText = data.choices[0].message.content
+          
+          try {
+            const analysis = JSON.parse(analysisText)
+            console.log('OpenAI analysis successful')
+            return analysis
+          } catch (parseError) {
+            console.log('OpenAI response parsing failed, trying Claude...')
+            throw new Error('Failed to parse OpenAI response')
           }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      })
-    })
-
-    console.log('OpenAI response status:', response.status)
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('OpenAI API error:', errorText)
-      throw new Error(`Failed to analyze diagnostic data: ${response.status} ${errorText}`)
+        } else {
+          console.log('OpenAI request failed, trying Claude...')
+          throw new Error('OpenAI request failed')
+        }
+      } catch (openaiError) {
+        console.log('OpenAI error:', openaiError)
+        // Fall through to Claude
+      }
     }
 
-    const data = await response.json()
-    const analysisText = data.choices[0].message.content
-    
-    try {
-      return JSON.parse(analysisText)
-    } catch (error) {
-      console.error('Failed to parse analysis JSON:', error)
-      throw new Error('Invalid analysis response format')
+    // Try Claude as fallback
+    if (this.claudeKey) {
+      try {
+        console.log('Attempting Claude analysis...')
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.claudeKey}`,
+            'Content-Type': 'application/json',
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-3-sonnet-20240229',
+            max_tokens: 2000,
+            messages: [
+              {
+                role: 'user',
+                content: prompt
+              }
+            ]
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const analysisText = data.content[0].text
+          
+          try {
+            const analysis = JSON.parse(analysisText)
+            console.log('Claude analysis successful')
+            return analysis
+          } catch (parseError) {
+            console.log('Claude response parsing failed, using fallback...')
+            throw new Error('Failed to parse Claude response')
+          }
+        } else {
+          console.log('Claude request failed, using fallback...')
+          throw new Error('Claude request failed')
+        }
+      } catch (claudeError) {
+        console.log('Claude error:', claudeError)
+        // Fall through to fallback
+      }
     }
+
+    // If both AI services fail, use fallback
+    console.log('Both OpenAI and Claude failed, using fallback analysis')
+    throw new Error('All AI services failed')
   }
 
   private async createProgramDays(
