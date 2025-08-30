@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const diagnosticAnalysis = safetyData.diagnosticAnalysis
 
     if (personalizedQuestions && diagnosticAnalysis && personalizedQuestions.length > 0) {
-      console.log('Using personalized questions:', personalizedQuestions.length)
+      console.log('Using existing personalized questions:', personalizedQuestions.length)
       // Use personalized questions
       return NextResponse.json({
         questions: personalizedQuestions,
@@ -45,6 +45,22 @@ export async function GET(request: NextRequest) {
         analysis: diagnosticAnalysis,
         isPersonalized: true
       })
+    }
+
+    // Check if questions are currently being generated
+    if (safetyData.questionGenerationTimestamp) {
+      const generationTime = new Date(safetyData.questionGenerationTimestamp)
+      const now = new Date()
+      const timeDiff = now.getTime() - generationTime.getTime()
+      
+      // If questions were generated in the last 30 seconds, wait a bit
+      if (timeDiff < 30000) {
+        console.log('Questions were recently generated, waiting...')
+        return NextResponse.json(
+          { error: 'Questions are being generated, please try again in a moment' },
+          { status: 429 }
+        )
+      }
     }
 
     console.log('No personalized questions found, generating them now...')
