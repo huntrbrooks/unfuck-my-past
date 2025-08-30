@@ -93,7 +93,7 @@ ONBOARDING DATA:
 - Safety: Crisis Support: ${onboardingData.safety.crisisSupport}, Content Warnings: ${onboardingData.safety.contentWarnings}, Skip Triggers: ${onboardingData.safety.skipTriggers}
 
 ANALYZE AND PROVIDE:
-1. Recommended number of diagnostic questions (3-15 based on engagement, time, and depth)
+1. Recommended number of diagnostic questions (MUST be between 3-8 based on engagement, time, and depth)
 2. Primary focus areas for this client
 3. Optimal communication style
 4. Appropriate intensity level
@@ -101,9 +101,20 @@ ANALYZE AND PROVIDE:
 6. Safety considerations
 7. Custom question categories based on their goals
 
+IMPORTANT: The question count must be between 3-8 questions maximum. Consider:
+- Passive engagement = 3-4 questions
+- Moderate engagement = 5-6 questions  
+- High engagement = 7-8 questions
+- 15min time commitment = 3-4 questions
+- 30min time commitment = 5-6 questions
+- 60min time commitment = 7-8 questions
+- Surface depth = 3-4 questions
+- Moderate depth = 5-6 questions
+- Deep depth = 7-8 questions
+
 Respond in JSON format:
 {
-  "recommendedQuestionCount": 8,
+  "recommendedQuestionCount": 5,
   "focusAreas": ["area1", "area2"],
   "communicationStyle": "description",
   "intensityLevel": "mild/moderate/intense",
@@ -146,6 +157,13 @@ Respond in JSON format:
           
           try {
             const analysis = JSON.parse(analysisText)
+            
+            // Validate and enforce question count limits
+            if (analysis.recommendedQuestionCount) {
+              analysis.recommendedQuestionCount = Math.max(3, Math.min(8, analysis.recommendedQuestionCount))
+              console.log(`Adjusted question count to: ${analysis.recommendedQuestionCount}`)
+            }
+            
             console.log('OpenAI analysis successful')
             return analysis
           } catch (parseError) {
@@ -191,6 +209,13 @@ Respond in JSON format:
           
           try {
             const analysis = JSON.parse(analysisText)
+            
+            // Validate and enforce question count limits
+            if (analysis.recommendedQuestionCount) {
+              analysis.recommendedQuestionCount = Math.max(3, Math.min(8, analysis.recommendedQuestionCount))
+              console.log(`Adjusted question count to: ${analysis.recommendedQuestionCount}`)
+            }
+            
             console.log('Claude analysis successful')
             return analysis
           } catch (parseError) {
@@ -372,12 +397,32 @@ Respond in JSON format:
   }
 
   private getFallbackAnalysis(onboardingData: OnboardingData): OnboardingAnalysis {
-    // Determine question count based on engagement and time commitment
-    let questionCount = 8 // default
-    if (onboardingData.engagement === 'passive') questionCount = 5
-    if (onboardingData.engagement === 'challenging') questionCount = 12
-    if (onboardingData.timeCommitment === '15min') questionCount = 5
-    if (onboardingData.timeCommitment === '60min') questionCount = 15
+    // Determine question count based on engagement, time commitment, and depth (3-8 range)
+    let questionCount = 5 // default moderate
+
+    // Adjust based on engagement level
+    if (onboardingData.engagement === 'passive') {
+      questionCount = 3
+    } else if (onboardingData.engagement === 'challenging') {
+      questionCount = 7
+    }
+
+    // Adjust based on time commitment
+    if (onboardingData.timeCommitment === '15min') {
+      questionCount = Math.min(questionCount, 4)
+    } else if (onboardingData.timeCommitment === '60min') {
+      questionCount = Math.min(questionCount, 8)
+    }
+
+    // Adjust based on depth preference
+    if (onboardingData.depth === 'surface') {
+      questionCount = Math.min(questionCount, 4)
+    } else if (onboardingData.depth === 'deep') {
+      questionCount = Math.min(questionCount, 8)
+    }
+
+    // Ensure question count is within 3-8 range
+    questionCount = Math.max(3, Math.min(8, questionCount))
 
     // Determine focus areas based on goals
     const focusAreas = onboardingData.goals.length > 0 ? onboardingData.goals : ['general healing']
@@ -401,7 +446,11 @@ Respond in JSON format:
     const analysis = this.getFallbackAnalysis(onboardingData)
     const questions: DiagnosticQuestion[] = []
 
-    for (let i = 1; i <= analysis.recommendedQuestionCount; i++) {
+    // Ensure we don't exceed 8 questions
+    const questionCount = Math.min(analysis.recommendedQuestionCount, 8)
+    console.log(`Generating ${questionCount} fallback questions`)
+
+    for (let i = 1; i <= questionCount; i++) {
       questions.push(this.getFallbackQuestion(i, onboardingData, analysis))
     }
 
