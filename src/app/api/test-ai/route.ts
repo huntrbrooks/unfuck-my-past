@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${claudeKey}`,
+            'x-api-key': claudeKey,
             'Content-Type': 'application/json',
             'anthropic-version': '2023-06-01'
           },

@@ -191,7 +191,7 @@ Respond in JSON format:
         const response = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${this.claudeKey}`,
+                                  'x-api-key': this.claudeKey,
             'Content-Type': 'application/json',
             'anthropic-version': '2023-06-01'
           },
