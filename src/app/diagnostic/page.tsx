@@ -28,23 +28,40 @@ export default function Diagnostic() {
   const [inputMode, setInputMode] = useState<'text' | 'voice'>('text')
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [userPreferences, setUserPreferences] = useState<any>(null)
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false)
 
   useEffect(() => {
-    loadQuestions()
+    // Only load questions if we don't have any and we're not already loading
+    if (questions.length === 0 && !isLoadingQuestions && !loading) {
+      loadQuestions()
+    }
   }, [])
 
   useEffect(() => {
     console.log('Questions state changed:', {
       questionsLength: questions.length,
       currentQuestionIndex,
-      currentQuestion: questions[currentQuestionIndex]
+      currentQuestion: questions[currentQuestionIndex],
+      isLoadingQuestions,
+      loading
     })
-  }, [questions, currentQuestionIndex])
+  }, [questions, currentQuestionIndex, isLoadingQuestions, loading])
 
   const loadQuestions = async () => {
+    // Prevent multiple simultaneous requests
+    if (isLoadingQuestions) {
+      console.log('Questions already loading, skipping duplicate request')
+      return
+    }
+    
+    setIsLoadingQuestions(true)
     setLoading(true)
+    setError('')
+    
     try {
+      console.log('Loading diagnostic questions...')
       const response = await fetch('/api/diagnostic/questions')
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         if (response.status === 401) {
@@ -52,22 +69,27 @@ export default function Diagnostic() {
         }
         throw new Error(errorData.error || 'Failed to load questions')
       }
+      
       const data = await response.json()
+      console.log('API Response data:', data)
       
       if (!data.questions || data.questions.length === 0) {
         throw new Error('No questions available. Please try again.')
       }
       
-      console.log('API Response data:', data)
-      setQuestions(data.questions)
-      setUserPreferences(data.userPreferences)
-      console.log('Loaded questions:', data.questions.length, 'isPersonalized:', data.isPersonalized)
+      // Only update questions if we don't have any or if we're getting new ones
+      if (questions.length === 0 || data.questions.length > 0) {
+        setQuestions(data.questions)
+        setUserPreferences(data.userPreferences)
+      }
+      console.log('Successfully loaded questions:', data.questions.length, 'isPersonalized:', data.isPersonalized)
       console.log('First question:', data.questions[0])
     } catch (error) {
       setError(`Failed to load diagnostic questions: ${error instanceof Error ? error.message : 'Unknown error'}`)
       console.error('Error loading questions:', error)
     } finally {
       setLoading(false)
+      setIsLoadingQuestions(false)
     }
   }
 
