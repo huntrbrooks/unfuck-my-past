@@ -29,14 +29,15 @@ export default function Diagnostic() {
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [userPreferences, setUserPreferences] = useState<any>(null)
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false)
+  const [questionsLoaded, setQuestionsLoaded] = useState(false)
 
   useEffect(() => {
-    // Only load questions if we don't have any and we're not already loading
-    if (questions.length === 0 && !isLoadingQuestions && !loading) {
-      console.log('Initial load: questions.length =', questions.length, 'isLoadingQuestions =', isLoadingQuestions, 'loading =', loading)
+    // Only load questions if we don't have any, we're not already loading, and we haven't loaded them yet
+    if (questions.length === 0 && !isLoadingQuestions && !loading && !questionsLoaded) {
+      console.log('Initial load: questions.length =', questions.length, 'isLoadingQuestions =', isLoadingQuestions, 'loading =', loading, 'questionsLoaded =', questionsLoaded)
       loadQuestions()
     }
-  }, [questions.length, isLoadingQuestions, loading])
+  }, [questions.length, isLoadingQuestions, loading, questionsLoaded])
 
   useEffect(() => {
     console.log('Questions state changed:', {
@@ -83,6 +84,7 @@ export default function Diagnostic() {
         console.log('Updating questions:', questions.length, '->', data.questions.length)
         setQuestions(data.questions)
         setUserPreferences(data.userPreferences)
+        setQuestionsLoaded(true) // Mark questions as loaded
       } else {
         console.log('Skipping question update: current =', questions.length, 'new =', data.questions.length)
       }
