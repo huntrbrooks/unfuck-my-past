@@ -47,9 +47,19 @@ export async function POST(request: NextRequest) {
       timeCommitment: safetyData.timeCommitment || '15min'
     }
 
+    console.log('Starting personalized questions generation...')
+    console.log('Onboarding data:', JSON.stringify(onboardingData, null, 2))
+
     // Generate personalized questions
     const analyzer = new AIOnboardingAnalyzer()
     const { analysis, questions } = await analyzer.analyzeOnboardingAndGenerateQuestions(onboardingData)
+
+    console.log('Generated analysis:', JSON.stringify(analysis, null, 2))
+    console.log('Generated questions count:', questions.length)
+
+    if (!questions || questions.length === 0) {
+      throw new Error('No questions were generated')
+    }
 
     // Save the analysis and questions to the database
     const updatedSafety = {
@@ -59,9 +69,12 @@ export async function POST(request: NextRequest) {
       questionGenerationTimestamp: new Date().toISOString()
     }
 
+    console.log('Saving to database...')
     await db.update(users)
       .set({ safety: updatedSafety })
       .where(eq(users.id, userId))
+
+    console.log('Successfully saved personalized questions to database')
 
     return NextResponse.json({
       success: true,
@@ -72,8 +85,15 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error generating personalized questions:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'Failed to generate personalized questions' },
+      { 
+        error: 'Failed to generate personalized questions',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

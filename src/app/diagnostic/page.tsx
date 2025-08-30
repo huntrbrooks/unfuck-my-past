@@ -50,11 +50,43 @@ export default function Diagnostic() {
       setQuestions(data.questions)
       setUserPreferences(data.userPreferences)
       console.log('Loaded questions:', data.questions.length, 'isPersonalized:', data.isPersonalized)
+      
+      // If not personalized, try to generate personalized questions
+      if (!data.isPersonalized) {
+        console.log('Questions not personalized, attempting to generate personalized questions...')
+        await generatePersonalizedQuestions()
+      }
     } catch (error) {
       setError(`Failed to load diagnostic questions: ${error instanceof Error ? error.message : 'Unknown error'}`)
       console.error('Error loading questions:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const generatePersonalizedQuestions = async () => {
+    try {
+      console.log('Generating personalized questions...')
+      const response = await fetch('/api/diagnostic/generate-questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to generate personalized questions:', errorData)
+        return
+      }
+
+      const data = await response.json()
+      console.log('Personalized questions generated:', data)
+      
+      // Reload questions to get the personalized ones
+      await loadQuestions()
+    } catch (error) {
+      console.error('Error generating personalized questions:', error)
     }
   }
 
@@ -181,9 +213,14 @@ export default function Diagnostic() {
               <Alert variant="danger">
                 <Alert.Heading>Error</Alert.Heading>
                 <p>{error}</p>
-                <Button variant="outline-danger" onClick={loadQuestions}>
-                  Try Again
-                </Button>
+                <div className="d-flex gap-2">
+                  <Button variant="outline-danger" onClick={loadQuestions}>
+                    Try Again
+                  </Button>
+                  <Button variant="outline-primary" onClick={generatePersonalizedQuestions}>
+                    Generate Personalized Questions
+                  </Button>
+                </div>
               </Alert>
             </Col>
           </Row>
