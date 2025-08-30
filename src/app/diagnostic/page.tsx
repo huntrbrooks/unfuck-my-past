@@ -397,7 +397,7 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
                 </div>
 
                 {/* Response Options or Text/Voice Input */}
-                {currentQuestion?.options ? (
+                {currentQuestion?.options && currentQuestion.options.length > 0 ? (
                   <div className="mb-4">
                     {currentQuestion.options.map((option, index) => (
                       <Button
