@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Button } from 'react-bootstrap'
+import { Button } from '@/components/ui/button'
 import { useTheme } from './ThemeProvider'
+import { Moon, Sun } from 'lucide-react'
 
 interface ThemeToggleProps {
   size?: 'sm' | 'md' | 'lg'
@@ -12,10 +13,11 @@ interface ThemeToggleProps {
 
 export default function ThemeToggle({ 
   size = 'sm', 
-  variant = 'outline',
+  variant = 'ghost',
   className = ''
 }: ThemeToggleProps) {
   const [mounted, setMounted] = useState(false)
+  const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
     setMounted(true)
@@ -23,32 +25,30 @@ export default function ThemeToggle({
 
   // Prevent hydration mismatch
   if (!mounted) {
-    return <div style={{ width: '60px', height: '32px' }}></div>
+    return <div className="w-9 h-9" />
   }
 
-  const { theme, toggleTheme } = useTheme()
-
   const getIcon = () => {
-    return theme === 'light' ? '🌙' : '☀️'
+    return theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />
   }
 
   const getLabel = () => {
     return theme === 'light' ? 'Dark Mode' : 'Light Mode'
   }
 
-  // Map size to Bootstrap Button size
-  const buttonSize = size === 'md' ? undefined : size
+  // Map size to Button size
+  const buttonSize = size === 'md' ? 'default' : size
 
   return (
     <Button
-      variant={variant === 'ghost' ? 'link' : `outline-${theme === 'light' ? 'dark' : 'light'}`}
-      size={buttonSize}
+      variant={variant}
+      size={buttonSize as any}
       onClick={toggleTheme}
-      className={`theme-toggle ${className}`}
+      className={className}
       title={getLabel()}
     >
-      <span className="theme-icon">{getIcon()}</span>
-      <span className="theme-label ms-1">{getLabel()}</span>
+      {getIcon()}
+      <span className="sr-only">{getLabel()}</span>
     </Button>
   )
 }

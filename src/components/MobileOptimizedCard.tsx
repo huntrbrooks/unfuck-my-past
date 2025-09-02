@@ -1,45 +1,52 @@
 'use client'
 
 import React from 'react'
-import { Card, Button } from 'react-bootstrap'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface MobileOptimizedCardProps {
   title: string
   content: string
-  actionText?: string
-  onAction?: () => void
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info'
+  buttonText?: string
+  buttonOnClick?: () => void
   className?: string
-  disabled?: boolean
+  variant?: 'default' | 'outline' | 'secondary'
 }
 
-export default function MobileOptimizedCard({
+const MobileOptimizedCard: React.FC<MobileOptimizedCardProps> = ({
   title,
   content,
-  actionText,
-  onAction,
-  variant = 'primary',
-  className = '',
-  disabled = false
-}: MobileOptimizedCardProps) {
+  buttonText,
+  buttonOnClick,
+  className,
+  variant = 'default'
+}) => {
   return (
-    <Card className={`mobile-card ${className}`}>
-      <Card.Body className="p-4">
-        <Card.Title className="h5 mb-3">{title}</Card.Title>
-        <Card.Text className="mb-4">{content}</Card.Text>
+    <Card className={cn('w-full transition-all duration-200 hover:shadow-md', className)}>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-semibold text-gray-900">
+          {title}
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        <p className="text-gray-700 leading-relaxed">
+          {content}
+        </p>
         
-        {actionText && onAction && (
-          <Button
+        {buttonText && buttonOnClick && (
+          <Button 
+            onClick={buttonOnClick}
             variant={variant}
-            onClick={onAction}
-            disabled={disabled}
-            className="w-100 mobile-action-button"
-            size="lg"
+            className="w-full sm:w-auto"
           >
-            {actionText}
+            {buttonText}
           </Button>
         )}
-      </Card.Body>
+      </CardContent>
     </Card>
   )
 }
+
+export default MobileOptimizedCard

@@ -1,10 +1,11 @@
 'use client'
 
 import { useAuth } from "@clerk/nextjs";
-import { Navbar, Nav, Container, Button } from "react-bootstrap";
+import { Button } from "@/components/ui/button";
 import UserButton from "./UserButton";
 import ThemeToggle from "./ThemeToggle";
 import Link from "next/link";
+import { Heart, Sparkles, TrendingUp, Calendar, Target, Clock } from "lucide-react";
 
 interface NavigationProps {
   className?: string
@@ -14,60 +15,73 @@ export default function Navigation({ className = '' }: NavigationProps) {
   const { isSignedIn, isLoaded } = useAuth();
 
   return (
-    <Navbar bg="dark" variant="dark" expand="lg" className={`py-3 ${className}`}>
-      <Container>
-        <Navbar.Brand as={Link} href="/" className="fw-bold">
-          Unfuck Your Past
-        </Navbar.Brand>
-        
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto">
-            <Nav.Link as={Link} href="/how-it-works">How It Works</Nav.Link>
-            {isSignedIn && (
-              <>
-                <Nav.Link as={Link} href="/dashboard">Dashboard</Nav.Link>
-                <Nav.Link as={Link} href="/program">30-Day Program</Nav.Link>
-                <Nav.Link as={Link} href="/onboarding">Continue Journey</Nav.Link>
-                <Nav.Link as={Link} href="/diagnostic">Diagnostic</Nav.Link>
-              </>
-            )}
-          </Nav>
+    <header className={`border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50 ${className}`}>
+      <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link href="/dashboard" className="text-xl font-bold text-foreground hover:text-primary transition-colors cursor-pointer">
+              Unfuck Your Past
+            </Link>
+            <nav className="hidden md:flex items-center gap-6">
+              {isSignedIn && (
+                <>
+                  <Link href="/dashboard" className="text-sm text-primary font-medium">
+                    Dashboard
+                  </Link>
+                  <Link href="/how-it-works" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    How It Works
+                  </Link>
+                  <Link href="/onboarding" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    Continue Journey
+                  </Link>
+                  <Link href="/report" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    My Report
+                  </Link>
+                  <Link href="/program" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    30-Day Program
+                  </Link>
+                  <Link href="/preferences" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    Preferences
+                  </Link>
+                </>
+              )}
+            </nav>
+          </div>
           
-          <Nav className="ms-auto">
-            <Nav.Item className="d-flex align-items-center me-3">
-              <ThemeToggle variant="ghost" size="sm" />
-            </Nav.Item>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
             
             {isLoaded && (
               <>
                 {isSignedIn ? (
                   <UserButton />
                 ) : (
-                  <div className="d-flex gap-2">
+                  <div className="flex gap-2">
                     <Button 
-                      variant="outline-light" 
-                      as={Link as any} 
-                      href="/sign-in"
+                      variant="outline" 
+                      asChild
                       size="sm"
                     >
-                      Sign In
+                      <Link href="/sign-in">
+                        Sign In
+                      </Link>
                     </Button>
                     <Button 
-                      variant="primary" 
-                      as={Link as any} 
-                      href="/sign-up"
+                      variant="default" 
+                      asChild
                       size="sm"
                     >
-                      Get Started
+                      <Link href="/sign-up">
+                        Get Started
+                      </Link>
                     </Button>
                   </div>
                 )}
               </>
             )}
-          </Nav>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
+          </div>
+        </div>
+      </div>
+    </header>
   );
 }

@@ -40,8 +40,12 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
 
   useEffect(() => {
     if (mounted) {
-      // Apply theme to document
-      document.documentElement.setAttribute('data-bs-theme', theme)
+      // Apply theme to document for Tailwind dark mode
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
       localStorage.setItem('theme', theme)
     }
   }, [theme, mounted])
@@ -52,11 +56,6 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme)
-  }
-
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return <div style={{ visibility: 'hidden' }}>{children}</div>
   }
 
   return (

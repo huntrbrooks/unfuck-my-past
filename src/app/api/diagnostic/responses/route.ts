@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, answers } from '../../../../db'
+import { db, diagnosticResponses } from '../../../../db'
 import { auth } from '@clerk/nextjs/server'
 import { eq } from 'drizzle-orm'
 
@@ -12,23 +12,23 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch user's diagnostic responses
-    const userAnswers = await db
+    const userResponses = await db
       .select({
-        questionId: answers.questionId,
-        response: answers.content,
-        insight: answers.summary,
-        timestamp: answers.createdAt
+        question: diagnosticResponses.question,
+        response: diagnosticResponses.response,
+        insight: diagnosticResponses.insight,
+        timestamp: diagnosticResponses.createdAt
       })
-      .from(answers)
-      .where(eq(answers.userId, userId))
-      .orderBy(answers.createdAt)
+      .from(diagnosticResponses)
+      .where(eq(diagnosticResponses.userId, userId))
+      .orderBy(diagnosticResponses.createdAt)
 
     // Format the responses
-    const formattedResponses = userAnswers.map(answer => ({
-      question: `Question ${answer.questionId}`,
-      response: answer.response || '',
-      insight: answer.insight || '',
-      timestamp: answer.timestamp?.toISOString() || new Date().toISOString()
+    const formattedResponses = userResponses.map((resp, index) => ({
+      question: typeof resp.question === 'object' ? resp.question.text || `Question ${index + 1}` : `Question ${index + 1}`,
+      response: resp.response || '',
+      insight: resp.insight || '',
+      timestamp: resp.timestamp?.toISOString() || new Date().toISOString()
     }))
 
     return NextResponse.json({

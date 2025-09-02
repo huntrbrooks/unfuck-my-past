@@ -244,6 +244,11 @@ Respond in JSON format:
     for (let day = 1; day <= 30; day++) {
       const dayContent = await this.generateDayContent(day, analysis, userProfile)
       program.push(dayContent)
+      
+      // Add a small delay between requests to avoid rate limiting
+      if (day < 30) {
+        await new Promise(resolve => setTimeout(resolve, 1000)) // 1 second delay
+      }
     }
     
     return program
@@ -307,45 +312,112 @@ Respond in JSON format:
 }
 `
 
-    if (!this.openaiKey) {
-      throw new Error('OpenAI API key is missing')
-    }
-
     console.log(`Generating content for day ${day}...`)
     
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.openaiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a trauma-informed therapist creating personalized healing content. Generate engaging, safe, and effective content in the exact JSON format requested.'
+    // Try OpenAI first
+    if (this.openaiKey) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.openaiKey}`,
+            'Content-Type': 'application/json',
           },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.8,
-        max_tokens: 1500
-      })
-    })
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a trauma-informed therapist creating personalized healing content. Generate engaging, safe, and effective content in the exact JSON format requested.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: 0.8,
+            max_tokens: 1500
+          })
+        })
 
-    console.log(`Day ${day} OpenAI response status:`, response.status)
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`OpenAI API error for day ${day}:`, errorText)
-      throw new Error(`Failed to generate content for day ${day}: ${response.status} ${errorText}`)
+        console.log(`Day ${day} OpenAI response status:`, response.status)
+        
+        if (response.ok) {
+          const data = await response.json()
+          const contentText = data.choices[0].message.content
+          return this.parseDayContent(contentText, day, analysis, userProfile)
+        } else {
+          const errorText = await response.text()
+          console.error(`OpenAI API error for day ${day}:`, errorText)
+          
+          // Check if it's a rate limit error
+          if (response.status === 429) {
+            console.log(`OpenAI rate limit hit for day ${day}, trying Claude...`)
+            return this.generateDayContentWithClaude(day, analysis, userProfile, prompt)
+          }
+          
+          throw new Error(`OpenAI failed: ${response.status} ${errorText}`)
+        }
+      } catch (error) {
+        console.error(`OpenAI error for day ${day}:`, error)
+        console.log(`Trying Claude fallback for day ${day}...`)
+        return this.generateDayContentWithClaude(day, analysis, userProfile, prompt)
+      }
+    } else {
+      // No OpenAI key, use Claude directly
+      return this.generateDayContentWithClaude(day, analysis, userProfile, prompt)
+    }
+  }
+
+  private async generateDayContentWithClaude(
+    day: number,
+    analysis: ProgramAnalysis,
+    userProfile: UserProfile,
+    prompt: string
+  ): Promise<PersonalizedDay> {
+    if (!this.claudeKey) {
+      console.log(`No Claude key available for day ${day}, using fallback content`)
+      return this.getFallbackDayContent(day, analysis, userProfile)
     }
 
-    const data = await response.json()
-    const contentText = data.choices[0].message.content
+    try {
+      console.log(`Attempting Claude generation for day ${day}...`)
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': this.claudeKey,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 2000,
+          messages: [
+            {
+              role: 'user',
+              content: `You are a trauma-informed therapist creating personalized healing content. ${prompt}`
+            }
+          ]
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const contentText = data.content[0].text
+        console.log(`Claude generation successful for day ${day}`)
+        return this.parseDayContent(contentText, day, analysis, userProfile)
+      } else {
+        const errorText = await response.text()
+        console.error(`Claude API error for day ${day}:`, errorText)
+        return this.getFallbackDayContent(day, analysis, userProfile)
+      }
+    } catch (error) {
+      console.error(`Claude error for day ${day}:`, error)
+      return this.getFallbackDayContent(day, analysis, userProfile)
+    }
+  }
+
+  private parseDayContent(contentText: string, day: number, analysis: ProgramAnalysis, userProfile: UserProfile): PersonalizedDay {
     
     try {
       return JSON.parse(contentText)

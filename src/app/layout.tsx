@@ -1,22 +1,26 @@
 import React from 'react'
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { DM_Sans } from 'next/font/google'
+import { GeistMono } from 'geist/font/mono'
 import { ClerkProvider } from '@clerk/nextjs'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap-icons/font/bootstrap-icons.css'
+import { Analytics } from '@vercel/analytics/next'
+import { Suspense } from 'react'
 import './globals.css'
-import BootstrapClient from '../components/BootstrapClient'
-import HydrationSuppressor from '../components/HydrationSuppressor'
 import ErrorBoundary from '../components/ErrorBoundary'
 import ThemeProvider from '../components/ThemeProvider'
 import ResponsiveNavigation from '../components/ResponsiveNavigation'
 import AnalyticsProvider from '../components/AnalyticsProvider'
 
-const inter = Inter({ subsets: ['latin'] })
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-dm-sans',
+})
 
 export const metadata: Metadata = {
-  title: 'Unfuck Your Past',
-  description: 'AI-driven self-healing and personal growth',
+  title: 'Unfuck Your Past - 30-Day Healing Journey',
+  description: 'Transform your life through structured self-discovery and healing',
+  generator: 'v0.app',
 }
 
 export default function RootLayout({
@@ -26,16 +30,16 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body className={inter.className}>
-          <BootstrapClient />
+      <html lang="en" className={`${dmSans.variable} ${GeistMono.variable}`}>
+        <body className="font-sans antialiased" suppressHydrationWarning={true}>
           <ErrorBoundary>
             <ThemeProvider>
               <AnalyticsProvider>
                 <ResponsiveNavigation />
-                <HydrationSuppressor>
+                <Suspense fallback={<div>Loading...</div>}>
                   {children}
-                </HydrationSuppressor>
+                </Suspense>
+                <Analytics />
               </AnalyticsProvider>
             </ThemeProvider>
           </ErrorBoundary>

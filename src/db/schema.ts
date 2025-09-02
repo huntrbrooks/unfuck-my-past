@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, integer, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, boolean, integer, jsonb, unique } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(), // Clerk userId
@@ -58,4 +58,26 @@ export const moods = pgTable('moods', {
   note: text('note'),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+export const diagnosticResponses = pgTable('diagnostic_responses', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  question: jsonb('question').notNull(),
+  response: text('response').notNull(),
+  insight: text('insight'),
+  model: text('model'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const diagnosticSummaries = pgTable('diagnostic_summaries', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  type: text('type').notNull(), // 'comprehensive' | 'comprehensive_report'
+  summary: text('summary').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+}, (table) => ({
+  // Add unique constraint on userId and type combination
+  userIdTypeUnique: unique('user_id_type_unique').on(table.userId, table.type),
+}));
 

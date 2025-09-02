@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { Row, Col } from 'react-bootstrap'
 import SkeletonCard from './SkeletonCard'
 
 interface SkeletonGridProps {
@@ -22,19 +21,18 @@ export default function SkeletonGrid({
   className = ''
 }: SkeletonGridProps) {
   const items = Array.from({ length: count })
-  const colSize = 12 / columns
 
   return (
-    <Row className={className}>
+    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${columns} gap-6 ${className}`}>
       {items.map((_, index) => (
-        <Col key={index} md={colSize} className="mb-4">
+        <div key={index}>
           <SkeletonCard 
             lines={lines}
             showImage={showImage}
             showButton={showButton}
           />
-        </Col>
+        </div>
       ))}
-    </Row>
+    </div>
   )
 }

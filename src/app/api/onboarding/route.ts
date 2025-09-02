@@ -1,134 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, users } from '../../../db'
 import { auth } from '@clerk/nextjs/server'
+import { db } from '@/db'
+import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
-import { validateObject, sanitizeObject, ONBOARDING_SCHEMA, globalRateLimiter } from '../../../lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting
-    const clientIP = request.headers.get('x-forwarded-for') || 
-                    request.headers.get('x-real-ip') || 
-                    'unknown'
-    if (!globalRateLimiter.isAllowed(clientIP)) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
-      )
-    }
-
-    // Authentication
     const { userId } = await auth()
+    
     if (!userId) {
-      return NextResponse.json({ 
-        error: 'Please sign in to save your onboarding preferences. You can complete the onboarding process after signing in.' 
-      }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Parse and validate request body
-    let body
-    try {
-      body = await request.json()
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        { status: 400 }
-      )
-    }
-
-    // Sanitize input
-    const sanitizedBody = sanitizeObject(body)
-
-    // Fix goals array if it's an object (localStorage issue)
-    if (sanitizedBody.goals && !Array.isArray(sanitizedBody.goals)) {
-      sanitizedBody.goals = Object.values(sanitizedBody.goals)
-    }
-
-    // Debug: Log the data being validated
-    console.log('Onboarding data received:', JSON.stringify(sanitizedBody, null, 2))
-
-    // Validate input
-    const validation = validateObject(sanitizedBody, ONBOARDING_SCHEMA)
-    if (!validation.isValid) {
-      console.log('Validation errors:', validation.errors)
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          details: validation.errors
-        },
-        { status: 400 }
-      )
-    }
-
-    const {
-      tone,
-      voice,
-      rawness,
-      depth,
-      learning,
-      engagement,
-      safety,
-      goals,
-      experience,
-      timeCommitment
-    } = sanitizedBody
-
-    // Prepare safety data
-    const safetyData = {
-      ...safety,
-      goals,
-      experience,
-      timeCommitment
-    }
-
-    try {
-      // Check if user exists
-      const existingUser = await db.select().from(users).where(eq(users.id, userId)).limit(1)
-      
-      if (existingUser.length > 0) {
-        // Update existing user
-        await db.update(users)
-          .set({
-            tone,
-            voice,
-            rawness,
-            depth,
-            learning,
-            engagement,
-            safety: safetyData
-          })
-          .where(eq(users.id, userId))
-      } else {
-        // Insert new user
-        await db.insert(users).values({
-          id: userId,
-          tone,
-          voice,
-          rawness,
-          depth,
-          learning,
-          engagement,
-          safety: safetyData
-        })
+    const body = await request.json()
+    
+    // Save onboarding data to database
+    await db.insert(users).values({
+      id: userId,
+      tone: body.tone,
+      voice: body.voice,
+      rawness: body.rawness,
+      depth: body.depth,
+      learning: body.learning,
+      engagement: body.engagement,
+      safety: {
+        ...body.safety,
+        goals: body.goals,
+        experience: body.experience,
+        timeCommitment: body.timeCommitment
       }
+    }).onConflictDoUpdate({
+      target: users.id,
+      set: {
+        tone: body.tone,
+        voice: body.voice,
+        rawness: body.rawness,
+        depth: body.depth,
+        learning: body.learning,
+        engagement: body.engagement,
+        safety: {
+          ...body.safety,
+          goals: body.goals,
+          experience: body.experience,
+          timeCommitment: body.timeCommitment
+        }
+      }
+    })
 
-      return NextResponse.json({ 
-        success: true,
-        message: 'Onboarding data saved successfully'
-      })
+    // Trigger question generation in the background (non-blocking)
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/diagnostic/generate-questions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId })
+    }).catch(error => {
+      console.error('Background question generation failed:', error)
+    })
 
-    } catch (dbError) {
-      console.error('Database error in onboarding:', dbError)
-      return NextResponse.json(
-        { error: 'Failed to save onboarding data. Please try again.' },
-        { status: 500 }
-      )
-    }
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Onboarding data saved successfully. Generating personalized questions...' 
+    })
 
   } catch (error) {
-    console.error('Unexpected error in onboarding:', error)
+    console.error('Error saving onboarding data:', error)
     return NextResponse.json(
-      { error: 'An unexpected error occurred. Please try again.' },
+      { error: 'Failed to save onboarding data' }, 
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { userId } = await auth()
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userOnboarding = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
+
+    if (userOnboarding.length === 0) {
+      return NextResponse.json({ error: 'Onboarding data not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ onboarding: userOnboarding[0] })
+
+  } catch (error) {
+    console.error('Error fetching onboarding data:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch onboarding data' }, 
       { status: 500 }
     )
   }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { db, users, answers } from '../../../../db'
+import { db, users, diagnosticResponses } from '../../../../db'
 import { AIService } from '../../../../lib/ai-service'
 import { generateAIPrompt } from '../../../../lib/diagnostic-questions'
 import { eq } from 'drizzle-orm'
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { question, response, useClaude = false } = sanitizedBody
+    const { question, response, useClaude = true } = sanitizedBody
 
     try {
       // Get user preferences for AI prompt generation using Drizzle ORM
@@ -87,12 +87,12 @@ export async function POST(request: NextRequest) {
       const insight = await aiService.generateInsight(prompt, response, useClaude)
 
       // Save the response and insight to database using Drizzle ORM
-      await db.insert(answers).values({
+      await db.insert(diagnosticResponses).values({
         userId: userId,
-        questionId: question.id,
-        modality: 'text',
-        content: response,
-        summary: insight.insight
+        question: question,
+        response: response,
+        insight: insight.insight,
+        model: insight.model
       })
 
       return NextResponse.json({

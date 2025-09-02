@@ -1,7 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, Button, Badge, Accordion, Alert } from 'react-bootstrap'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { ChevronDown, ChevronUp, FileText, Download } from 'lucide-react'
 
 interface DiagnosticResponse {
   question: string
@@ -11,174 +14,180 @@ interface DiagnosticResponse {
 }
 
 interface DiagnosticReportProps {
-  className?: string
+  userId: string
 }
 
-export default function DiagnosticReport({ className = '' }: DiagnosticReportProps) {
+const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
   const [responses, setResponses] = useState<DiagnosticResponse[]>([])
-  const [summary, setSummary] = useState<string>('')
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string>('')
-  const [hasPurchased, setHasPurchased] = useState(false)
+  const [error, setError] = useState('')
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
 
   useEffect(() => {
-    checkAccessAndLoadReport()
-  }, [])
+    fetchDiagnosticResponses()
+  }, [userId])
 
-  const checkAccessAndLoadReport = async () => {
+  const fetchDiagnosticResponses = async () => {
     try {
-      setLoading(true)
-      
-      // Check if user has purchased the diagnostic report
-      const purchasesResponse = await fetch('/api/payments/user-purchases')
-      if (purchasesResponse.ok) {
-        const purchases = await purchasesResponse.json()
-        
-        // Ensure purchases is an array
-        const purchasesArray = Array.isArray(purchases) ? purchases : []
-        
-        const hasDiagnostic = purchasesArray.some((p: any) => p.product === 'diagnostic' && p.active === true)
-        setHasPurchased(hasDiagnostic)
-        
-        if (hasDiagnostic) {
-          await loadDiagnosticData()
-        }
+      const response = await fetch('/api/diagnostic/responses')
+      if (!response.ok) {
+        throw new Error('Failed to fetch diagnostic responses')
       }
-    } catch (error) {
-      console.error('Error checking diagnostic access:', error)
-      setError('Failed to load diagnostic report')
+      const data = await response.json()
+      setResponses(data.responses || [])
+    } catch (err) {
+      setError('Failed to load diagnostic responses')
     } finally {
       setLoading(false)
     }
   }
 
-  const loadDiagnosticData = async () => {
-    try {
-      // Load diagnostic responses
-      const responsesResponse = await fetch('/api/diagnostic/responses')
-      if (responsesResponse.ok) {
-        const responsesData = await responsesResponse.json()
-        setResponses(responsesData.responses || [])
-      }
-
-      // Load diagnostic summary
-      const summaryResponse = await fetch('/api/diagnostic/summary')
-      if (summaryResponse.ok) {
-        const summaryData = await summaryResponse.json()
-        setSummary(summaryData.summary || '')
-      }
-    } catch (error) {
-      console.error('Error loading diagnostic data:', error)
-      setError('Failed to load diagnostic data')
+  const toggleExpanded = (index: number) => {
+    const newExpanded = new Set(expandedItems)
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index)
+    } else {
+      newExpanded.add(index)
     }
+    setExpandedItems(newExpanded)
   }
 
-  const formatDate = (timestamp: string) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/diagnostic/export', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Export failed')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `diagnostic-report-${new Date().toISOString().split('T')[0]}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      setError('Failed to export report')
+    }
   }
 
   if (loading) {
     return (
-      <Card className={className}>
-        <Card.Body className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <span className="ml-2">Loading diagnostic report...</span>
           </div>
-          <p className="mt-2">Loading your diagnostic report...</p>
-        </Card.Body>
+        </CardContent>
       </Card>
     )
   }
 
   if (error) {
     return (
-      <Card className={className}>
-        <Card.Body>
-          <Alert variant="danger">
-            <Alert.Heading>Error</Alert.Heading>
-            <p>{error}</p>
-          </Alert>
-        </Card.Body>
+      <Card>
+        <CardContent className="p-6">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700">
+            {error}
+          </div>
+        </CardContent>
       </Card>
     )
   }
 
-  if (!hasPurchased) {
+  if (responses.length === 0) {
     return (
-      <Card className={className}>
-        <Card.Body>
-          <Card.Title>Diagnostic Report</Card.Title>
-          <Card.Text>
-            Purchase the full diagnostic report to access your personalized insights and analysis.
-          </Card.Text>
-          <Button variant="primary" href="/diagnostic">
-            Take Diagnostic & Purchase Report
-          </Button>
-        </Card.Body>
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-gray-500">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <p>No diagnostic responses found.</p>
+            <p className="text-sm">Complete the diagnostic section to generate your report.</p>
+          </div>
+        </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className={className}>
-      <Card.Body>
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <Card.Title className="mb-0">Your Diagnostic Report</Card.Title>
-          <Badge bg="success">Purchased</Badge>
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Diagnostic Report</h2>
+        <Button onClick={handleExport} className="flex items-center gap-2">
+          <Download className="h-4 w-4" />
+          Export Report
+        </Button>
+      </div>
 
-        {summary && (
-          <div className="mb-4">
-            <h5>Executive Summary</h5>
-            <div className="p-3 bg-light rounded">
-              <p className="mb-0">{summary}</p>
-            </div>
-          </div>
-        )}
+      <div className="space-y-4">
+        {responses.map((response, index) => (
+          <Card key={index} className="overflow-hidden">
+            <CardHeader 
+              className="cursor-pointer hover:bg-gray-50 transition-colors"
+              onClick={() => toggleExpanded(index)}
+            >
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">
+                  Question {index + 1}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    {new Date(response.timestamp).toLocaleDateString()}
+                  </Badge>
+                  {expandedItems.has(index) ? (
+                    <ChevronUp className="h-5 w-5" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5" />
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            
+            {expandedItems.has(index) && (
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Question:</h4>
+                  <p className="text-gray-700">{response.question}</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Your Response:</h4>
+                  <p className="text-gray-700 bg-gray-50 p-3 rounded-md">
+                    {response.response}
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">AI Insight:</h4>
+                  <p className="text-gray-700 bg-blue-50 p-3 rounded-md">
+                    {response.insight}
+                  </p>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        ))}
+      </div>
 
-        {responses.length > 0 && (
-          <div>
-            <h5>Your Responses & Insights</h5>
-            <Accordion>
-              {responses.map((response, index) => (
-                <Accordion.Item key={index} eventKey={index.toString()}>
-                  <Accordion.Header>
-                    <div className="d-flex justify-content-between align-items-center w-100 me-3">
-                      <span className="text-truncate">{response.question}</span>
-                      <small className="text-muted">{formatDate(response.timestamp)}</small>
-                    </div>
-                  </Accordion.Header>
-                  <Accordion.Body>
-                    <div className="mb-3">
-                      <strong>Your Response:</strong>
-                      <p className="mt-1 mb-0">{response.response}</p>
-                    </div>
-                    <div>
-                      <strong>AI Insight:</strong>
-                      <p className="mt-1 mb-0">{response.insight}</p>
-                    </div>
-                  </Accordion.Body>
-                </Accordion.Item>
-              ))}
-            </Accordion>
-          </div>
-        )}
-
-        <div className="mt-4">
-          <Button variant="outline-primary" href="/diagnostic">
-            Retake Diagnostic
-          </Button>
-          <Button variant="outline-secondary" href="/program" className="ms-2">
-            Start 30-Day Program
-          </Button>
-        </div>
-      </Card.Body>
-    </Card>
+      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+        <h3 className="font-semibold text-blue-900 mb-2">Report Summary</h3>
+        <p className="text-blue-800 text-sm">
+          This report contains {responses.length} diagnostic responses with AI-generated insights. 
+          Each response has been analyzed to provide personalized recommendations for your healing journey.
+        </p>
+      </div>
+    </div>
   )
 }
+
+export default DiagnosticReport

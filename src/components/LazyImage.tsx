@@ -1,34 +1,28 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Image } from 'react-bootstrap'
+import { cn } from '@/lib/utils'
 
 interface LazyImageProps {
   src: string
   alt: string
-  placeholder?: string
   className?: string
-  fluid?: boolean
-  rounded?: boolean
-  thumbnail?: boolean
+  placeholder?: string
   onLoad?: () => void
   onError?: () => void
 }
 
-export default function LazyImage({
+const LazyImage: React.FC<LazyImageProps> = ({
   src,
   alt,
-  placeholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOWZhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxvYWRpbmcuLi48L3RleHQ+PC9zdmc+',
-  className = '',
-  fluid = false,
-  rounded = false,
-  thumbnail = false,
+  className,
+  placeholder = '/placeholder-image.jpg',
   onLoad,
   onError
-}: LazyImageProps) {
+}) => {
   const [isLoaded, setIsLoaded] = useState(false)
-  const [isInView, setIsInView] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const [isInView, setIsInView] = useState(false)
   const imgRef = useRef<HTMLImageElement>(null)
 
   useEffect(() => {
@@ -39,10 +33,7 @@ export default function LazyImage({
           observer.disconnect()
         }
       },
-      {
-        rootMargin: '50px 0px',
-        threshold: 0.1
-      }
+      { threshold: 0.1 }
     )
 
     if (imgRef.current) {
@@ -62,23 +53,40 @@ export default function LazyImage({
     onError?.()
   }
 
-  const imageSrc = isInView ? (hasError ? placeholder : src) : placeholder
+  const imageSrc = isInView ? src : placeholder
 
   return (
-    <Image
-      ref={imgRef}
-      src={imageSrc}
-      alt={alt}
-      className={`${className} ${isLoaded ? 'fade-in' : ''}`}
-      fluid={fluid}
-      rounded={rounded}
-      thumbnail={thumbnail}
-      onLoad={handleLoad}
-      onError={handleError}
-      style={{
-        opacity: isLoaded ? 1 : 0.7,
-        transition: 'opacity 0.3s ease-in-out'
-      }}
-    />
+    <div className={cn('relative overflow-hidden', className)}>
+      <img
+        ref={imgRef}
+        src={imageSrc}
+        alt={alt}
+        className={cn(
+          'w-full h-full object-cover transition-opacity duration-300',
+          isLoaded ? 'opacity-100' : 'opacity-0'
+        )}
+        onLoad={handleLoad}
+        onError={handleError}
+      />
+      
+      {!isLoaded && !hasError && (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
+      )}
+      
+      {hasError && (
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <svg className="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm">Image unavailable</p>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
+
+export default LazyImage

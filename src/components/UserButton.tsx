@@ -1,16 +1,15 @@
 'use client'
 
 import { UserButton as ClerkUserButton } from "@clerk/nextjs";
-import { Dropdown, Button } from "react-bootstrap";
 
 export default function UserButton() {
   return (
-    <div className="d-inline-block">
+    <div className="inline-block">
       <ClerkUserButton 
         appearance={{
           elements: {
-            userButtonAvatarBox: "rounded-circle",
-            userButtonTrigger: "btn btn-outline-light"
+            userButtonAvatarBox: "rounded-full",
+            userButtonTrigger: "w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium"
           }
         }}
       />

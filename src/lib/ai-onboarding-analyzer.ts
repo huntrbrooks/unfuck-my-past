@@ -460,50 +460,104 @@ Respond in JSON format:
     onboardingData: OnboardingData,
     analysis: OnboardingAnalysis
   ): DiagnosticQuestion {
-    const categories = ['trauma', 'patterns', 'relationships', 'self-image', 'coping', 'goals']
-    const category = categories[(questionNumber - 1) % categories.length]
-
     const questionTemplates = {
       trauma: [
-        "What's the most challenging experience you've had to overcome?",
-        "How do you typically respond when you feel overwhelmed?",
-        "What triggers your strongest emotional reactions?"
+        {
+          question: "What's the most challenging experience you've had to overcome?",
+          followUp: "How did that experience change the way you see yourself?"
+        },
+        {
+          question: "How do you typically respond when you feel overwhelmed?",
+          followUp: "What would help you feel more supported in those moments?"
+        },
+        {
+          question: "What triggers your strongest emotional reactions?",
+          followUp: "How do you wish you could respond differently?"
+        }
       ],
       patterns: [
-        "What's a behavior you keep repeating even though you know it's not good for you?",
-        "What patterns do you notice in your relationships?",
-        "How do you typically handle stress or difficult situations?"
+        {
+          question: "What's a behavior you keep repeating even though you know it's not good for you?",
+          followUp: "What do you think is the deeper reason behind this pattern?"
+        },
+        {
+          question: "What patterns do you notice in your relationships?",
+          followUp: "How do these patterns serve you, even if they're not ideal?"
+        },
+        {
+          question: "How do you typically handle stress or difficult situations?",
+          followUp: "What would be a healthier way to cope with these challenges?"
+        }
       ],
       relationships: [
-        "What's your biggest challenge in relationships?",
-        "How do you typically communicate when you're upset?",
-        "What do you need most from the people in your life?"
+        {
+          question: "What's your biggest challenge in relationships?",
+          followUp: "How does this challenge show up in your daily interactions?"
+        },
+        {
+          question: "How do you typically communicate when you're upset?",
+          followUp: "What would better communication look like for you?"
+        },
+        {
+          question: "What do you need most from the people in your life?",
+          followUp: "How do you express these needs to others?"
+        }
       ],
       'self-image': [
-        "What would you change about yourself if you could?",
-        "How do you see yourself compared to others?",
-        "What are your biggest strengths and weaknesses?"
+        {
+          question: "What would you change about yourself if you could?",
+          followUp: "What's stopping you from making these changes?"
+        },
+        {
+          question: "How do you see yourself compared to others?",
+          followUp: "Where do you think this comparison comes from?"
+        },
+        {
+          question: "What are your biggest strengths and weaknesses?",
+          followUp: "How do your weaknesses actually serve you in some ways?"
+        }
       ],
       coping: [
-        "How do you usually deal with difficult emotions?",
-        "What helps you feel better when you're struggling?",
-        "What coping strategies have you tried in the past?"
+        {
+          question: "How do you usually deal with difficult emotions?",
+          followUp: "What would be a more helpful way to process these feelings?"
+        },
+        {
+          question: "What helps you feel better when you're struggling?",
+          followUp: "How could you make these coping strategies more accessible?"
+        },
+        {
+          question: "What coping strategies have you tried in the past?",
+          followUp: "Which ones worked best and why?"
+        }
       ],
       goals: [
-        "What's the biggest thing holding you back from the life you want?",
-        "What would success look like for you?",
-        "What's one change you'd like to make in your life?"
+        {
+          question: "What's the biggest thing holding you back from the life you want?",
+          followUp: "What small step could you take today toward that life?"
+        },
+        {
+          question: "What would success look like for you?",
+          followUp: "How would you know you're making progress?"
+        },
+        {
+          question: "What's one change you'd like to make in your life?",
+          followUp: "What support would you need to make this change?"
+        }
       ]
     }
 
-    const template = questionTemplates[category as keyof typeof questionTemplates]
-    const question = template[questionNumber % template.length]
+    const categories = Object.keys(questionTemplates)
+    const category = categories[questionNumber % categories.length] as keyof typeof questionTemplates
+    const categoryQuestions = questionTemplates[category]
+    const questionIndex = Math.floor(questionNumber / categories.length) % categoryQuestions.length
+    const { question, followUp } = categoryQuestions[questionIndex]
 
     return {
       id: questionNumber,
       category: category as any,
       question,
-      followUp: `What do you think keeps you stuck in this area?`,
+      followUp,
       adaptive: {
         tone: [onboardingData.tone],
         rawness: [onboardingData.rawness],

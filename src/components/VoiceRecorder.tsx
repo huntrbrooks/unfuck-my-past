@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Button, Alert, Spinner, Form } from 'react-bootstrap'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { AlertTriangle, Mic, StopCircle, XCircle, CheckCircle, Loader2 } from 'lucide-react'
 
 interface VoiceRecorderProps {
   onTranscription: (text: string) => void
@@ -196,72 +198,84 @@ export default function VoiceRecorder({
 
   if (!isSupported) {
     return (
-      <Alert variant="warning" className={className}>
-        <Alert.Heading>Voice Input Not Available</Alert.Heading>
-        <p>
+      <div className={`bg-yellow-50 border border-yellow-200 rounded-lg p-4 ${className}`}>
+        <div className="flex items-center gap-3 mb-2">
+          <AlertTriangle className="h-5 w-5 text-yellow-600" />
+          <h4 className="font-semibold text-yellow-800">Voice Input Not Available</h4>
+        </div>
+        <p className="text-yellow-700">
           Your browser doesn't support voice recording. Please use the text input instead.
         </p>
-      </Alert>
+      </div>
     )
   }
 
   return (
     <div className={`voice-recorder ${className}`}>
       {error && (
-        <Alert variant="danger" dismissible onClose={() => setError(null)}>
-          {error}
-        </Alert>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <p className="text-red-800">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-600 hover:text-red-800"
+            >
+              ×
+            </button>
+          </div>
+        </div>
       )}
 
-      <div className="voice-controls mb-3">
+      <div className="mb-4">
         {!isRecording ? (
           <Button
-            variant="primary"
             size="lg"
             onClick={startRecording}
             disabled={disabled || isProcessing}
-            className="voice-button"
+            className="w-full sm:w-auto"
           >
             {isProcessing ? (
               <>
-                <Spinner animation="border" size="sm" className="me-2" />
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
                 Processing...
               </>
             ) : (
               <>
-                <i className="bi bi-mic-fill me-2"></i>
+                <Mic className="h-5 w-5 mr-2" />
                 Start Recording
               </>
             )}
           </Button>
         ) : (
-          <div className="d-flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button
-              variant="danger"
+              variant="destructive"
               size="lg"
               onClick={stopRecording}
               disabled={isProcessing || disabled}
-              className="voice-button"
+              className="flex-1"
             >
               {isProcessing ? (
                 <>
-                  <Spinner animation="border" size="sm" className="me-2" />
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
                   Stopping...
                 </>
               ) : (
                 <>
-                  <i className="bi bi-stop-fill me-2"></i>
+                  <StopCircle className="h-5 w-5 mr-2" />
                   Stop Recording
                 </>
               )}
             </Button>
             <Button
-              variant="outline-secondary"
+              variant="outline"
               size="lg"
               onClick={clearTranscript}
               disabled={isProcessing || disabled}
+              className="flex-1"
             >
-              <i className="bi bi-x-circle me-2"></i>
+              <XCircle className="h-5 w-5 mr-2" />
               Clear
             </Button>
           </div>
@@ -269,13 +283,13 @@ export default function VoiceRecorder({
       </div>
 
       {(transcript || interimTranscript) && !isEditing && (
-        <div className="transcript-display">
-          <div className="transcript-content">
-            <strong>Your Response:</strong>
-            <div className="transcript-text">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div>
+            <strong className="text-blue-900">Your Response:</strong>
+            <div className="text-blue-800 mt-2">
               {transcript}
               {interimTranscript && (
-                <span className="interim-text">{interimTranscript}</span>
+                <span className="text-blue-600 italic">{interimTranscript}</span>
               )}
             </div>
           </div>
@@ -283,33 +297,29 @@ export default function VoiceRecorder({
       )}
 
       {isEditing && (
-        <div className="edit-transcript-display">
-          <div className="edit-transcript-content">
-            <strong>Edit Your Response:</strong>
-            <Form.Control
-              as="textarea"
-              rows={4}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+          <div>
+            <strong className="text-gray-900 mb-2 block">Edit Your Response:</strong>
+            <Textarea
               value={editedText}
               onChange={(e) => setEditedText(e.target.value)}
               placeholder="Edit your transcribed text here..."
-              className="mt-2"
+              className="mb-4 min-h-[100px]"
             />
-            <div className="edit-actions mt-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button
-                variant="success"
-                size="sm"
                 onClick={handleEditSave}
-                className="me-2"
+                className="flex-1"
               >
-                <i className="bi bi-check-circle me-1"></i>
+                <CheckCircle className="h-4 w-4 mr-2" />
                 Save & Use
               </Button>
               <Button
-                variant="outline-secondary"
-                size="sm"
+                variant="outline"
                 onClick={handleEditCancel}
+                className="flex-1"
               >
-                <i className="bi bi-x-circle me-1"></i>
+                <XCircle className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
             </div>
@@ -318,20 +328,18 @@ export default function VoiceRecorder({
       )}
 
       {isRecording && (
-        <div className="recording-indicator">
-          <div className="pulse-dot"></div>
-          <span className="ms-2">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+          <span className="text-gray-700">
             Recording... {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
           </span>
         </div>
       )}
 
       {!transcript && !isRecording && (
-        <div className="voice-placeholder">
-          <p className="text-muted mb-0">
-            <i className="bi bi-mic me-2"></i>
-            {placeholder}
-          </p>
+        <div className="text-center text-gray-500 py-8">
+          <Mic className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+          <p>{placeholder}</p>
         </div>
       )}
     </div>

@@ -136,7 +136,7 @@ export const DIAGNOSTIC_RESPONSE_SCHEMA: ValidationSchema = {
       return true
     }
   },
-  response: { required: true, minLength: 10, maxLength: 2000 },
+  response: { required: true, minLength: 10, maxLength: 10000 },
   useClaude: { custom: (value) => typeof value === 'boolean' ? true : 'useClaude must be a boolean' }
 }
 

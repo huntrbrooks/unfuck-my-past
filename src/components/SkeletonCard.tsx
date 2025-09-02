@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Card, Placeholder } from 'react-bootstrap'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface SkeletonCardProps {
   lines?: number
@@ -17,29 +17,27 @@ export default function SkeletonCard({
   className = ''
 }: SkeletonCardProps) {
   return (
-    <Card className={`skeleton-card ${className}`}>
-      <Card.Body>
+    <Card className={`animate-pulse ${className}`}>
+      <CardContent className="p-6">
         {showImage && (
-          <Placeholder as="div" animation="glow" className="mb-3">
-            <Placeholder xs={12} style={{ height: '120px', borderRadius: '8px' }} />
-          </Placeholder>
+          <div className="bg-gray-200 rounded-lg mb-4" style={{ height: '120px' }} />
         )}
         
-        <Placeholder as={Card.Title} animation="glow">
-          <Placeholder xs={8} />
-        </Placeholder>
+        <div className="bg-gray-200 h-6 rounded mb-3" style={{ width: '60%' }} />
         
         {Array.from({ length: lines }).map((_, index) => (
-          <Placeholder key={index} as="p" animation="glow" className="mb-2">
-            <Placeholder xs={12} />
-            {index < lines - 1 && <Placeholder xs={10} />}
-          </Placeholder>
+          <div key={index} className="space-y-2 mb-3">
+            <div className="bg-gray-200 h-4 rounded" style={{ width: '100%' }} />
+            {index < lines - 1 && (
+              <div className="bg-gray-200 h-4 rounded" style={{ width: '80%' }} />
+            )}
+          </div>
         ))}
         
         {showButton && (
-          <Placeholder.Button variant="primary" xs={6} className="mt-3" />
+          <div className="bg-gray-200 h-10 rounded mt-4" style={{ width: '40%' }} />
         )}
-      </Card.Body>
+      </CardContent>
     </Card>
   )
 }

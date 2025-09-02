@@ -1,7 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Button, Alert, Spinner, Card, Form } from 'react-bootstrap'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { CreditCard, Loader2, AlertTriangle } from 'lucide-react'
 import { validateObject, sanitizeObject, PAYMENT_SCHEMA, PATTERNS } from '../lib/validation'
 
 interface PaymentFormProps {
@@ -9,14 +13,17 @@ interface PaymentFormProps {
   amount: number
   onSuccess: () => void
   onCancel: () => void
+  onLoadingComplete?: () => void
+  setPaymentFormLoading?: (loading: boolean) => void
 }
 
 interface FormErrors {
   [key: string]: string
 }
 
-export default function PaymentForm({ productType, amount, onSuccess, onCancel }: PaymentFormProps) {
+export default function PaymentForm({ productType, amount, onSuccess, onCancel, onLoadingComplete, setPaymentFormLoading }: PaymentFormProps) {
   const [loading, setLoading] = useState(false)
+  const [loadingStage, setLoadingStage] = useState('')
   const [error, setError] = useState('')
   const [cardNumber, setCardNumber] = useState('')
   const [expiryDate, setExpiryDate] = useState('')
@@ -144,6 +151,8 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
     }
 
     setLoading(true)
+    setPaymentFormLoading?.(true)
+    setLoadingStage('Creating payment...')
 
     try {
       console.log('Creating payment intent...')
@@ -159,11 +168,17 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
 
       if (!createResponse.ok) {
         const errorData = await createResponse.json()
-        throw new Error(errorData.error || 'Failed to create payment')
+        console.error('Payment intent creation failed:', errorData)
+        if (createResponse.status === 401) {
+          throw new Error('Authentication required. Please refresh the page and try again.')
+        }
+        throw new Error(errorData.error || 'Failed to create payment. Please try again.')
       }
 
       const { clientSecret, paymentIntentId } = await createResponse.json()
       console.log('Payment intent created:', paymentIntentId)
+
+      setLoadingStage('Processing payment...')
 
       // For testing purposes, we'll simulate a successful payment
       // In production, you'd use Stripe's confirmPayment with the actual card details
@@ -180,34 +195,68 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
 
       if (!confirmResponse.ok) {
         const errorData = await confirmResponse.json()
-        throw new Error(errorData.error || 'Failed to confirm payment')
+        console.error('Payment confirmation failed:', errorData)
+        throw new Error(errorData.error || 'Failed to confirm payment. Please try again.')
       }
 
       console.log('Payment confirmed successfully')
-      onSuccess()
+      
+      if (productType === 'diagnostic') {
+        setLoadingStage('Generating your comprehensive report...')
+        // Call onSuccess to trigger report generation
+        // The onSuccess callback will handle clearing the loading state when complete
+        onSuccess()
+      } else {
+        setLoadingStage('Preparing your 30-day program...')
+        // For program, we can complete immediately
+        onSuccess()
+        setLoading(false)
+        setPaymentFormLoading?.(false)
+        setLoadingStage('')
+      }
       
     } catch (error) {
       console.error('Payment error:', error)
       setError(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
+      setPaymentFormLoading?.(false)
+      setLoadingStage('')
     }
   }
 
   return (
-    <Card className="payment-form-card">
-      <Card.Header className="payment-header">
-        <h4 className="mb-0">
-          {productType === 'diagnostic' ? 'Full Diagnostic Report' : '30-Day Healing Program'}
-        </h4>
-      </Card.Header>
-      <Card.Body className="payment-body">
-        <div className="mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="mb-0">Total Amount</h5>
-            <h4 className="mb-0 text-primary-custom">{formatAmount(amount)}</h4>
+    <Card className="max-w-md mx-auto relative">
+      {loading && (
+        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center">
+          <div className="text-center">
+            <div className="relative mb-4">
+              <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-8 h-8 bg-blue-600 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Processing Your Payment</h3>
+            <p className="text-gray-600 mb-4">{loadingStage}</p>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+            </div>
           </div>
-          <p className="text-muted mb-0">
+        </div>
+      )}
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CreditCard className="h-5 w-5" />
+          {productType === 'diagnostic' ? 'Full Diagnostic Report' : '30-Day Healing Program'}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-3">
+            <h5 className="font-semibold">Total Amount</h5>
+            <h4 className="text-green-600 font-bold">{formatAmount(amount)}</h4>
+          </div>
+          <p className="text-gray-600 text-sm">
             {productType === 'diagnostic' 
               ? 'Complete trauma mapping, detailed pattern analysis, and personalized recommendations'
               : 'Complete 30-day structured healing program with daily tasks, journaling, and AI guidance'
@@ -216,121 +265,120 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel }
         </div>
 
         {error && (
-          <Alert variant="danger" className="mb-3 alert-custom">
-            {error}
-          </Alert>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          </div>
         )}
 
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
-            <Form.Label>Cardholder Name</Form.Label>
-            <Form.Control
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="name">Cardholder Name</Label>
+            <Input
+              id="name"
               type="text"
               placeholder="John Doe"
               value={name}
               onChange={(e) => handleFieldChange('name', e.target.value)}
-              isInvalid={!!errors.name}
+              className={errors.name ? 'border-red-500' : ''}
               required
-              className="form-control-custom"
             />
-            <Form.Control.Feedback type="invalid">
-              {errors.name}
-            </Form.Control.Feedback>
-          </Form.Group>
+            {errors.name && (
+              <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+            )}
+          </div>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Card Number</Form.Label>
-            <Form.Control
+          <div>
+            <Label htmlFor="cardNumber">Card Number</Label>
+            <Input
+              id="cardNumber"
               type="text"
               placeholder="4242 4242 4242 4242"
               value={cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
               onChange={(e) => handleFieldChange('cardNumber', e.target.value)}
               maxLength={19}
-              isInvalid={!!errors.cardNumber}
+              className={errors.cardNumber ? 'border-red-500' : ''}
               required
-              className="form-control-custom"
             />
-            <Form.Control.Feedback type="invalid">
-              {errors.cardNumber}
-            </Form.Control.Feedback>
-            <Form.Text className="text-muted">
+            {errors.cardNumber && (
+              <p className="text-red-500 text-sm mt-1">{errors.cardNumber}</p>
+            )}
+            <p className="text-gray-500 text-sm mt-1">
               For testing, use: 4242 4242 4242 4242
-            </Form.Text>
-          </Form.Group>
+            </p>
+          </div>
 
-          <div className="row">
-            <div className="col-md-6">
-              <Form.Group className="mb-3">
-                <Form.Label>Expiry Date</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="MM/YY"
-                  value={expiryDate}
-                  onChange={(e) => handleFieldChange('expiryDate', e.target.value)}
-                  maxLength={5}
-                  isInvalid={!!errors.expiryDate}
-                  required
-                  className="form-control-custom"
-                />
-                <Form.Control.Feedback type="invalid">
-                  {errors.expiryDate}
-                </Form.Control.Feedback>
-              </Form.Group>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="expiryDate">Expiry Date</Label>
+              <Input
+                id="expiryDate"
+                type="text"
+                placeholder="MM/YY"
+                value={expiryDate}
+                onChange={(e) => handleFieldChange('expiryDate', e.target.value)}
+                maxLength={5}
+                className={errors.expiryDate ? 'border-red-500' : ''}
+                required
+              />
+              {errors.expiryDate && (
+                <p className="text-red-500 text-sm mt-1">{errors.expiryDate}</p>
+              )}
             </div>
-            <div className="col-md-6">
-              <Form.Group className="mb-3">
-                <Form.Label>CVC</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="123"
-                  value={cvc}
-                  onChange={(e) => handleFieldChange('cvc', e.target.value)}
-                  maxLength={4}
-                  isInvalid={!!errors.cvc}
-                  required
-                  className="form-control-custom"
-                />
-                <Form.Control.Feedback type="invalid">
-                  {errors.cvc}
-                </Form.Control.Feedback>
-              </Form.Group>
+            <div>
+              <Label htmlFor="cvc">CVC</Label>
+              <Input
+                id="cvc"
+                type="text"
+                placeholder="123"
+                value={cvc}
+                onChange={(e) => handleFieldChange('cvc', e.target.value)}
+                maxLength={4}
+                className={errors.cvc ? 'border-red-500' : ''}
+                required
+              />
+              {errors.cvc && (
+                <p className="text-red-500 text-sm mt-1">{errors.cvc}</p>
+              )}
             </div>
           </div>
 
-          <div className="d-flex gap-2 mt-4">
+          <div className="flex gap-3 pt-4">
             <Button
-              variant="outline-secondary"
+              type="button"
+              variant="outline"
               onClick={onCancel}
               disabled={loading}
-              className="flex-fill"
+              className="flex-1"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              variant="primary"
               disabled={loading || Object.keys(errors).length > 0}
-              className="flex-fill"
+              className="flex-1"
             >
               {loading ? (
                 <>
-                  <Spinner animation="border" size="sm" className="me-2" />
-                  Processing...
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {loadingStage || 'Processing...'}
                 </>
               ) : (
                 `Pay ${formatAmount(amount)}`
               )}
             </Button>
           </div>
-        </Form>
+        </form>
 
-        <div className="mt-3">
-          <small className="text-muted">
+        <div className="mt-4">
+          <p className="text-gray-500 text-xs">
             <strong>Test Mode:</strong> This is a simplified payment form for testing. 
             Use test card number 4242 4242 4242 4242 with any future expiry date and CVC.
-          </small>
+          </p>
         </div>
-      </Card.Body>
+      </CardContent>
     </Card>
   )
 }

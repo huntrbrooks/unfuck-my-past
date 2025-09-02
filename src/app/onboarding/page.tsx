@@ -1,426 +1,589 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Container, Row, Col, Card, ProgressBar, Button, Form, Alert } from 'react-bootstrap'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@clerk/nextjs'
+import { useUser } from '@clerk/nextjs'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { AlertTriangle, Loader2, CheckCircle } from 'lucide-react'
 
 interface OnboardingData {
+  ageBracket: string
   tone: string
   voice: string
   rawness: string
   depth: string
   learning: string
   engagement: string
+  goals: string[]
+  experience: string
+  timeCommitment: string
+  locationPermission: boolean
   safety: {
     crisisSupport: boolean
     contentWarnings: boolean
     skipTriggers: boolean
   }
-  goals: string[]
-  experience: string
-  timeCommitment: string
 }
 
-const onboardingSteps = [
-  {
-    id: 1,
-    title: "What's your communication style?",
-    question: "How do you prefer to be spoken to?",
-    options: [
-      { value: "direct", label: "Direct & straight to the point" },
-      { value: "gentle", label: "Gentle & supportive" },
-      { value: "raw", label: "Raw & unfiltered" },
-      { value: "analytical", label: "Analytical & detailed" }
-    ],
-    field: "tone"
-  },
-  {
-    id: 2,
-    title: "Your learning preference",
-    question: "How do you learn best?",
-    options: [
-      { value: "visual", label: "Visual examples & diagrams" },
-      { value: "text", label: "Written explanations" },
-      { value: "audio", label: "Voice recordings" },
-      { value: "interactive", label: "Interactive exercises" }
-    ],
-    field: "learning"
-  },
-  {
-    id: 3,
-    title: "Content intensity",
-    question: "How raw can we get?",
-    options: [
-      { value: "mild", label: "Keep it light & positive" },
-      { value: "moderate", label: "Some real talk, but balanced" },
-      { value: "intense", label: "Go deep, no sugar coating" },
-      { value: "extreme", label: "Maximum intensity, full truth" }
-    ],
-    field: "rawness"
-  },
-  {
-    id: 4,
-    title: "Exploration depth",
-    question: "How deep do you want to go?",
-    options: [
-      { value: "surface", label: "Surface level insights" },
-      { value: "moderate", label: "Moderate depth" },
-      { value: "deep", label: "Deep psychological work" },
-      { value: "profound", label: "Profound transformation" }
-    ],
-    field: "depth"
-  },
-  {
-    id: 5,
-    title: "Engagement style",
-    question: "How do you like to engage?",
-    options: [
-      { value: "passive", label: "Read & reflect quietly" },
-      { value: "active", label: "Active participation" },
-      { value: "challenging", label: "Challenge me & push back" },
-      { value: "collaborative", label: "Work together as partners" }
-    ],
-    field: "engagement"
-  },
-  {
-    id: 6,
-    title: "Voice preference",
-    question: "What voice resonates with you?",
-    options: [
-      { value: "therapist", label: "Professional therapist" },
-      { value: "friend", label: "Supportive friend" },
-      { value: "coach", label: "Tough love coach" },
-      { value: "mentor", label: "Wise mentor" }
-    ],
-    field: "voice"
-  },
-  {
-    id: 7,
-    title: "Safety & support",
-    question: "What safety measures do you need?",
-    options: [
-      { value: "crisisSupport", label: "Crisis support resources" },
-      { value: "contentWarnings", label: "Content warnings" },
-      { value: "skipTriggers", label: "Skip triggering content" }
-    ],
-    field: "safety",
-    multiSelect: true
-  },
-  {
-    id: 8,
-    title: "Your goals",
-    question: "What are you hoping to achieve?",
-    options: [
-      { value: "healing", label: "Heal from past trauma" },
-      { value: "growth", label: "Personal growth" },
-      { value: "clarity", label: "Gain clarity & understanding" },
-      { value: "change", label: "Change behavior patterns" }
-    ],
-    field: "goals",
-    multiSelect: true
-  },
-  {
-    id: 9,
-    title: "Your experience",
-    question: "What's your experience with self-help?",
-    options: [
-      { value: "beginner", label: "New to this journey" },
-      { value: "some", label: "Some experience" },
-      { value: "experienced", label: "Experienced with therapy/self-help" },
-      { value: "advanced", label: "Advanced practitioner" }
-    ],
-    field: "experience"
-  },
-  {
-    id: 10,
-    title: "Time commitment",
-    question: "How much time can you commit?",
-    options: [
-      { value: "5min", label: "5 minutes per day" },
-      { value: "15min", label: "15 minutes per day" },
-      { value: "30min", label: "30 minutes per day" },
-      { value: "1hour", label: "1 hour per day" }
-    ],
-    field: "timeCommitment"
-  }
-]
-
 export default function Onboarding() {
+  const { user, isLoaded } = useUser()
   const router = useRouter()
-  const { isSignedIn, isLoaded } = useAuth()
-  const [currentStep, setCurrentStep] = useState(0)
+  const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [onboardingData, setOnboardingData] = useState<OnboardingData>(() => {
-    // Try to restore onboarding data from localStorage
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('onboardingData')
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          // Ensure goals is always an array
-          if (parsed.goals && !Array.isArray(parsed.goals)) {
-            parsed.goals = Object.values(parsed.goals)
-          }
-          return parsed
-        } catch (e) {
-          console.error('Failed to parse stored onboarding data:', e)
-        }
-      }
-    }
-    
-    return {
-      tone: '',
-      voice: '',
-      rawness: '',
-      depth: '',
-      learning: '',
-      engagement: '',
-      safety: {
-        crisisSupport: false,
-        contentWarnings: false,
-        skipTriggers: false
-      },
-      goals: [],
-      experience: '',
-      timeCommitment: ''
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submissionProgress, setSubmissionProgress] = useState(0)
+  
+  const [formData, setFormData] = useState<OnboardingData>({
+    ageBracket: '',
+    tone: 'gentle',
+    voice: 'friend',
+    rawness: 'moderate',
+    depth: 'moderate',
+    learning: 'text',
+    engagement: 'passive',
+    goals: [],
+    experience: 'beginner',
+    timeCommitment: '15min',
+    locationPermission: false,
+    safety: {
+      crisisSupport: false,
+      contentWarnings: true,
+      skipTriggers: true
     }
   })
 
-  const currentStepData = onboardingSteps[currentStep]
-  const progress = ((currentStep + 1) / onboardingSteps.length) * 100
+  useEffect(() => {
+    if (isLoaded && !user) {
+      router.push('/sign-in')
+    }
+  }, [isLoaded, user, router])
 
-  const handleOptionSelect = (value: string) => {
-    if (currentStepData.multiSelect) {
-      // Handle multi-select fields
-      if (currentStepData.field === 'safety') {
-        setOnboardingData(prev => ({
-          ...prev,
-          safety: {
-            ...prev.safety,
-            [value]: !prev.safety[value as keyof typeof prev.safety]
-          }
-        }))
-      } else if (currentStepData.field === 'goals') {
-        setOnboardingData(prev => ({
-          ...prev,
-          goals: prev.goals.includes(value) 
-            ? prev.goals.filter(g => g !== value)
-            : [...prev.goals, value]
-        }))
+  const handleInputChange = (field: keyof OnboardingData, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+    setError('') // Clear any previous errors
+  }
+
+  const handleSafetyChange = (field: keyof OnboardingData['safety'], value: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      safety: {
+        ...prev.safety,
+        [field]: value
       }
-    } else {
-      // Handle single-select fields
-      setOnboardingData(prev => ({
-        ...prev,
-        [currentStepData.field]: value
-      }))
-    }
+    }))
+    setError('') // Clear any previous errors
   }
 
-  const handleNext = () => {
-    console.log('Current step data:', currentStepData)
-    console.log('Current onboarding data:', onboardingData)
-    
-    if (currentStep < onboardingSteps.length - 1) {
+  const handleGoalToggle = (goal: string) => {
+    setFormData(prev => ({
+      ...prev,
+      goals: prev.goals.includes(goal)
+        ? prev.goals.filter(g => g !== goal)
+        : [...prev.goals, goal]
+    }))
+    setError('') // Clear any previous errors
+  }
+
+  const nextStep = () => {
+    if (currentStep < 6) {
       setCurrentStep(currentStep + 1)
-    } else {
-      // Save onboarding data and proceed to diagnostic
-      handleComplete()
+      setError('') // Clear errors when moving to next step
     }
   }
 
-  const handleBack = () => {
-    if (currentStep > 0) {
+  const prevStep = () => {
+    if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
+      setError('') // Clear errors when moving to previous step
     }
   }
 
-  const handleComplete = async () => {
-    // Debug: Log the data being sent
-    console.log('Onboarding data being sent:', JSON.stringify(onboardingData, null, 2))
-    
-    // Check if user is signed in
-    if (!isSignedIn) {
-      // Store onboarding data in localStorage temporarily
-      localStorage.setItem('onboardingData', JSON.stringify(onboardingData))
-      // Redirect to sign in
-      router.push('/sign-in?redirect=/onboarding')
+  const handleSubmit = async () => {
+    if (!user) {
+      setError('User not authenticated')
       return
     }
 
+    // Validate required fields
+    if (!formData.ageBracket) {
+      setError('Please select your age bracket')
+      return
+    }
+    
+    if (formData.goals.length === 0) {
+      setError('Please select at least one goal')
+      return
+    }
+
+    setIsSubmitting(true)
+    setError('')
+    setSubmissionProgress(0)
+
     try {
-      setLoading(true)
-      
-      // Save onboarding data to database
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setSubmissionProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 200)
+
       const response = await fetch('/api/onboarding', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(onboardingData),
+        body: JSON.stringify({
+          userId: user.id,
+          ...formData
+        }),
       })
 
+      clearInterval(progressInterval)
+      setSubmissionProgress(100)
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
+        const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to save onboarding data')
       }
 
-      // Clear any stored onboarding data
-      localStorage.removeItem('onboardingData')
-      
-      // Generate personalized diagnostic questions (non-blocking)
-      fetch('/api/diagnostic/generate-questions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-      .then(questionsResponse => {
-        if (questionsResponse.ok) {
-          console.log('Personalized questions generated successfully')
-        } else {
-          console.log('Failed to generate personalized questions, will use fallback')
-        }
-      })
-      .catch(error => {
-        console.log('Error generating personalized questions:', error)
-      })
-      
-      // Redirect to diagnostic immediately (don't wait for questions generation)
-      router.push('/diagnostic')
-    } catch (error) {
-      console.error('Error saving onboarding data:', error)
-      setError(`Error: ${error instanceof Error ? error.message : 'Failed to save onboarding data'}`)
+             // Add a longer delay to give GPT-4.1 time to analyze and generate questions
+       await new Promise(resolve => setTimeout(resolve, 3000))
+       
+       router.push('/diagnostic?generating=true')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      setSubmissionProgress(0)
     } finally {
-      setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
-  // Clear any corrupted localStorage data on component mount
-  React.useEffect(() => {
-    const stored = localStorage.getItem('onboardingData')
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        if (parsed.goals && !Array.isArray(parsed.goals)) {
-          // Clear corrupted data
-          localStorage.removeItem('onboardingData')
-          console.log('Cleared corrupted onboarding data from localStorage')
-        }
-      } catch (e) {
-        // Clear invalid data
-        localStorage.removeItem('onboardingData')
-        console.log('Cleared invalid onboarding data from localStorage')
-      }
-    }
-  }, [])
-
-  const isOptionSelected = (value: string) => {
-    if (currentStepData.multiSelect) {
-      if (currentStepData.field === 'safety') {
-        return onboardingData.safety[value as keyof typeof onboardingData.safety]
-      } else if (currentStepData.field === 'goals') {
-        return onboardingData.goals.includes(value)
-      }
-      return false
-    } else {
-      return onboardingData[currentStepData.field as keyof OnboardingData] === value
-    }
-  }
-
-  // Show loading while Clerk is initializing
   if (!isLoaded) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     )
   }
 
+  if (!user) {
+    return null
+  }
+
   return (
-    <>
-      <Container className="py-5">
-        <Row className="justify-content-center">
-          <Col lg={8}>
-            <Card className="border-0 shadow-sm">
-              <Card.Body className="p-5">
-                {/* Progress */}
-                <div className="mb-4">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <small className="text-muted">Step {currentStep + 1} of {onboardingSteps.length}</small>
-                    <small className="text-muted">{Math.round(progress)}% complete</small>
-                  </div>
-                  <ProgressBar now={progress} className="mb-3" />
-                </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-2xl mx-auto px-4">
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-700">
+              Step {currentStep} of 6
+            </span>
+            <span className="text-sm text-gray-500">
+              {Math.round((currentStep / 6) * 100)}% Complete
+            </span>
+          </div>
+          <Progress value={(currentStep / 6) * 100} className="w-full" />
+        </div>
 
-                {/* Error Display */}
-                {error && (
-                  <Alert variant="danger" dismissible onClose={() => setError('')} className="mb-4">
-                    {error}
-                  </Alert>
-                )}
+        {/* Error Display */}
+        {error && (
+          <Card className="mb-6 border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                <p className="text-red-700">{error}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-                {/* Step Content */}
-                <div className="text-center mb-4">
-                  <h2 className="h3 mb-3">{currentStepData.title}</h2>
-                  <p className="text-muted mb-4">{currentStepData.question}</p>
-                </div>
+        {/* Submission Progress */}
+        {isSubmitting && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                                 <h3 className="text-lg font-semibold mb-2">Processing Your Preferences</h3>
+                 <p className="text-gray-600 mb-4">
+                   Analyzing your responses with GPT-4.1 and generating personalized questions...
+                 </p>
+                <Progress value={submissionProgress} className="w-full mb-2" />
+                <p className="text-sm text-gray-500">{submissionProgress}% complete</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-                {/* Options */}
-                <div className="mb-4">
-                  {currentStepData.options.map((option) => (
-                    <div key={option.value} className="mb-3">
+        {/* Step Content */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {currentStep === 1 && 'Tell us about yourself'}
+              {currentStep === 2 && 'How would you like to communicate?'}
+              {currentStep === 3 && 'What are your goals?'}
+              {currentStep === 4 && 'What\'s your experience level?'}
+              {currentStep === 5 && 'Location & Personalization'}
+              {currentStep === 6 && 'Safety & Preferences'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Step 1: Age Bracket */}
+            {currentStep === 1 && (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    What age bracket do you fall into?
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['18-25', '26-35', '36-45', '46-55', '56-65', '65+'].map(age => (
                       <Button
-                        variant={isOptionSelected(option.value) ? "primary" : "outline-primary"}
-                        className="w-100 text-start p-3"
-                        onClick={() => handleOptionSelect(option.value)}
+                        key={age}
+                        variant={formData.ageBracket === age ? 'default' : 'outline'}
+                        onClick={() => handleInputChange('ageBracket', age)}
+                        className="capitalize"
                       >
-                        {option.label}
+                        {age}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Communication Preferences */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Communication Tone
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['gentle', 'direct', 'coaching', 'casual'].map(tone => (
+                      <Button
+                        key={tone}
+                        variant={formData.tone === tone ? 'default' : 'outline'}
+                        onClick={() => handleInputChange('tone', tone)}
+                        className="capitalize"
+                      >
+                        {tone}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Voice Style
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['friend', 'mentor', 'therapist', 'coach'].map(voice => (
+                      <Button
+                        key={voice}
+                        variant={formData.voice === voice ? 'default' : 'outline'}
+                        onClick={() => handleInputChange('voice', voice)}
+                        className="capitalize"
+                      >
+                        {voice}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Content Intensity
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {['mild', 'moderate', 'intense'].map(rawness => (
+                      <Button
+                        key={rawness}
+                        variant={formData.rawness === rawness ? 'default' : 'outline'}
+                        onClick={() => handleInputChange('rawness', rawness)}
+                        className="capitalize"
+                      >
+                        {rawness}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Exploration Depth
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['surface', 'moderate', 'deep', 'profound'].map(depth => (
+                      <Button
+                        key={depth}
+                        variant={formData.depth === depth ? 'default' : 'outline'}
+                        onClick={() => handleInputChange('depth', depth)}
+                        className="capitalize"
+                      >
+                        {depth}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Goals */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    What are your primary goals? (Select all that apply)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      'healing', 'growth', 'self-discovery', 'trauma-recovery',
+                      'relationships', 'confidence', 'peace', 'purpose'
+                    ].map(goal => (
+                      <Button
+                        key={goal}
+                        variant={formData.goals.includes(goal) ? 'default' : 'outline'}
+                        onClick={() => handleGoalToggle(goal)}
+                        className="capitalize"
+                      >
+                        {goal.replace('-', ' ')}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Learning Style
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['text', 'interactive', 'visual', 'audio'].map(learning => (
+                      <Button
+                        key={learning}
+                        variant={formData.learning === learning ? 'default' : 'outline'}
+                        onClick={() => handleInputChange('learning', learning)}
+                        className="capitalize"
+                      >
+                        {learning}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Engagement Level
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {['passive', 'moderate', 'active'].map(engagement => (
+                      <Button
+                        key={engagement}
+                        variant={formData.engagement === engagement ? 'default' : 'outline'}
+                        onClick={() => handleInputChange('engagement', engagement)}
+                        className="capitalize"
+                      >
+                        {engagement}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Experience */}
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Experience Level
+                  </label>
+                  <div className="space-y-3">
+                    {[
+                      { value: 'beginner', label: 'Beginner - New to healing work' },
+                      { value: 'intermediate', label: 'Intermediate - Some experience' },
+                      { value: 'experienced', label: 'Experienced - Regular practice' }
+                    ].map(exp => (
+                      <Button
+                        key={exp.value}
+                        variant={formData.experience === exp.value ? 'default' : 'outline'}
+                        onClick={() => handleInputChange('experience', exp.value)}
+                        className="w-full justify-start text-left h-auto p-4"
+                      >
+                        <div>
+                          <div className="font-medium capitalize">{exp.value}</div>
+                          <div className="text-sm opacity-80">{exp.label}</div>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Time Commitment
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['5min', '15min', '30min', '60min'].map(time => (
+                      <Button
+                        key={time}
+                        variant={formData.timeCommitment === time ? 'default' : 'outline'}
+                        onClick={() => handleInputChange('timeCommitment', time)}
+                      >
+                        {time}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Location & Personalization */}
+            {currentStep === 5 && (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Location Access for Weather Personalization
+                  </label>
+                  <div className="p-4 border rounded-lg bg-blue-50">
+                    <div className="flex items-start gap-3">
+                      <div className="text-blue-600 mt-1">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">Personalized Weather Insights</h4>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Allow location access to get personalized weather recommendations for your healing practice. 
+                          This will enhance your daily program with weather-specific guidance and seasonal practices.
+                        </p>
+                        <div className="flex gap-3">
+                          <Button
+                            variant={formData.locationPermission ? 'default' : 'outline'}
+                            onClick={() => handleInputChange('locationPermission', true)}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Enable Location Access
+                          </Button>
+                          <Button
+                            variant={!formData.locationPermission ? 'default' : 'outline'}
+                            onClick={() => handleInputChange('locationPermission', false)}
+                          >
+                            Skip for Now
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 6: Safety */}
+            {currentStep === 6 && (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Safety Preferences
+                  </label>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="font-medium">Content Warnings</div>
+                        <div className="text-sm text-gray-600">Get warned about potentially triggering content</div>
+                      </div>
+                      <Button
+                        variant={formData.safety.contentWarnings ? 'default' : 'outline'}
+                        onClick={() => handleSafetyChange('contentWarnings', !formData.safety.contentWarnings)}
+                        size="sm"
+                      >
+                        {formData.safety.contentWarnings ? 'On' : 'Off'}
                       </Button>
                     </div>
-                  ))}
-                </div>
 
-                {/* Navigation */}
-                <div className="d-flex justify-content-between">
-                  <Button
-                    variant="outline-secondary"
-                    onClick={handleBack}
-                    disabled={currentStep === 0}
-                  >
-                    Back
-                  </Button>
-                  
-                  <Button
-                    variant="primary"
-                    onClick={handleNext}
-                    disabled={
-                      loading ||
-                      (currentStepData.multiSelect 
-                        ? (currentStepData.field === 'safety' && !(onboardingData.safety.crisisSupport || onboardingData.safety.contentWarnings || onboardingData.safety.skipTriggers)) ||
-                          (currentStepData.field === 'goals' && onboardingData.goals.length === 0)
-                        : !onboardingData[currentStepData.field as keyof OnboardingData])
-                    }
-                  >
-                    {loading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        {currentStep === onboardingSteps.length - 1 ? 'Completing...' : 'Loading...'}
-                      </>
-                    ) : (
-                      currentStep === onboardingSteps.length - 1 ? 'Complete' : 'Next'
-                    )}
-                  </Button>
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="font-medium">Skip Triggers</div>
+                        <div className="text-sm text-gray-600">Skip content that might be triggering</div>
+                      </div>
+                      <Button
+                        variant={formData.safety.skipTriggers ? 'default' : 'outline'}
+                        onClick={() => handleSafetyChange('skipTriggers', !formData.safety.skipTriggers)}
+                        size="sm"
+                      >
+                        {formData.safety.skipTriggers ? 'On' : 'Off'}
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="font-medium">Crisis Support</div>
+                        <div className="text-sm text-gray-600">Access to crisis resources if needed</div>
+                      </div>
+                      <Button
+                        variant={formData.safety.crisisSupport ? 'default' : 'outline'}
+                        onClick={() => handleSafetyChange('crisisSupport', !formData.safety.crisisSupport)}
+                        size="sm"
+                      >
+                        {formData.safety.crisisSupport ? 'On' : 'Off'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
-    </>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex justify-between pt-6">
+              <Button
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 1 || isSubmitting}
+              >
+                Previous
+              </Button>
+              
+              {currentStep < 4 ? (
+                <Button onClick={nextStep} disabled={isSubmitting}>
+                  Next
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleSubmit} 
+                  disabled={isSubmitting || formData.goals.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      Complete Setup
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }
