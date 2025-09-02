@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, users, diagnosticResponses, progress, purchases, diagnosticSummaries } from '../../../db'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 
 export async function POST(request: NextRequest) {
   try {
@@ -93,8 +93,10 @@ async function handleDiagnosticComprehensiveTXT(userId: string, safetyData: any)
     const reportResult = await db
       .select()
       .from(diagnosticSummaries)
-      .where(eq(diagnosticSummaries.userId, userId))
-      .where(eq(diagnosticSummaries.type, 'comprehensive_report'))
+      .where(and(
+        eq(diagnosticSummaries.userId, userId),
+        eq(diagnosticSummaries.type, 'comprehensive_report')
+      ))
       .limit(1)
 
     if (!reportResult || reportResult.length === 0) {
@@ -274,7 +276,7 @@ Generated on ${new Date().toLocaleDateString()}
 `
 
     responses.forEach((resp, index) => {
-      const questionText = typeof resp.question === 'object' ? resp.question.text || `Question ${index + 1}` : `Question ${index + 1}`
+      const questionText = resp.question && typeof resp.question === 'object' && 'text' in resp.question ? (resp.question as any).text || `Question ${index + 1}` : `Question ${index + 1}`
       const timestamp = resp.timestamp ? new Date(resp.timestamp).toLocaleString() : 'Unknown time'
       
       text += `\n${'='.repeat(80)}\n`
@@ -331,7 +333,7 @@ export async function GET(request: NextRequest) {
 
     // Get diagnostic responses
     const answersResult = await db.select({
-      questionId: diagnosticResponses.questionId,
+      question: diagnosticResponses.question,
       content: diagnosticResponses.response,
       summary: diagnosticResponses.insight,
       createdAt: diagnosticResponses.createdAt
@@ -374,7 +376,7 @@ export async function GET(request: NextRequest) {
       },
       diagnostic: {
         responses: answersResult.map(answer => ({
-          question: answer.questionId,
+          question: answer.question,
           response: answer.content || '',
           insight: answer.summary || '',
           timestamp: answer.createdAt?.toISOString() || ''

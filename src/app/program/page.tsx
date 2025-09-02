@@ -25,6 +25,7 @@ interface PersonalizedDay {
   focus: string
   content: {
     introduction: string
+    mainFocus: string
     guidedPractice: string
     challenge: string
     journalingPrompt: string
@@ -274,7 +275,9 @@ export default function Program() {
       } else if (line.includes('🛠️ TOOLS & RESOURCES') || line.includes('## 🛠️ Tools & Resources')) {
         currentSection = 'tools'
       } else if (currentSection && line.trim()) {
-        sections[currentSection] += line + '\n'
+        if (currentSection in sections) {
+          sections[currentSection as keyof typeof sections] += line + '\n'
+        }
       }
     }
 
@@ -331,7 +334,7 @@ export default function Program() {
       setCompletingDay(true)
       
       // Mark day as completed locally
-      setCompletedDays(prev => new Set([...prev, currentDay.day]))
+      setCompletedDays(prev => new Set(Array.from(prev).concat(currentDay.day)))
       setShowNextDayButton(true)
 
       // Generate PDF for completed day

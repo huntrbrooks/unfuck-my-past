@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     // Format the responses
     const formattedResponses = userResponses.map((resp, index) => ({
-      question: typeof resp.question === 'object' ? resp.question.text || `Question ${index + 1}` : `Question ${index + 1}`,
+      question: resp.question && typeof resp.question === 'object' && 'text' in resp.question ? (resp.question as any).text || `Question ${index + 1}` : `Question ${index + 1}`,
       response: resp.response || '',
       insight: resp.insight || '',
       timestamp: resp.timestamp?.toISOString() || new Date().toISOString()

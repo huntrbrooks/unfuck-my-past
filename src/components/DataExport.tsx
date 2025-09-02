@@ -4,7 +4,15 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Download, FileText, FileSpreadsheet, FileCode, Loader2, BookOpen, Calendar, FileCheck } from 'lucide-react'
-import { exportToJSON, exportToCSV, exportToPDF, downloadFile, ExportData } from '../lib/export-utils'
+import { downloadFile } from '../lib/export-utils'
+
+interface ExportResponse {
+  success: boolean
+  data: string
+  filename: string
+  mimeType: string
+  error?: string
+}
 
 interface DataExportProps {
   userId: string
@@ -36,7 +44,7 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
         throw new Error('Export failed')
       }
 
-      const data: ExportData = await response.json()
+      const data: ExportResponse = await response.json()
       
       if (data.success) {
         downloadFile(data.data, data.filename, data.mimeType)

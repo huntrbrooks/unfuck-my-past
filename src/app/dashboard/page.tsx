@@ -12,6 +12,7 @@ import DiagnosticReport from '../../components/DiagnosticReport'
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser()
+  const userId = user?.id
 
   if (!isLoaded) {
     return (
@@ -245,8 +246,8 @@ export default function Dashboard() {
         {/* Reports Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           <div className="lg:col-span-2">
-            <DiagnosticReport className="mb-4" />
-            <DataExport />
+            {userId && <DiagnosticReport userId={userId} />}
+            {userId && <DataExport userId={userId} />}
           </div>
           
           <Card>

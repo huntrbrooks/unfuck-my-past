@@ -51,10 +51,10 @@ export default function Diagnostic() {
       // Clean up the URL
       window.history.replaceState({}, '', '/diagnostic')
     } else {
-      // Load questions on component mount
-      if (questions.length === 0 && !isLoadingQuestions && !loading) {
-        console.log('Loading questions on mount...')
-        loadQuestions()
+    // Load questions on component mount
+    if (questions.length === 0 && !isLoadingQuestions && !loading) {
+      console.log('Loading questions on mount...')
+      loadQuestions()
       }
     }
   }, [])
@@ -299,27 +299,27 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
   })
 
   if (loading && questions.length === 0) {
-          return (
-        <>
+    return (
+      <>
          <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
            <div className="max-w-2xl w-full">
              <Card className="border-0 shadow-xl">
                <CardContent className="p-8">
-                 <LoadingSpinner 
-                   size="lg" 
-                   text="Loading your personalized questions..." 
-                 />
+                  <LoadingSpinner 
+                    size="lg" 
+                    text="Loading your personalized questions..." 
+                  />
                </CardContent>
-             </Card>
+              </Card>
            </div>
          </div>
-        </>
-      )
+      </>
+    )
   }
 
   if (error) {
-          return (
-        <>
+    return (
+      <>
          <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
            <div className="max-w-2xl w-full">
              <Card className="border-0 shadow-xl">
@@ -332,20 +332,20 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
                    <p className="text-red-700 mb-6">{error}</p>
                    <div className="flex flex-col sm:flex-row gap-3">
                      <Button variant="outline" onClick={loadQuestions}>
-                       Try Again
-                     </Button>
+                    Try Again
+                  </Button>
                      <Button variant="outline" onClick={generatePersonalizedQuestions}>
-                       Generate Personalized Questions
-                     </Button>
+                    Generate Personalized Questions
+                  </Button>
                      <Button variant="outline" onClick={testAIServices}>
-                       Test AI Services
-                     </Button>
-                     {error.includes('sign in') && (
+                    Test AI Services
+                  </Button>
+                  {error.includes('sign in') && (
                        <Button onClick={() => router.push('/sign-in?redirect=/diagnostic')}>
-                         Sign In
-                       </Button>
-                     )}
-                   </div>
+                      Sign In
+                    </Button>
+                  )}
+                </div>
                  </div>
                </CardContent>
              </Card>
@@ -382,7 +382,7 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
                     <li>• You haven't completed the onboarding process</li>
                     <li>• The AI service failed to generate questions</li>
                     <li>• There was an issue loading your personalized questions</li>
-                  </ul>
+                </ul>
                 </div>
                 <div className="flex gap-3 justify-center">
                   <Button variant="outline" onClick={loadQuestions}>
@@ -400,138 +400,138 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
     )
   }
 
-      return (
-      <>
+  return (
+    <>
        <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 py-8">
          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
            <Card className="border-0 shadow-xl">
              <CardContent className="p-8">
-               {/* Progress */}
+                {/* Progress */}
                <div className="mb-8">
                  <div className="flex justify-between items-center mb-3">
                    <span className="text-sm text-gray-600">Question {currentQuestionIndex + 1} of {questions.length}</span>
                    <span className="text-sm text-gray-600">{Math.round(progress)}% complete</span>
-                 </div>
+                  </div>
                  <Progress value={progress} className="h-2" />
-               </div>
+                </div>
 
-               {/* Question */}
+                {/* Question */}
                <div className="mb-8">
-                 {currentQuestion ? (
-                   <>
+                  {currentQuestion ? (
+                    <>
                      <h2 className="text-2xl font-bold text-gray-900 mb-4">{currentQuestion.question}</h2>
-                     {currentQuestion.followUp && (
+                      {currentQuestion.followUp && (
                        <p className="text-lg text-gray-600 mb-4">{currentQuestion.followUp}</p>
-                     )}
-                   </>
-                 ) : (
-                   <div className="text-center">
-                     <LoadingSpinner size="md" text="Loading question..." />
-                   </div>
-                 )}
-               </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <LoadingSpinner size="md" text="Loading question..." />
+                    </div>
+                  )}
+                </div>
 
-               {/* Response Options or Text/Voice Input */}
-               {currentQuestion?.options && currentQuestion.options.length > 0 ? (
+                {/* Response Options or Text/Voice Input */}
+                {currentQuestion?.options && currentQuestion.options.length > 0 ? (
                  <div className="mb-8">
                    <div className="space-y-3">
-                     {currentQuestion.options.map((option, index) => (
-                       <Button
-                         key={index}
+                    {currentQuestion.options.map((option, index) => (
+                      <Button
+                        key={index}
                          variant={currentResponse === option ? "default" : "outline"}
                          className={`w-full justify-start p-4 h-auto text-left ${
                            currentResponse === option 
                              ? 'bg-green-600 hover:bg-green-700 border-green-600' 
                              : 'hover:bg-gray-50'
                          }`}
-                         onClick={() => setCurrentResponse(option)}
-                         disabled={generatingInsight}
-                       >
+                        onClick={() => setCurrentResponse(option)}
+                        disabled={generatingInsight}
+                      >
                          <div className="flex items-center gap-3">
                            {currentResponse === option && (
                              <CheckCircle className="h-5 w-5 text-white" />
                            )}
                            <span className="text-base">{option}</span>
                          </div>
-                       </Button>
-                     ))}
+                      </Button>
+                    ))}
                    </div>
-                 </div>
-               ) : (
+                  </div>
+                ) : (
                  <div className="mb-8">
-                   {/* Input Mode Toggle */}
+                    {/* Input Mode Toggle */}
                    <div className="mb-6">
                      <div className="flex bg-gray-100 rounded-lg p-1">
-                       <Button
+                        <Button
                          variant={inputMode === 'text' ? 'default' : 'ghost'}
-                         onClick={() => setInputMode('text')}
-                         disabled={generatingInsight}
+                          onClick={() => setInputMode('text')}
+                          disabled={generatingInsight}
                          className="flex-1 flex items-center gap-2"
-                       >
+                        >
                          <Pencil className="h-4 w-4" />
-                         Type
-                       </Button>
-                       <Button
+                          Type
+                        </Button>
+                        <Button
                          variant={inputMode === 'voice' ? 'default' : 'ghost'}
-                         onClick={() => setInputMode('voice')}
-                         disabled={generatingInsight}
+                          onClick={() => setInputMode('voice')}
+                          disabled={generatingInsight}
                          className="flex-1 flex items-center gap-2"
-                       >
+                        >
                          <Mic className="h-4 w-4" />
-                         Voice
-                       </Button>
+                          Voice
+                        </Button>
                      </div>
-                   </div>
+                    </div>
 
-                   {/* Voice Input */}
-                   {inputMode === 'voice' && (
+                    {/* Voice Input */}
+                    {inputMode === 'voice' && (
                      <div className="mb-6">
-                       <VoiceRecorder
-                         onTranscription={handleVoiceTranscription}
-                         onError={handleVoiceError}
-                         disabled={generatingInsight}
-                         placeholder="Click to start recording your response..."
+                        <VoiceRecorder
+                          onTranscription={handleVoiceTranscription}
+                          onError={handleVoiceError}
+                          disabled={generatingInsight}
+                          placeholder="Click to start recording your response..."
                          className="mb-4"
-                         allowEdit={true}
-                       />
-                       {voiceError && (
+                          allowEdit={true}
+                        />
+                        {voiceError && (
                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                            <div className="flex items-center gap-3">
                              <AlertTriangle className="h-5 w-5 text-red-600" />
                              <p className="text-red-800">{voiceError}</p>
                            </div>
                          </div>
-                       )}
-                     </div>
-                   )}
+                        )}
+                      </div>
+                    )}
 
-                   {/* Text Input */}
-                   {inputMode === 'text' && (
+                    {/* Text Input */}
+                    {inputMode === 'text' && (
                      <div className="mb-6">
                        <Textarea
-                         placeholder="Share your thoughts here..."
-                         value={currentResponse}
-                         onChange={(e) => setCurrentResponse(e.target.value)}
-                         disabled={generatingInsight}
+                          placeholder="Share your thoughts here..."
+                          value={currentResponse}
+                          onChange={(e) => setCurrentResponse(e.target.value)}
+                          disabled={generatingInsight}
                          className="min-h-[120px] text-base"
-                       />
+                        />
                      </div>
-                   )}
+                    )}
 
-                   {/* Current Response Display */}
-                   {currentResponse && (
+                    {/* Current Response Display */}
+                    {currentResponse && (
                      <div className="mb-6">
                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                          <h4 className="font-semibold text-blue-900 mb-2">Your Response:</h4>
                          <p className="text-blue-800">{currentResponse}</p>
                        </div>
-                     </div>
-                   )}
-                 </div>
-               )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                {/* Previous Insights - Updated to show only 1 */}
-               {responses.length > 0 && (
+                {responses.length > 0 && (
                  <div className="mb-8">
                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Previous Insights</h3>
                    <div className="space-y-4">
@@ -546,46 +546,46 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
                            </div>
                            <p className="text-gray-700">{response.insight}</p>
                          </CardContent>
-                       </Card>
-                     ))}
+                      </Card>
+                    ))}
                    </div>
-                 </div>
-               )}
+                  </div>
+                )}
 
-               {/* Navigation */}
+                {/* Navigation */}
                <div className="flex justify-between">
-                 <Button
+                  <Button
                    variant="outline"
-                   onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
-                   disabled={currentQuestionIndex === 0 || generatingInsight}
+                    onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
+                    disabled={currentQuestionIndex === 0 || generatingInsight}
                    className="flex items-center gap-2"
-                 >
+                  >
                    <ArrowLeft className="h-4 w-4" />
-                   Previous
-                 </Button>
-                 
-                 <Button
-                   onClick={handleSubmitResponse}
-                   disabled={!currentResponse.trim() || generatingInsight}
+                    Previous
+                  </Button>
+                  
+                  <Button
+                    onClick={handleSubmitResponse}
+                    disabled={!currentResponse.trim() || generatingInsight}
                    className="flex items-center gap-2"
-                 >
-                   {generatingInsight ? (
-                     <>
+                  >
+                    {generatingInsight ? (
+                      <>
                        <Loader2 className="h-4 w-4 animate-spin" />
                        Analyzing...
-                     </>
-                   ) : (
+                      </>
+                    ) : (
                      <>
                        {currentQuestionIndex === questions.length - 1 ? 'Complete Assessment' : 'Next Question'}
                        <ArrowRight className="h-4 w-4" />
                      </>
-                   )}
-                 </Button>
-               </div>
+                    )}
+                  </Button>
+                </div>
              </CardContent>
-           </Card>
+            </Card>
          </div>
        </div>
-      </>
-    )
+    </>
+  )
 }

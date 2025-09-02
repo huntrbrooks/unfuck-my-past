@@ -177,14 +177,17 @@ export default function DiagnosticResults() {
       } else if (line.includes('📚 RESOURCES AND NEXT STEPS')) {
         currentSection = 'resources'
       } else if (currentSection && line.trim()) {
-        sections[currentSection] += line + '\n'
+        if (currentSection in sections) {
+          sections[currentSection as keyof typeof sections] += line + '\n'
+        }
       }
     }
 
     // Ensure all sections have content
     Object.keys(sections).forEach(key => {
-      if (!sections[key]) {
-        sections[key] = 'Content not available'
+      const sectionKey = key as keyof typeof sections
+      if (!sections[sectionKey]) {
+        sections[sectionKey] = 'Content not available'
       }
     })
 
@@ -320,10 +323,13 @@ export default function DiagnosticResults() {
             <div class="space-y-4">
               ${sections.healingRoadmap.split('\n').map((line, index) => {
                 if (line.trim().match(/^\d+\./)) {
-                  return `<div class="flex items-start gap-3 p-3 bg-white rounded-lg border border-teal-200">
-                    <div class="flex-shrink-0 w-8 h-8 bg-teal-500 text-white rounded-full flex items-center justify-center font-bold text-sm">${line.match(/^\d+/)[0]}</div>
-                    <div class="flex-1 text-gray-700">${line.replace(/^\d+\.\s*/, '')}</div>
-                  </div>`
+                  const match = line.match(/^\d+/)
+                  if (match) {
+                    return `<div class="flex items-start gap-3 p-3 bg-white rounded-lg border border-teal-200">
+                      <div class="flex-shrink-0 w-8 h-8 bg-teal-500 text-white rounded-full flex items-center justify-center font-bold text-sm">${match[0]}</div>
+                      <div class="flex-1 text-gray-700">${line.replace(/^\d+\.\s*/, '')}</div>
+                    </div>`
+                  }
                 } else if (line.trim().startsWith('•')) {
                   return `<div class="flex items-start gap-2 ml-4"><span class="text-teal-600 mt-1">•</span><span>${line.substring(1).trim()}</span></div>`
                 } else if (line.trim() && !line.trim().startsWith('🛣️')) {

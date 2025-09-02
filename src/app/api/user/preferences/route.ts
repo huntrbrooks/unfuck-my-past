@@ -47,6 +47,10 @@ export async function PUT(request: NextRequest) {
       contentWarnings: Boolean(body.contentWarnings)
     }
 
+    // Get current user data to preserve existing safety data
+    const currentUser = (await db.select().from(users).where(eq(users.id, userId)).limit(1))[0]
+    const currentSafety = currentUser?.safety || {}
+    
     // Update user's safety data with new preferences
     await db
       .update(users)
@@ -54,8 +58,8 @@ export async function PUT(request: NextRequest) {
         safety: {
           ...validPreferences,
           // Preserve any existing diagnostic data
-          diagnosticAnalysis: (await db.select().from(users).where(eq(users.id, userId)).limit(1))[0]?.safety?.diagnosticAnalysis || {},
-          personalizedQuestions: (await db.select().from(users).where(eq(users.id, userId)).limit(1))[0]?.safety?.personalizedQuestions || []
+          diagnosticAnalysis: (currentSafety as any)?.diagnosticAnalysis || {},
+          personalizedQuestions: (currentSafety as any)?.personalizedQuestions || []
         }
       })
       .where(eq(users.id, userId))

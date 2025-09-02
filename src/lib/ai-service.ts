@@ -200,7 +200,7 @@ Create a brief, powerful summary that:
         // If Claude fails, try OpenAI as fallback
         if (this.openaiKey) {
           try {
-            return await this.generateOpenAIInsight(summaryPrompt, '', false)
+            return await this.generateOpenAIInsight(summaryPrompt, '')
           } catch (fallbackError) {
             throw new Error('Both AI services failed')
           }
@@ -272,7 +272,7 @@ Format as a numbered list.`
         // If Claude fails, try OpenAI as fallback
         if (this.openaiKey) {
           try {
-            return await this.generateOpenAIInsight(insightsPrompt, '', false)
+            return await this.generateOpenAIInsight(insightsPrompt, '')
           } catch (fallbackError) {
             throw new Error('Both AI services failed')
           }

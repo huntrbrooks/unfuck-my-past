@@ -32,13 +32,13 @@ export async function POST(request: NextRequest) {
 
     const user = userData[0]
     const userPreferences = {
-      tone: user.tone,
-      voice: user.voice,
-      rawness: user.rawness,
-      depth: user.depth,
-      learning: user.learning,
-      engagement: user.engagement,
-      ...user.safety
+      tone: user.tone || 'gentle',
+      voice: user.voice || 'friend',
+      rawness: user.rawness || 'moderate',
+      depth: user.depth || 'moderate',
+      learning: user.learning || 'text',
+      engagement: user.engagement || 'passive',
+      ...(user.safety || {})
     }
 
     // Get diagnostic responses
@@ -52,19 +52,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No diagnostic responses found' }, { status: 404 })
     }
 
+    // Transform responses to match expected type
+    const transformedResponses = responses.map(resp => ({
+      question: resp.question && typeof resp.question === 'object' && 'text' in resp.question ? (resp.question as any).text : `Question ${resp.id}`,
+      response: resp.response || '',
+      insight: resp.insight || '',
+      createdAt: resp.createdAt || new Date()
+    }))
+
     // Generate the specific day's content
     const programGenerator = new ProgramGenerator()
-    const dailyContent = await programGenerator.generateDailyContent(dayNumber, responses, userPreferences, weatherData)
+    const dailyContent = await programGenerator.generateDailyContent(dayNumber, transformedResponses, userPreferences, weatherData)
     
     console.log(`Generated content for day ${dayNumber}:`, dailyContent)
     console.log(`Content length:`, dailyContent.length)
     console.log(`Content preview:`, dailyContent.substring(0, 200))
 
     // Save the daily content to the user's safety data
+    const currentSafety = user.safety || {}
+    const currentDailyContent = (user.safety as any)?.dailyContent || {}
+    
     const updatedSafety = {
-      ...user.safety,
+      ...currentSafety,
       dailyContent: {
-        ...user.safety?.dailyContent,
+        ...currentDailyContent,
         [dayNumber]: {
           content: dailyContent,
           timestamp: new Date().toISOString()
@@ -118,7 +129,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = userData[0]
-    const dailyContentData = user.safety?.dailyContent?.[dayNumber]
+    const dailyContentData = (user.safety as any)?.dailyContent?.[dayNumber]
 
     if (!dailyContentData) {
       return NextResponse.json({ error: 'Daily content not found' }, { status: 404 })
