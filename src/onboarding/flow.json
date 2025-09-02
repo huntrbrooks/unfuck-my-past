@@ -1,0 +1,67 @@
+{
+  "steps": [
+    {
+      "id": "about",
+      "title": "About You",
+      "helper": null,
+      "fields": [
+        {
+          "id": "ageBracket",
+          "label": "How old are you? Pick the range your age fits into.",
+          "multi": false,
+          "options": ["18-25","26-35","36-45","46-55","56-65","65+"],
+          "type": "choice"
+        }
+      ]
+    },
+    {
+      "id": "communication",
+      "title": "How Should We Talk to You?",
+      "helper": "We want to make sure the way we guide you feels right. Choose what works best for you.",
+      "fields": [
+        {"id": "tone", "label": "Communication Tone", "multi": true, "options": ["Gentle","Direct","Coaching","Casual"], "type": "choice"},
+        {"id": "guideStyle", "label": "Guide Style", "multi": true, "options": ["Friend","Mentor","Therapist","Coach"], "type": "choice"},
+        {"id": "strength", "label": "Guidance Strength", "multi": false, "options": ["Mild","Moderate","Intense"], "type": "choice"},
+        {"id": "depth", "label": "Depth of Exploration", "multi": false, "options": ["Surface","Moderate","Deep","Profound"], "type": "choice"}
+      ]
+    },
+    {
+      "id": "goals",
+      "title": "Your Goals",
+      "helper": "What do you want to get out of this program? Pick everything that applies.",
+      "fields": [
+        {"id": "primaryGoals", "label": "Primary Goals", "multi": true, "options": ["Healing","Growth","Self Discovery","Trauma Recovery","Relationships","Confidence","Peace","Purpose"], "type": "choice"},
+        {"id": "learningStyle", "label": "Learning Style", "multi": true, "options": ["Text","Visual","Audio","Interactive"], "type": "choice"},
+        {"id": "engagement", "label": "Engagement Level", "multi": false, "options": ["Passive","Moderate","Active"], "type": "choice"}
+      ]
+    },
+    {
+      "id": "experience",
+      "title": "Experience and Time",
+      "helper": "This helps us adjust the program to your background and schedule.",
+      "fields": [
+        {"id": "experienceLevel", "label": "Experience Level", "multi": true, "options": ["Beginner","Intermediate","Experienced"], "type": "choice"},
+        {"id": "timeCommitment", "label": "Time Commitment", "multi": true, "options": ["5 min","15 min","30 min","60 min"], "type": "choice"}
+      ]
+    },
+    {
+      "id": "challenges",
+      "title": "Challenges (Optional)",
+      "helper": "What is your biggest challenge right now? Pick all that apply.",
+      "optional": true,
+      "fields": [
+        {"id": "challenges", "label": "Challenges", "multi": true, "options": ["Stress or Anxiety","Lack of Confidence","Relationship Struggles","Past Trauma","Lack of Purpose","Feeling Stuck"], "type": "choice"},
+        {"id": "challengeOther", "label": "Other", "type": "text", "placeholder": "Add any other challenge", "optional": true}
+      ]
+    },
+    {
+      "id": "final",
+      "title": "Final Personalization",
+      "helper": null,
+      "fields": [
+        {"id": "freeNote", "label": "Is there anything else you would like the AI to know about you, so it can personalize your journey more accurately?", "type": "longtext", "placeholder": "For example: I struggle with motivation, I have ADHD, I prefer shorter content, I want more accountability, etc.", "optional": true}
+      ],
+      "final": true
+    }
+  ]
+}

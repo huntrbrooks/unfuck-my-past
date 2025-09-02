@@ -99,12 +99,12 @@ export default function DiagnosticResults() {
       
       // Generate comprehensive report
       const response = await fetch('/api/diagnostic/comprehensive-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
         }
-      })
-
+        })
+      
       if (response.ok) {
         const data = await response.json()
         setComprehensiveReport(data.report)
@@ -420,11 +420,11 @@ export default function DiagnosticResults() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+            <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading your diagnostic results...</p>
         </div>
-      </div>
+            </div>
     )
   }
 
@@ -440,7 +440,7 @@ export default function DiagnosticResults() {
             <p className="text-gray-600 mb-4">{error}</p>
             <Button onClick={() => router.push('/diagnostic')} className="w-full">
               Return to Diagnostic
-            </Button>
+              </Button>
           </CardContent>
         </Card>
       </div>
@@ -490,8 +490,8 @@ export default function DiagnosticResults() {
                 <p className="text-gray-700 leading-relaxed text-lg">{summary}</p>
               </div>
             </CardContent>
-          </Card>
-        )}
+            </Card>
+          )}
 
         {/* Key Insights */}
         {keyInsights && (
@@ -528,15 +528,15 @@ export default function DiagnosticResults() {
           >
             View Full Diagnostic Report
           </Button>
-        </div>
+                </div>
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">
             Your personalized healing journey is ready to begin. 
             The program has been tailored based on your diagnostic responses.
-          </p>
-        </div>
-      </div>
+                      </p>
+                    </div>
+                  </div>
 
       {/* Diagnostic Report Paywall Modal */}
       {showPaywall && (
@@ -548,8 +548,8 @@ export default function DiagnosticResults() {
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Comprehensive Diagnostic Report</h2>
                 <p className="text-gray-600">
                   Get your complete trauma analysis, personality profile, and personalized healing roadmap.
-                </p>
-              </div>
+                      </p>
+                    </div>
               <PaymentForm
                 productType="diagnostic"
                 amount={1000} // $10.00 in cents
@@ -558,7 +558,7 @@ export default function DiagnosticResults() {
               />
             </CardContent>
           </Card>
-        </div>
+                  </div>
       )}
 
       {/* 30-Day Program Paywall Modal */}
@@ -571,8 +571,8 @@ export default function DiagnosticResults() {
                 <h2 className="text-xl font-bold text-gray-900 mb-2">30-Day Healing Program</h2>
                 <p className="text-gray-600">
                   Access your personalized 30-day healing journey with daily tasks, journaling, and AI guidance.
-                </p>
-              </div>
+                      </p>
+                    </div>
               <PaymentForm
                 productType="program"
                 amount={2995} // $29.95 in cents
@@ -597,7 +597,7 @@ export default function DiagnosticResults() {
               </div>
             </CardContent>
           </Card>
-        </div>
+                  </div>
       )}
 
       {/* Payment Success Modal */}
@@ -618,7 +618,7 @@ export default function DiagnosticResults() {
               </Button>
             </CardContent>
           </Card>
-        </div>
+                    </div>
       )}
 
       {/* Comprehensive Report Display */}
@@ -664,8 +664,8 @@ export default function DiagnosticResults() {
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
-    </div>
+            </div>
+          )}
+            </div>
   )
 }
