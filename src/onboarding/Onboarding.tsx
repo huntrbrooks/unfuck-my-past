@@ -15,14 +15,21 @@ const ToggleButton: React.FC<{
   onClick: () => void;
   children: React.ReactNode;
   ariaLabel: string;
-}> = ({ active, onClick, children, ariaLabel }) => {
+  hasWarning?: boolean;
+}> = ({ active, onClick, children, ariaLabel, hasWarning }) => {
   return (
     <button
       type="button"
       aria-pressed={active}
       aria-label={ariaLabel}
       onClick={onClick}
-      className={`w-full text-left rounded-xl border px-4 py-3 transition ${active ? "bg-black text-white border-black" : "bg-white text-black border-gray-300 hover:border-gray-500"}`}
+      className={`w-full text-left rounded-xl border px-4 py-3 transition ${
+        active 
+          ? "bg-black text-white border-black" 
+          : hasWarning 
+            ? "bg-red-50 text-red-700 border-red-300 hover:border-red-500" 
+            : "bg-white text-black border-gray-300 hover:border-gray-500"
+      }`}
     >
       {children}
     </button>
@@ -52,6 +59,34 @@ const TextInput: React.FC<{
   )
 );
 
+const WarningModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  warning: string;
+}> = ({ isOpen, onClose, warning }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl p-6 max-w-md w-full">
+        <div className="text-center mb-4">
+          <div className="text-4xl mb-2">⚠️</div>
+          <h3 className="text-lg font-semibold text-gray-900">Age Restriction Notice</h3>
+        </div>
+        <div className="text-sm text-gray-700 mb-6 whitespace-pre-line">
+          {warning}
+        </div>
+        <button
+          onClick={onClose}
+          className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition"
+        >
+          I Understand
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const StepView: React.FC<{
   step: Step;
   values: Record<string, any>;
@@ -62,6 +97,27 @@ const StepView: React.FC<{
   prev: () => void;
 }> = ({ step, values, setValues, index, total, next, prev }) => {
   const helper = step.helper;
+  const [warningModal, setWarningModal] = useState<{ isOpen: boolean; warning: string }>({ isOpen: false, warning: '' });
+
+  const handleChoiceClick = (field: ChoiceField, option: string) => {
+    // Check if this option has a warning
+    if (field.warnings && field.warnings[option]) {
+      setWarningModal({ isOpen: true, warning: field.warnings[option] });
+      return;
+    }
+
+    // Normal selection logic
+    const current = values[field.id] ?? (field.multi ? [] : "");
+    if (field.multi) {
+      const cur = new Set(current as string[]);
+      cur.has(option) ? cur.delete(option) : cur.add(option);
+      const arr = Array.from(cur);
+      setValues({ ...values, [field.id]: arr });
+    } else {
+      setValues({ ...values, [field.id]: option });
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-4 text-sm text-gray-600">Step {index + 1} of {total}</div>
@@ -75,21 +131,21 @@ const StepView: React.FC<{
             return (
               <div key={field.id}>
                 <div className="mb-2 font-medium">{field.label}{isMulti ? " (Choose all that apply)" : " (Select one)"}</div>
+                {field.subheading && (
+                  <p className="text-sm text-gray-600 mb-3 italic">{field.subheading}</p>
+                )}
                 <div className="grid grid-cols-1 gap-3">
                   {field.options.map((opt) => {
                     const active = isMulti ? (current as string[]).includes(opt) : current === opt;
-                    const toggle = () => {
-                      if (isMulti) {
-                        const cur = new Set(current as string[]);
-                        cur.has(opt) ? cur.delete(opt) : cur.add(opt);
-                        const arr = Array.from(cur);
-                        setValues({ ...values, [field.id]: arr });
-                      } else {
-                        setValues({ ...values, [field.id]: opt });
-                      }
-                    };
+                    const hasWarning = field.warnings && field.warnings[opt];
                     return (
-                      <ToggleButton key={opt} active={active} onClick={toggle} ariaLabel={`${field.label}: ${opt}`}>
+                      <ToggleButton 
+                        key={opt} 
+                        active={active} 
+                        onClick={() => handleChoiceClick(field, opt)} 
+                        ariaLabel={`${field.label}: ${opt}`}
+                        hasWarning={!!hasWarning}
+                      >
                         {opt}
                       </ToggleButton>
                     );
@@ -117,6 +173,12 @@ const StepView: React.FC<{
           <button type="button" onClick={next} className="rounded-lg bg-black text-white px-4 py-2">Next</button>
         ) : null}
       </div>
+
+      <WarningModal
+        isOpen={warningModal.isOpen}
+        onClose={() => setWarningModal({ isOpen: false, warning: '' })}
+        warning={warningModal.warning}
+      />
     </div>
   );
 };

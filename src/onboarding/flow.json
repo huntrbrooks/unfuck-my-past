@@ -9,8 +9,11 @@
           "id": "ageBracket",
           "label": "How old are you? Pick the range your age fits into.",
           "multi": false,
-          "options": ["18-25","26-35","36-45","46-55","56-65","65+"],
-          "type": "choice"
+          "options": ["0-18","18-25","26-35","36-45","46-55","56-65","65+"],
+          "type": "choice",
+          "warnings": {
+            "0-18": "⚠️ Age Restriction Notice\n\nThis tool is designed for adults (18+) who are ready to engage in deep personal healing work. If you are under 18, we strongly recommend:\n\n• Speaking with a trusted adult, parent, or guardian\n• Consulting with a qualified mental health professional\n• Using age-appropriate resources for your healing journey\n\nThis tool involves complex emotional processing that requires adult emotional maturity and support systems. Your safety and well-being are our priority."
+          }
         }
       ]
     },
@@ -40,8 +43,22 @@
       "title": "Experience and Time",
       "helper": "This helps us adjust the program to your background and schedule.",
       "fields": [
-        {"id": "experienceLevel", "label": "Experience Level", "multi": true, "options": ["Beginner","Intermediate","Experienced"], "type": "choice"},
-        {"id": "timeCommitment", "label": "Time Commitment", "multi": true, "options": ["5 min","15 min","30 min","60 min"], "type": "choice"}
+        {
+          "id": "experienceLevel", 
+          "label": "Experience Level", 
+          "subheading": "What is your experience level with personal healing work, therapy, or self-development practices?",
+          "multi": true, 
+          "options": ["Beginner","Intermediate","Experienced"], 
+          "type": "choice"
+        },
+        {
+          "id": "timeCommitment", 
+          "label": "Time Commitment", 
+          "subheading": "How much time are you willing to put aside each day to focus on your healing journey?",
+          "multi": true, 
+          "options": ["5 min","15 min","30 min","60 min"], 
+          "type": "choice"
+        }
       ]
     },
     {

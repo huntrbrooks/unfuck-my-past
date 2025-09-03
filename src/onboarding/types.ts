@@ -4,6 +4,8 @@ export type ChoiceField = {
   multi: boolean;
   options: string[];
   type: "choice";
+  subheading?: string;
+  warnings?: Record<string, string>;
 };
 
 export type TextField = {
