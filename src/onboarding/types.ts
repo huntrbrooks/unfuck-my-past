@@ -5,6 +5,7 @@ export type ChoiceField = {
   options: string[];
   type: "choice";
   subheading?: string;
+  descriptions?: Record<string, string>;
   warnings?: Record<string, string>;
 };
 
@@ -14,6 +15,7 @@ export type TextField = {
   type: "text" | "longtext";
   placeholder?: string;
   optional?: boolean;
+  subheading?: string;
 };
 
 export type Field = ChoiceField | TextField;
@@ -21,6 +23,7 @@ export type Field = ChoiceField | TextField;
 export type Step = {
   id: string;
   title: string;
+  subheading?: string;
   helper?: string | null;
   optional?: boolean;
   final?: boolean;

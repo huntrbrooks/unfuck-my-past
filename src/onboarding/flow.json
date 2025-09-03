@@ -10,6 +10,15 @@
           "label": "How old are you? Pick the range your age fits into.",
           "multi": false,
           "options": ["0-18","18-25","26-35","36-45","46-55","56-65","65+"],
+          "descriptions": {
+            "0-18": "Minors under 18 - requires special consideration and guidance",
+            "18-25": "Young adults - early adulthood and identity formation",
+            "26-35": "Early career and relationship building years",
+            "36-45": "Mid-life reflection and career establishment",
+            "46-55": "Life assessment and mid-life transition period",
+            "56-65": "Pre-retirement planning and life review",
+            "65+": "Retirement years and legacy building"
+          },
           "type": "choice",
           "warnings": {
             "0-18": "⚠️ Age Restriction Notice\n\nThis tool is designed for adults (18+) who are ready to engage in deep personal healing work. If you are under 18, we strongly recommend:\n\n• Speaking with a trusted adult, parent, or guardian\n• Consulting with a qualified mental health professional\n• Using age-appropriate resources for your healing journey\n\nThis tool involves complex emotional processing that requires adult emotional maturity and support systems. Your safety and well-being are our priority."
@@ -20,27 +29,123 @@
     {
       "id": "communication",
       "title": "How Should We Talk to You?",
+      "subheading": "We want to make sure the way we guide you feels right. Choose what works best for you.",
       "helper": "We want to make sure the way we guide you feels right. Choose what works best for you.",
       "fields": [
-        {"id": "tone", "label": "Communication Tone", "multi": true, "options": ["Gentle","Direct","Coaching","Casual"], "type": "choice"},
-        {"id": "guideStyle", "label": "Guide Style", "multi": true, "options": ["Friend","Mentor","Therapist","Coach"], "type": "choice"},
-        {"id": "strength", "label": "Guidance Strength", "multi": false, "options": ["Mild","Moderate","Intense"], "type": "choice"},
-        {"id": "depth", "label": "Depth of Exploration", "multi": false, "options": ["Surface","Moderate","Deep","Profound"], "type": "choice"}
+        {
+          "id": "tone", 
+          "label": "Communication Tone", 
+          "subheading": "What emotional tone feels most comfortable and supportive for you?",
+          "multi": true, 
+          "options": ["Gentle","Direct","Coaching","Casual"], 
+          "descriptions": {
+            "Gentle": "Soft, nurturing approach with extra care and patience",
+            "Direct": "Clear, straightforward communication without sugar-coating",
+            "Coaching": "Motivational and encouraging with actionable guidance",
+            "Casual": "Relaxed, friendly tone like talking to a close friend"
+          },
+          "type": "choice"
+        },
+        {
+          "id": "guideStyle", 
+          "label": "Guide Style", 
+          "subheading": "What type of relationship dynamic feels most helpful?",
+          "multi": true, 
+          "options": ["Friend","Mentor","Therapist","Coach"], 
+          "descriptions": {
+            "Friend": "Supportive peer who listens and shares experiences",
+            "Mentor": "Wise advisor who shares knowledge and perspective",
+            "Therapist": "Professional guidance with therapeutic techniques",
+            "Coach": "Motivational trainer focused on goals and progress"
+          },
+          "type": "choice"
+        },
+        {
+          "id": "strength", 
+          "label": "Guidance Strength", 
+          "subheading": "How much intensity and challenge do you want in your guidance?",
+          "multi": false, 
+          "options": ["Mild","Moderate","Intense"], 
+          "descriptions": {
+            "Mild": "Gentle encouragement with minimal pressure to change",
+            "Moderate": "Balanced support with some gentle pushing for growth",
+            "Intense": "Strong motivation and accountability for rapid transformation"
+          },
+          "type": "choice"
+        },
+        {
+          "id": "depth", 
+          "label": "Depth of Exploration", 
+          "subheading": "How deep do you want to go in exploring your inner world?",
+          "multi": false, 
+          "options": ["Surface","Moderate","Deep","Profound"], 
+          "descriptions": {
+            "Surface": "Light exploration of current thoughts and feelings",
+            "Moderate": "Meaningful self-reflection with some emotional depth",
+            "Deep": "Intensive exploration of patterns and root causes",
+            "Profound": "Transformative work on core beliefs and deep healing"
+          },
+          "type": "choice"
+        }
       ]
     },
     {
       "id": "goals",
       "title": "Your Goals",
+      "subheading": "What do you want to get out of this program? Pick everything that applies.",
       "helper": "What do you want to get out of this program? Pick everything that applies.",
       "fields": [
-        {"id": "primaryGoals", "label": "Primary Goals", "multi": true, "options": ["Healing","Growth","Self Discovery","Trauma Recovery","Relationships","Confidence","Peace","Purpose"], "type": "choice"},
-        {"id": "learningStyle", "label": "Learning Style", "multi": true, "options": ["Text","Visual","Audio","Interactive"], "type": "choice"},
-        {"id": "engagement", "label": "Engagement Level", "multi": false, "options": ["Passive","Moderate","Active"], "type": "choice"}
+        {
+          "id": "primaryGoals", 
+          "label": "Primary Goals", 
+          "subheading": "What are your main objectives for this healing journey?",
+          "multi": true, 
+          "options": ["Healing","Growth","Self Discovery","Trauma Recovery","Relationships","Confidence","Peace","Purpose"], 
+          "descriptions": {
+            "Healing": "Recovering from emotional wounds and finding inner peace",
+            "Growth": "Personal development and becoming your best self",
+            "Self Discovery": "Understanding who you are and what you want",
+            "Trauma Recovery": "Processing and healing from past traumatic experiences",
+            "Relationships": "Improving connections with others and yourself",
+            "Confidence": "Building self-esteem and belief in your abilities",
+            "Peace": "Finding inner calm and emotional stability",
+            "Purpose": "Discovering your life's meaning and direction"
+          },
+          "type": "choice"
+        },
+        {
+          "id": "learningStyle", 
+          "label": "Learning Style", 
+          "subheading": "How do you prefer to absorb and process new information?",
+          "multi": true, 
+          "options": ["Text","Visual","Audio","Interactive"], 
+          "descriptions": {
+            "Text": "Reading and written exercises work best for you",
+            "Visual": "Diagrams, charts, and visual aids help you learn",
+            "Audio": "Listening to guidance and verbal explanations",
+            "Interactive": "Hands-on activities and real-time feedback"
+          },
+          "type": "choice"
+        },
+        {
+          "id": "engagement", 
+          "label": "Engagement Level", 
+          "subheading": "How actively do you want to participate in your healing process?",
+          "multi": false, 
+          "options": ["Passive","Moderate","Active"], 
+          "descriptions": {
+            "Passive": "Gentle guidance with minimal effort required",
+            "Moderate": "Balanced participation with some homework and practice",
+            "Active": "Full commitment with daily exercises and deep work"
+          },
+          "type": "choice"
+        }
       ]
     },
     {
       "id": "experience",
       "title": "Experience and Time",
+      "subheading": "This helps us adjust the program to your background and schedule.",
       "helper": "This helps us adjust the program to your background and schedule.",
       "fields": [
         {
@@ -49,6 +154,11 @@
           "subheading": "What is your experience level with personal healing work, therapy, or self-development practices?",
           "multi": true, 
           "options": ["Beginner","Intermediate","Experienced"], 
+          "descriptions": {
+            "Beginner": "New to personal development and healing work",
+            "Intermediate": "Some experience with therapy or self-improvement",
+            "Experienced": "Extensive background in healing and personal growth"
+          },
           "type": "choice"
         },
         {
@@ -57,6 +167,12 @@
           "subheading": "How much time are you willing to put aside each day to focus on your healing journey?",
           "multi": true, 
           "options": ["5 min","15 min","30 min","60 min"], 
+          "descriptions": {
+            "5 min": "Quick daily check-ins and brief reflections",
+            "15 min": "Short but meaningful daily practice sessions",
+            "30 min": "Dedicated time for deeper work and exercises",
+            "60 min": "Comprehensive daily healing and growth sessions"
+          },
           "type": "choice"
         }
       ]
@@ -64,19 +180,50 @@
     {
       "id": "challenges",
       "title": "Challenges (Optional)",
+      "subheading": "What is your biggest challenge right now? Pick all that apply.",
       "helper": "What is your biggest challenge right now? Pick all that apply.",
       "optional": true,
       "fields": [
-        {"id": "challenges", "label": "Challenges", "multi": true, "options": ["Stress or Anxiety","Lack of Confidence","Relationship Struggles","Past Trauma","Lack of Purpose","Feeling Stuck"], "type": "choice"},
-        {"id": "challengeOther", "label": "Other", "type": "text", "placeholder": "Add any other challenge", "optional": true}
+        {
+          "id": "challenges", 
+          "label": "Challenges", 
+          "subheading": "What obstacles are you currently facing in your healing journey?",
+          "multi": true, 
+          "options": ["Stress or Anxiety","Lack of Confidence","Relationship Struggles","Past Trauma","Lack of Purpose","Feeling Stuck"], 
+          "descriptions": {
+            "Stress or Anxiety": "Managing overwhelming feelings and nervous energy",
+            "Lack of Confidence": "Struggling with self-doubt and low self-esteem",
+            "Relationship Struggles": "Difficulty connecting with others or maintaining boundaries",
+            "Past Trauma": "Processing and healing from difficult life experiences",
+            "Lack of Purpose": "Feeling directionless or questioning life's meaning",
+            "Feeling Stuck": "Unable to move forward or make positive changes"
+          },
+          "type": "choice"
+        },
+        {
+          "id": "challengeOther", 
+          "label": "Other", 
+          "subheading": "Is there another challenge not listed above?",
+          "type": "text", 
+          "placeholder": "Add any other challenge you're facing", 
+          "optional": true
+        }
       ]
     },
     {
       "id": "final",
       "title": "Final Personalization",
+      "subheading": "Is there anything else you would like the AI to know about you, so it can personalize your journey more accurately?",
       "helper": null,
       "fields": [
-        {"id": "freeNote", "label": "Is there anything else you would like the AI to know about you, so it can personalize your journey more accurately?", "type": "longtext", "placeholder": "For example: I struggle with motivation, I have ADHD, I prefer shorter content, I want more accountability, etc.", "optional": true}
+        {
+          "id": "freeNote", 
+          "label": "Additional Information", 
+          "subheading": "Share anything else that would help personalize your experience",
+          "type": "longtext", 
+          "placeholder": "For example: I struggle with motivation, I have ADHD, I prefer shorter content, I want more accountability, etc.", 
+          "optional": true
+        }
       ],
       "final": true
     }
