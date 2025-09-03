@@ -1,346 +1,229 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { CreditCard, Loader2, AlertTriangle } from 'lucide-react'
-import { validateObject, sanitizeObject, PAYMENT_SCHEMA, PATTERNS } from '../lib/validation'
+import { Loader2, CreditCard, Shield } from 'lucide-react'
 
 interface PaymentFormProps {
-  productType: 'diagnostic' | 'program'
   amount: number
-  onSuccess: () => void
+  onSuccess: (paymentIntent: { id: string; amount: number; status: string }) => void
   onCancel: () => void
-  onLoadingComplete?: () => void
-  setPaymentFormLoading?: (loading: boolean) => void
+  productName: string
 }
 
-interface FormErrors {
-  [key: string]: string
-}
+export default function PaymentForm({ amount, onSuccess, onCancel, productName }: PaymentFormProps) {
+  const [formData, setFormData] = useState({
+    name: '',
+    cardNumber: '',
+    expiryDate: '',
+    cvc: ''
+  })
 
-export default function PaymentForm({ productType, amount, onSuccess, onCancel, onLoadingComplete, setPaymentFormLoading }: PaymentFormProps) {
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [loadingStage, setLoadingStage] = useState('')
-  const [error, setError] = useState('')
-  const [cardNumber, setCardNumber] = useState('')
-  const [expiryDate, setExpiryDate] = useState('')
-  const [cvc, setCvc] = useState('')
-  const [name, setName] = useState('')
-  const [errors, setErrors] = useState<FormErrors>({})
 
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount / 100)
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }))
+    }
+
+    // Format card number with spaces
+    if (field === 'cardNumber') {
+      const cleaned = value.replace(/\s/g, '')
+      if (cleaned.length <= 16) {
+        setFormData(prev => ({ ...prev, [field]: cleaned }))
+      }
+    }
+
+    // Format expiry date
+    if (field === 'expiryDate') {
+      const cleaned = value.replace(/\D/g, '')
+      if (cleaned.length <= 4) {
+        const formatted = cleaned.replace(/(\d{2})(\d{0,2})/, '$1/$2')
+        setFormData(prev => ({ ...prev, [field]: formatted }))
+      }
+    }
+
+    // Format CVC
+    if (field === 'cvc') {
+      const cleaned = value.replace(/\D/g, '')
+      if (cleaned.length <= 4) {
+        setFormData(prev => ({ ...prev, [field]: cleaned }))
+      }
+    }
   }
 
-  // Real-time validation
-  const validateField = (fieldName: string, value: string) => {
-    const fieldErrors: FormErrors = { ...errors }
-    
-    switch (fieldName) {
-      case 'name':
-        if (!value.trim()) {
-          fieldErrors.name = 'Name is required'
-        } else if (!PATTERNS.NAME.test(value.trim())) {
-          fieldErrors.name = 'Please enter a valid name (2-50 characters, letters only)'
-        } else {
-          delete fieldErrors.name
-        }
-        break
-        
-      case 'cardNumber':
-        if (!value.trim()) {
-          fieldErrors.cardNumber = 'Card number is required'
-        } else if (!PATTERNS.CARD_NUMBER.test(value.replace(/\s/g, ''))) {
-          fieldErrors.cardNumber = 'Please enter a valid 16-digit card number'
-        } else {
-          delete fieldErrors.cardNumber
-        }
-        break
-        
-      case 'expiryDate':
-        if (!value.trim()) {
-          fieldErrors.expiryDate = 'Expiry date is required'
-        } else if (!PATTERNS.EXPIRY_DATE.test(value)) {
-          fieldErrors.expiryDate = 'Please enter expiry date in MM/YY format'
-        } else {
-          // Check if card is expired
-          const [month, year] = value.split('/')
-          const expiryDate = new Date(2000 + parseInt(year), parseInt(month) - 1)
-          const now = new Date()
-          if (expiryDate < now) {
-            fieldErrors.expiryDate = 'Card has expired'
-          } else {
-            delete fieldErrors.expiryDate
-          }
-        }
-        break
-        
-      case 'cvc':
-        if (!value.trim()) {
-          fieldErrors.cvc = 'CVC is required'
-        } else if (!PATTERNS.CVC.test(value)) {
-          fieldErrors.cvc = 'Please enter a valid 3-4 digit CVC'
-        } else {
-          delete fieldErrors.cvc
-        }
-        break
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required'
     }
-    
-    setErrors(fieldErrors)
-    return Object.keys(fieldErrors).length === 0
+
+    if (!formData.cardNumber || formData.cardNumber.length < 16) {
+      newErrors.cardNumber = 'Valid card number is required'
+    }
+
+    if (!formData.expiryDate || formData.expiryDate.length < 5) {
+      newErrors.expiryDate = 'Valid expiry date is required'
+    }
+
+    if (!formData.cvc || formData.cvc.length < 3) {
+      newErrors.cvc = 'Valid CVC is required'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
-  const handleFieldChange = (fieldName: string, value: string) => {
-    // Update the field value
-    switch (fieldName) {
-      case 'name':
-        setName(value)
-        break
-      case 'cardNumber':
-        setCardNumber(value.replace(/\s/g, ''))
-        break
-      case 'expiryDate':
-        setExpiryDate(value)
-        break
-      case 'cvc':
-        setCvc(value)
-        break
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     
-    // Validate the field
-    validateField(fieldName, value)
-  }
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    setError('')
-
-    // Validate all fields
-    const allValid = ['name', 'cardNumber', 'expiryDate', 'cvc'].every(field => {
-      const value = field === 'name' ? name : 
-                   field === 'cardNumber' ? cardNumber :
-                   field === 'expiryDate' ? expiryDate : cvc
-      return validateField(field, value)
-    })
-
-    if (!allValid) {
-      setError('Please fix the errors above before submitting')
-      return
-    }
-
-    // Prepare form data
-    const formData = {
-      name: name.trim(),
-      cardNumber: cardNumber.replace(/\s/g, ''),
-      expiryDate: expiryDate.trim(),
-      cvc: cvc.trim(),
-      productType
-    }
-
-    // Server-side validation
-    const validation = validateObject(formData, PAYMENT_SCHEMA)
-    if (!validation.isValid) {
-      setError(`Validation failed: ${validation.errors.join(', ')}`)
+    if (!validateForm()) {
       return
     }
 
     setLoading(true)
-    setPaymentFormLoading?.(true)
-    setLoadingStage('Creating payment...')
+    setLoadingStage('Validating payment details...')
 
     try {
-      console.log('Creating payment intent...')
-      
-      // Create payment intent
-      const createResponse = await fetch('/api/payments/create-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ productType }),
-      })
-
-      if (!createResponse.ok) {
-        const errorData = await createResponse.json()
-        console.error('Payment intent creation failed:', errorData)
-        if (createResponse.status === 401) {
-          throw new Error('Authentication required. Please refresh the page and try again.')
-        }
-        throw new Error(errorData.error || 'Failed to create payment. Please try again.')
-      }
-
-      const { clientSecret, paymentIntentId } = await createResponse.json()
-      console.log('Payment intent created:', paymentIntentId)
-
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000))
       setLoadingStage('Processing payment...')
-
-      // For testing purposes, we'll simulate a successful payment
-      // In production, you'd use Stripe's confirmPayment with the actual card details
-      console.log('Simulating successful payment...')
       
-      // Confirm the payment
-      const confirmResponse = await fetch('/api/payments/confirm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ paymentIntentId }),
-      })
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      setLoadingStage('Confirming transaction...')
+      
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-      if (!confirmResponse.ok) {
-        const errorData = await confirmResponse.json()
-        console.error('Payment confirmation failed:', errorData)
-        throw new Error(errorData.error || 'Failed to confirm payment. Please try again.')
+      // Simulate successful payment
+      const mockPaymentIntent = {
+        id: 'pi_' + Math.random().toString(36).substr(2, 9),
+        amount: amount,
+        status: 'succeeded'
       }
 
-      console.log('Payment confirmed successfully')
-      
-      if (productType === 'diagnostic') {
-        setLoadingStage('Generating your comprehensive report...')
-        // Call onSuccess to trigger report generation
-        // The onSuccess callback will handle clearing the loading state when complete
-        onSuccess()
-      } else {
-        setLoadingStage('Preparing your 30-day program...')
-        // For program, we can complete immediately
-        onSuccess()
-        setLoading(false)
-        setPaymentFormLoading?.(false)
-        setLoadingStage('')
-      }
-      
+      onSuccess(mockPaymentIntent)
     } catch (error) {
-      console.error('Payment error:', error)
-      setError(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.')
+      console.error('Payment failed:', error)
+      setErrors({ general: 'Payment failed. Please try again.' })
     } finally {
       setLoading(false)
-      setPaymentFormLoading?.(false)
       setLoadingStage('')
     }
   }
 
-  return (
-    <Card className="max-w-md mx-auto relative">
-      {loading && (
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center">
-          <div className="text-center">
-            <div className="relative mb-4">
-              <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 bg-blue-600 rounded-full animate-pulse"></div>
-              </div>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Processing Your Payment</h3>
-            <p className="text-gray-600 mb-4">{loadingStage}</p>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
-            </div>
-          </div>
-        </div>
-      )}
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CreditCard className="h-5 w-5" />
-          {productType === 'diagnostic' ? 'Full Diagnostic Report' : '30-Day Healing Program'}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-3">
-            <h5 className="font-semibold">Total Amount</h5>
-            <h4 className="text-green-600 font-bold">{formatAmount(amount)}</h4>
-          </div>
-          <p className="text-gray-600 text-sm">
-            {productType === 'diagnostic' 
-              ? 'Complete trauma mapping, detailed pattern analysis, and personalized recommendations'
-              : 'Complete 30-day structured healing program with daily tasks, journaling, and AI guidance'
-            }
-          </p>
-        </div>
+  const formatAmount = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount / 100)
+  }
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <p className="text-red-800 text-sm">{error}</p>
-            </div>
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="text-center space-y-2">
+        <div className="flex justify-center mb-2">
+          <div className="p-2 rounded-full bg-primary/10">
+            <CreditCard className="h-6 w-6 text-primary" />
+          </div>
+        </div>
+        <CardTitle className="text-xl font-semibold">Complete Your Purchase</CardTitle>
+        <p className="text-muted-foreground">
+          Secure payment for {productName}
+        </p>
+      </CardHeader>
+      
+      <CardContent>
+        {errors.general && (
+          <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+            <p className="text-destructive text-sm">{errors.general}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name">Cardholder Name</Label>
+            <Label htmlFor="name" className="text-sm font-medium">
+              Cardholder Name
+            </Label>
             <Input
               id="name"
               type="text"
               placeholder="John Doe"
-              value={name}
+              value={formData.name}
               onChange={(e) => handleFieldChange('name', e.target.value)}
-              className={errors.name ? 'border-red-500' : ''}
+              className={`mt-1 ${errors.name ? 'border-destructive focus:ring-destructive' : ''}`}
               required
             />
             {errors.name && (
-              <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+              <p className="text-destructive text-sm mt-1">{errors.name}</p>
             )}
           </div>
 
           <div>
-            <Label htmlFor="cardNumber">Card Number</Label>
+            <Label htmlFor="cardNumber" className="text-sm font-medium">
+              Card Number
+            </Label>
             <Input
               id="cardNumber"
               type="text"
               placeholder="4242 4242 4242 4242"
-              value={cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
+              value={formData.cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
               onChange={(e) => handleFieldChange('cardNumber', e.target.value)}
               maxLength={19}
-              className={errors.cardNumber ? 'border-red-500' : ''}
+              className={`mt-1 ${errors.cardNumber ? 'border-destructive focus:ring-destructive' : ''}`}
               required
             />
             {errors.cardNumber && (
-              <p className="text-red-500 text-sm mt-1">{errors.cardNumber}</p>
+              <p className="text-destructive text-sm mt-1">{errors.cardNumber}</p>
             )}
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               For testing, use: 4242 4242 4242 4242
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="expiryDate">Expiry Date</Label>
+              <Label htmlFor="expiryDate" className="text-sm font-medium">
+                Expiry Date
+              </Label>
               <Input
                 id="expiryDate"
                 type="text"
                 placeholder="MM/YY"
-                value={expiryDate}
+                value={formData.expiryDate}
                 onChange={(e) => handleFieldChange('expiryDate', e.target.value)}
                 maxLength={5}
-                className={errors.expiryDate ? 'border-red-500' : ''}
+                className={`mt-1 ${errors.expiryDate ? 'border-destructive focus:ring-destructive' : ''}`}
                 required
               />
               {errors.expiryDate && (
-                <p className="text-red-500 text-sm mt-1">{errors.expiryDate}</p>
+                <p className="text-destructive text-sm mt-1">{errors.expiryDate}</p>
               )}
             </div>
             <div>
-              <Label htmlFor="cvc">CVC</Label>
+              <Label htmlFor="cvc" className="text-sm font-medium">
+                CVC
+              </Label>
               <Input
                 id="cvc"
                 type="text"
                 placeholder="123"
-                value={cvc}
+                value={formData.cvc}
                 onChange={(e) => handleFieldChange('cvc', e.target.value)}
                 maxLength={4}
-                className={errors.cvc ? 'border-red-500' : ''}
+                className={`mt-1 ${errors.cvc ? 'border-destructive focus:ring-destructive' : ''}`}
                 required
               />
               {errors.cvc && (
-                <p className="text-red-500 text-sm mt-1">{errors.cvc}</p>
+                <p className="text-destructive text-sm mt-1">{errors.cvc}</p>
               )}
             </div>
           </div>
@@ -372,9 +255,13 @@ export default function PaymentForm({ productType, amount, onSuccess, onCancel, 
           </div>
         </form>
 
-        <div className="mt-4">
-          <p className="text-gray-500 text-xs">
-            <strong>Test Mode:</strong> This is a simplified payment form for testing. 
+        <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Test Mode</span>
+          </div>
+          <p className="text-muted-foreground text-xs">
+            This is a simplified payment form for testing. 
             Use test card number 4242 4242 4242 4242 with any future expiry date and CVC.
           </p>
         </div>

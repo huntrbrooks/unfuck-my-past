@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Download, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Download, AlertTriangle, CheckCircle, Brain, Target, Sparkles, Heart, BookOpen, TrendingUp } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PaymentForm from '@/components/PaymentForm'
 
@@ -34,7 +34,7 @@ export default function ReportPage() {
 
   useEffect(() => {
     checkAccess()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAccess = async () => {
     try {
@@ -179,77 +179,54 @@ export default function ReportPage() {
       
       if (!content) return null
       
-      let bgColor = 'bg-blue-50'
-      let borderColor = 'border-blue-200'
-      let textColor = 'text-blue-600'
-      
-      if (title.includes('Executive Summary')) {
-        bgColor = 'bg-purple-50'
-        borderColor = 'border-purple-200'
-        textColor = 'text-purple-600'
-      } else if (title.includes('Trauma Analysis')) {
-        bgColor = 'bg-red-50'
-        borderColor = 'border-red-200'
-        textColor = 'text-red-600'
-      } else if (title.includes('Toxicity Score')) {
-        bgColor = 'bg-orange-50'
-        borderColor = 'border-orange-200'
-        textColor = 'text-orange-600'
-      } else if (title.includes('Strengths')) {
-        bgColor = 'bg-green-50'
-        borderColor = 'border-green-200'
-        textColor = 'text-green-600'
-      } else if (title.includes('Most Important to Address')) {
-        bgColor = 'bg-yellow-50'
-        borderColor = 'border-yellow-200'
-        textColor = 'text-yellow-600'
-      } else if (title.includes('Behavioral Patterns')) {
-        bgColor = 'bg-indigo-50'
-        borderColor = 'border-indigo-200'
-        textColor = 'text-indigo-600'
-      } else if (title.includes('Healing Roadmap')) {
-        bgColor = 'bg-teal-50'
-        borderColor = 'border-teal-200'
-        textColor = 'text-teal-600'
-      } else if (title.includes('Actionable Recommendations')) {
-        bgColor = 'bg-pink-50'
-        borderColor = 'border-pink-200'
-        textColor = 'text-pink-600'
-      } else if (title.includes('Resources')) {
-        bgColor = 'bg-gray-50'
-        borderColor = 'border-gray-200'
-        textColor = 'text-gray-600'
-      }
-      
       return (
-        <div key={index} className={`${bgColor} p-6 rounded-lg border ${borderColor} mb-6`}>
-          <h3 className={`font-bold text-lg mb-4 ${textColor} border-b ${borderColor} pb-2`}>
-            {title}
-          </h3>
-          <div className="whitespace-pre-line text-gray-700 leading-relaxed space-y-3">
-            {content.split('\n').map((line, lineIndex) => {
-              if (line.trim().startsWith('•')) {
-                return (
-                  <div key={lineIndex} className="flex items-start gap-2">
-                    <span className={`${textColor} mt-1`}>•</span>
-                    <span>{line.substring(1).trim()}</span>
-                  </div>
-                )
-              } else if (line.trim().match(/^\d+\./)) {
-                // Handle numbered roadmap items
-                return (
-                  <div key={lineIndex} className="flex items-start gap-2">
-                    <span className={`${textColor} font-bold`}>{line.match(/^\d+\./)?.[0]}</span>
-                    <span>{line.replace(/^\d+\.\s*/, '')}</span>
-                  </div>
-                )
-              } else if (line.trim() && !line.trim().startsWith('#')) {
-                return <div key={lineIndex} className="font-medium text-gray-800">{line.trim()}</div>
-              }
-              return null
-            })}
-          </div>
-        </div>
+        <Card key={index} variant="feature" className="mb-6 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b border-border/50">
+            <CardTitle className="flex items-center gap-3 text-foreground">
+              {title.includes('Executive Summary') && <Brain className="w-5 h-5 text-primary" />}
+              {title.includes('Trauma Analysis') && <Target className="w-5 h-5 text-destructive" />}
+              {title.includes('Toxicity Score') && <TrendingUp className="w-5 h-5 text-warning" />}
+              {title.includes('Strengths') && <Sparkles className="w-5 h-5 text-success" />}
+              {title.includes('Most Important to Address') && <AlertTriangle className="w-5 h-5 text-warning" />}
+              {title.includes('Behavioral Patterns') && <Brain className="w-5 h-5 text-primary" />}
+              {title.includes('Healing Roadmap') && <Heart className="w-5 h-5 text-primary" />}
+              {title.includes('Actionable Recommendations') && <Target className="w-5 h-5 text-success" />}
+              {title.includes('Resources') && <BookOpen className="w-5 h-5 text-muted-foreground" />}
+              {title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+              {content.split('\n').map((line, lineIndex) => {
+                if (line.trim().startsWith('•')) {
+                  return (
+                    <div key={lineIndex} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                      <span className="text-primary font-bold mt-0.5">•</span>
+                      <span className="text-foreground">{line.substring(1).trim()}</span>
+                    </div>
+                  )
+                } else if (line.trim().match(/^\d+\./)) {
+                  // Handle numbered roadmap items
+                  return (
+                    <div key={lineIndex} className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
+                      <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10">
+                        {line.match(/^\d+\./)?.[0]}
+                      </Badge>
+                      <span className="text-foreground font-medium">{line.replace(/^\d+\.\s*/, '')}</span>
+                    </div>
+                  )
+                } else if (line.trim() && !line.trim().startsWith('#')) {
+                  return (
+                    <div key={lineIndex} className="p-3 rounded-lg bg-background border border-border/50">
+                      <span className="text-foreground font-medium">{line.trim()}</span>
+                    </div>
+                  )
+                }
+                return null
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )
     })
   }
@@ -257,10 +234,15 @@ export default function ReportPage() {
   if (checkingAccess) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+        <Card variant="glass" className="max-w-md mx-auto text-center p-8">
+          <div className="relative mb-6">
+            <div className="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-10 h-10 bg-primary rounded-full animate-pulse"></div>
+            </div>
+          </div>
           <p className="text-muted-foreground">Checking your access...</p>
-        </div>
+        </Card>
       </div>
     )
   }
@@ -270,55 +252,48 @@ export default function ReportPage() {
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-4">Your Comprehensive Diagnostic Report</h1>
-            <p className="text-lg text-muted-foreground mb-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full mb-6">
+              <Brain className="w-10 h-10 text-primary" />
+            </div>
+            <h1 className="responsive-heading text-foreground mb-4">Your Comprehensive Diagnostic Report</h1>
+            <p className="responsive-body text-muted-foreground mb-8">
               Unlock your personalized trauma analysis, healing roadmap, and actionable recommendations
             </p>
           </div>
           
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-center">Complete Diagnostic Report</CardTitle>
+          <Card variant="modern" className="max-w-2xl mx-auto">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="flex items-center justify-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center">
+                  📊
+                </div>
+                Complete Diagnostic Report
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-8">
               <div className="text-center">
-                <div className="text-6xl mb-4">📊</div>
-                <h3 className="text-xl font-semibold mb-2">What's Included:</h3>
-                <ul className="text-left space-y-2 text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    Executive Summary & Trauma Analysis
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    Toxicity Score Assessment
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    Personal Strengths & Growth Areas
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    Behavioral Pattern Analysis
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    Custom Healing Roadmap
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    Actionable Recommendations
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    Resources & Next Steps
-                  </li>
-                </ul>
+                <h3 className="text-xl font-semibold mb-4 text-foreground">What's Included:</h3>
+                <div className="grid gap-3 text-left">
+                  {[
+                    { icon: Brain, text: 'Executive Summary & Trauma Analysis', color: 'text-primary' },
+                    { icon: TrendingUp, text: 'Toxicity Score Assessment', color: 'text-warning' },
+                    { icon: Sparkles, text: 'Personal Strengths & Growth Areas', color: 'text-success' },
+                    { icon: Target, text: 'Behavioral Pattern Analysis', color: 'text-primary' },
+                    { icon: Heart, text: 'Custom Healing Roadmap', color: 'text-primary' },
+                    { icon: Target, text: 'Actionable Recommendations', color: 'text-success' },
+                    { icon: BookOpen, text: 'Resources & Next Steps', color: 'text-muted-foreground' }
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                      <CheckCircle className={`w-5 h-5 text-green-500 flex-shrink-0`} />
+                      <span className="text-foreground">{item.text}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
               
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 mb-2">$9.99</div>
-                <p className="text-gray-600 mb-6">One-time purchase • Lifetime access</p>
+                <div className="text-3xl font-bold text-foreground mb-2">$9.99</div>
+                <p className="text-muted-foreground mb-6">One-time purchase • Lifetime access</p>
                 
                 <PaymentForm
                   productType="diagnostic"
@@ -338,7 +313,7 @@ export default function ReportPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-md">
+        <Card variant="glass" className="max-w-md mx-auto text-center p-8">
           <div className="relative mb-6">
             <div className="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
             <div className="absolute inset-0 flex items-center justify-center">
@@ -355,7 +330,7 @@ export default function ReportPage() {
             <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
             <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
           </div>
-        </div>
+        </Card>
       </div>
     )
   }
@@ -364,8 +339,11 @@ export default function ReportPage() {
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Your Comprehensive Diagnostic Report</h1>
-          <p className="text-lg text-muted-foreground mb-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full mb-6">
+            <Brain className="w-10 h-10 text-primary" />
+          </div>
+          <h1 className="responsive-heading text-foreground mb-4">Your Comprehensive Diagnostic Report</h1>
+          <p className="responsive-body text-muted-foreground mb-6">
             Based on your {questionCount} diagnostic responses
           </p>
           
@@ -374,25 +352,26 @@ export default function ReportPage() {
               onClick={() => {
                 const link = document.createElement('a')
                 link.href = '/api/export'
-                link.download = 'diagnostic-report.pdf'
+                link.download = 'diagnostic-report.txt'
                 document.body.appendChild(link)
                 link.click()
                 document.body.removeChild(link)
               }}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              variant="primary"
+              size="lg"
             >
               <Download className="w-4 h-4 mr-2" />
-              Download PDF
+              Download Report
             </Button>
           </div>
         </div>
 
         {error && (
-          <Card className="mb-8 border-destructive/20 bg-destructive/5">
+          <Card variant="destructive" className="mb-8">
             <CardContent className="p-6">
-              <div className="flex items-center gap-2 text-destructive">
+              <div className="flex items-center gap-3 text-destructive">
                 <AlertTriangle className="w-5 h-5" />
-                <span>{error}</span>
+                <span className="font-medium">{error}</span>
               </div>
             </CardContent>
           </Card>
@@ -405,14 +384,16 @@ export default function ReportPage() {
         )}
 
         {!comprehensiveReport && !loading && (
-          <Card>
+          <Card variant="glass">
             <CardContent className="p-8 text-center">
-              <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-warning/20 rounded-full mb-4">
+                <AlertTriangle className="w-8 h-8 text-warning" />
+              </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">Report Not Available</h3>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-6">
                 Your comprehensive diagnostic report is not available. Please ensure you have completed the diagnostic process.
               </p>
-              <Button onClick={() => router.push('/diagnostic')}>
+              <Button variant="primary" onClick={() => router.push('/diagnostic')}>
                 Complete Diagnostic
               </Button>
             </CardContent>

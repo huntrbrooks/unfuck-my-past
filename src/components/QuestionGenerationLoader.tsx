@@ -1,182 +1,208 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Brain, Sparkles, Target, Heart, Zap, CheckCircle } from 'lucide-react'
+import React from 'react'
+import { Card, CardContent, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { 
+  Brain, 
+  Sparkles, 
+  Target, 
+  Heart, 
+  Zap, 
+  Star,
+  ArrowRight,
+  CheckCircle
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface QuestionGenerationLoaderProps {
-  isGenerating: boolean
-  onQuestionsReady: () => void
-  onRetry: () => void
+  currentStep?: number
+  totalSteps?: number
+  isGenerating?: boolean
 }
 
-const QuestionGenerationLoader: React.FC<QuestionGenerationLoaderProps> = ({
-  isGenerating,
-  onQuestionsReady,
-  onRetry
-}) => {
-  const [showReady, setShowReady] = useState(false)
-  const [currentStep, setCurrentStep] = useState(0)
+export default function QuestionGenerationLoader({ 
+  currentStep = 1,
+  totalSteps = 5,
+  isGenerating = true
+}: QuestionGenerationLoaderProps) {
+  const progress = (currentStep / totalSteps) * 100
 
   const steps = [
-    { icon: Brain, text: "Analyzing your responses with GPT-4.1", color: "text-blue-500" },
-    { icon: Sparkles, text: "Creating your master prompt", color: "text-purple-500" },
-    { icon: Target, text: "Generating personalized questions with Claude-3-Opus", color: "text-green-500" },
-    { icon: Heart, text: "Crafting your healing journey", color: "text-pink-500" },
-    { icon: Zap, text: "Finalizing your diagnostic experience", color: "text-yellow-500" }
+    {
+      icon: Brain,
+      title: 'Analyzing your responses',
+      description: 'Processing your unique patterns and experiences',
+      color: 'from-blue-500 to-indigo-500'
+    },
+    {
+      icon: Target,
+      title: 'Identifying key areas',
+      description: 'Mapping your healing journey priorities',
+      color: 'from-green-500 to-emerald-500'
+    },
+    {
+      icon: Heart,
+      title: 'Personalizing questions',
+      description: 'Creating questions tailored to your needs',
+      color: 'from-purple-500 to-pink-500'
+    },
+    {
+      icon: Zap,
+      title: 'Optimizing flow',
+      description: 'Ensuring smooth question progression',
+      color: 'from-yellow-500 to-orange-500'
+    },
+    {
+      icon: Star,
+      title: 'Finalizing your journey',
+      description: 'Preparing your personalized experience',
+      color: 'from-red-500 to-rose-500'
+    }
   ]
 
-  useEffect(() => {
-    if (!isGenerating && !showReady) {
-      // Show the ready message after a brief delay
-      setTimeout(() => setShowReady(true), 500)
-    }
-  }, [isGenerating, showReady])
-
-  useEffect(() => {
-    if (isGenerating) {
-      const interval = setInterval(() => {
-        setCurrentStep((prev) => (prev + 1) % steps.length)
-      }, 2000)
-      return () => clearInterval(interval)
-    }
-  }, [isGenerating, steps.length])
-
-  if (showReady) {
-    return (
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4"
-        >
-          <Card className="max-w-md w-full border-0 shadow-2xl">
-            <CardContent className="p-8 text-center">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="mb-6"
-              >
-                <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-              </motion.div>
-              
-              <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="text-2xl font-bold text-gray-900 mb-4"
-              >
-                Ready to Unfuck Your Past?
-              </motion.h2>
-              
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="text-gray-600 mb-8"
-              >
-                Your personalized diagnostic questions are ready. This journey is about understanding, healing, and transforming your life.
-              </motion.p>
-              
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-              >
-                <Button 
-                  onClick={onQuestionsReady}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105"
-                >
-                  Begin Your Journey
-                </Button>
-              </motion.div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </AnimatePresence>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full border-0 shadow-2xl">
-        <CardContent className="p-8 text-center">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="mb-6"
-          >
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 rounded-full blur-lg opacity-30"></div>
-              <div className="relative bg-white rounded-full p-4 w-20 h-20 mx-auto flex items-center justify-center">
-                <Brain className="h-8 w-8 text-gray-700" />
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-6">
+      <div className="max-w-2xl w-full space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <div className="relative inline-block">
+            <div className="w-20 h-20 bg-gradient-to-br from-primary via-accent to-secondary rounded-3xl flex items-center justify-center mx-auto mb-4 animate-float">
+              <Sparkles className="h-10 w-10 text-primary-foreground" />
             </div>
-          </motion.div>
+            {/* Floating elements */}
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-accent to-secondary rounded-full animate-float" style={{ animationDelay: '0.5s' }} />
+            <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-gradient-to-br from-secondary to-muted rounded-full animate-float" style={{ animationDelay: '1s' }} />
+          </div>
           
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            Crafting Your Personalized Experience
-          </h2>
-          
-          <div className="space-y-4 mb-8">
-            {steps.map((step, index) => {
-              const Icon = step.icon
-              const isActive = index === currentStep
-              const isCompleted = index < currentStep
-              
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ 
-                    opacity: isActive || isCompleted ? 1 : 0.5,
-                    x: 0
-                  }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-300 ${
-                    isActive ? 'bg-green-50 border border-green-200' : ''
-                  }`}
-                >
-                  <div className={`flex-shrink-0 ${step.color}`}>
-                    <Icon className={`h-5 w-5 ${isCompleted ? 'text-green-500' : ''}`} />
+          <h1 className="text-3xl font-bold text-foreground">
+            Creating Your Personal Journey
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-md mx-auto">
+            Our AI is analyzing your responses to create a truly personalized healing experience
+          </p>
+        </div>
+
+        {/* Progress */}
+        <Card className="glass-card border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle className="text-lg font-semibold text-foreground">
+                Progress
+              </CardTitle>
+              <Badge variant="glass" size="lg">
+                Step {currentStep} of {totalSteps}
+              </Badge>
+            </div>
+            
+            <Progress 
+              value={progress} 
+              variant="gradient" 
+              size="lg" 
+              className="h-3 mb-4" 
+            />
+            
+            <div className="text-center text-sm text-muted-foreground">
+              {Math.round(progress)}% Complete
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Steps */}
+        <div className="space-y-4">
+          {steps.map((step, index) => {
+            const Icon = step.icon
+            const isActive = index + 1 === currentStep
+            const isCompleted = index + 1 < currentStep
+            const isPending = index + 1 > currentStep
+            
+            return (
+              <Card 
+                key={index}
+                className={cn(
+                  'border-0 transition-all duration-500',
+                  isActive ? 'glass-card shadow-glow' : 'modern-card',
+                  isCompleted ? 'opacity-60' : '',
+                  isPending ? 'opacity-40' : ''
+                )}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      'w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300',
+                      isActive ? 'bg-gradient-to-br ' + step.color + ' scale-110' : 'bg-muted',
+                      isCompleted ? 'bg-success/20' : '',
+                      isPending ? 'bg-muted/50' : ''
+                    )}>
+                      {isCompleted ? (
+                        <CheckCircle className="h-6 w-6 text-success" />
+                      ) : (
+                        <Icon className={cn(
+                          'h-6 w-6 transition-all duration-300',
+                          isActive ? 'text-white animate-pulse' : 'text-muted-foreground',
+                          isPending ? 'text-muted-foreground/50' : ''
+                        )} />
+                      )}
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className={cn(
+                          'font-semibold transition-colors duration-300',
+                          isActive ? 'text-foreground' : 'text-muted-foreground',
+                          isCompleted ? 'text-success' : '',
+                          isPending ? 'text-muted-foreground/50' : ''
+                        )}>
+                          {step.title}
+                        </h3>
+                        {isActive && (
+                          <div className="flex gap-1">
+                            {[0, 1, 2].map((i) => (
+                              <div
+                                key={i}
+                                className="w-1 h-1 bg-primary rounded-full animate-pulse"
+                                style={{ animationDelay: `${i * 0.2}s` }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <p className={cn(
+                        'text-sm transition-colors duration-300',
+                        isActive ? 'text-foreground' : 'text-muted-foreground',
+                        isCompleted ? 'text-success/80' : '',
+                        isPending ? 'text-muted-foreground/50' : ''
+                      )}>
+                        {step.description}
+                      </p>
+                    </div>
+                    
+                    {isActive && (
+                      <ArrowRight className="h-5 w-5 text-primary animate-pulse" />
+                    )}
                   </div>
-                  <span className={`text-sm ${isActive ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
-                    {step.text}
-                  </span>
-                  {isCompleted && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="ml-auto"
-                    >
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    </motion.div>
-                  )}
-                </motion.div>
-              )
-            })}
-          </div>
-          
-          <div className="text-center">
-            <p className="text-sm text-gray-500 mb-4">
-              This usually takes 30-60 seconds
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+
+        {/* Status Message */}
+        <Card className="glass-card border-0 text-center">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+              <span className="text-sm font-medium text-foreground">
+                {isGenerating ? 'Generating...' : 'Almost ready...'}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              This process typically takes 30-60 seconds. Please don&apos;t refresh the page.
             </p>
-            <Button 
-              variant="outline" 
-              onClick={onRetry}
-              className="text-sm"
-            >
-              Try Again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
-
-export default QuestionGenerationLoader

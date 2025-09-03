@@ -1,162 +1,154 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import UserButton from './UserButton'
 import ThemeToggle from './ThemeToggle'
 import Link from 'next/link'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Target, Sparkles, TrendingUp, Heart, Calendar, Clock } from 'lucide-react'
 
-interface MobileMenuProps {
-  className?: string
-}
-
-export default function MobileMenu({ className = '' }: MobileMenuProps) {
-  const [show, setShow] = useState(false)
+export default function MobileMenu() {
+  const [isOpen, setIsOpen] = useState(false)
   const { isSignedIn, isLoaded } = useAuth()
 
-  const handleClose = () => setShow(false)
-  const handleShow = () => setShow(true)
+  const toggleMenu = () => setIsOpen(!isOpen)
 
   return (
-    <>
-      <header className={`border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50 ${className}`}>
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="text-xl font-bold text-foreground hover:text-primary transition-colors cursor-pointer">
-              Unfuck Your Past
-            </Link>
-            
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShow}
-                className="md:hidden"
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
+    <div className="md:hidden">
+      {/* Mobile Menu Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleMenu}
+        className="relative z-50 hover:bg-accent/50 transition-all duration-300"
+        aria-label="Toggle mobile menu"
+      >
+        {isOpen ? (
+          <X className="h-6 w-6 transition-all duration-300 rotate-90" />
+        ) : (
+          <Menu className="h-6 w-6 transition-all duration-300" />
+        )}
+      </Button>
+
+      {/* Mobile Menu Overlay */}
+      {isOpen && (
+        <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-xl">
+          <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-card/95 backdrop-blur-xl border-l border-border/50 shadow-2xl">
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-border/50">
+                <Link 
+                  href="/dashboard" 
+                  className="text-xl font-bold text-foreground hover:text-primary transition-all duration-300 cursor-pointer group"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent group-hover:from-primary/80 group-hover:via-accent/80 group-hover:to-secondary/80 transition-all duration-300">
+                    Unfuck Your Past
+                  </span>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleMenu}
+                  className="hover:bg-accent/50 transition-all duration-300"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+
+              {/* Navigation Links */}
+              <nav className="flex-1 px-6 py-8 space-y-6">
+                {isSignedIn && (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-3 text-lg font-medium text-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Target className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/how-it-works"
+                      className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Sparkles className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                      How It Works
+                    </Link>
+                    <Link
+                      href="/onboarding"
+                      className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <TrendingUp className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                      Continue Journey
+                    </Link>
+                    <Link
+                      href="/report"
+                      className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Heart className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                      My Report
+                    </Link>
+                    <Link
+                      href="/program"
+                      className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Calendar className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                      30-Day Program
+                    </Link>
+                    <Link
+                      href="/preferences"
+                      className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Clock className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                      Preferences
+                    </Link>
+                  </>
+                )}
+              </nav>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-border/50 space-y-4">
+                <div className="flex items-center justify-center">
+                  <ThemeToggle />
+                </div>
+                
+                {isLoaded && !isSignedIn && (
+                  <div className="flex flex-col gap-3">
+                    <Button 
+                      variant="outline" 
+                      asChild
+                      className="w-full hover:shadow-lg transition-all duration-300"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Link href="/sign-in">Sign In</Link>
+                    </Button>
+                    <Button 
+                      asChild
+                      className="w-full hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Link href="/sign-up">Get Started</Link>
+                    </Button>
+                  </div>
+                )}
+                
+                {isSignedIn && (
+                  <div className="flex justify-center">
+                    <UserButton />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </header>
-
-      {/* Mobile Menu Overlay */}
-      {show && (
-        <div className="fixed inset-0 z-50 bg-black/50 md:hidden" onClick={handleClose} />
       )}
-
-      {/* Mobile Menu Sidebar */}
-      <div className={`fixed top-0 right-0 z-50 h-full w-80 bg-background border-l border-border transform transition-transform duration-300 ease-in-out md:hidden ${show ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-lg font-semibold">Menu</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <div className="p-6">
-          <nav className="flex flex-col space-y-4">
-            <Link 
-              href="/how-it-works" 
-              onClick={handleClose}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors py-2"
-            >
-              How It Works
-            </Link>
-            
-            {isSignedIn && (
-              <>
-                <Link 
-                  href="/dashboard" 
-                  onClick={handleClose}
-                  className="text-sm text-primary font-medium py-2"
-                >
-                  Dashboard
-                </Link>
-                <Link 
-                  href="/how-it-works" 
-                  onClick={handleClose}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors py-2"
-                >
-                  How It Works
-                </Link>
-                <Link 
-                  href="/onboarding" 
-                  onClick={handleClose}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors py-2"
-                >
-                  Continue Journey
-                </Link>
-                <Link 
-                  href="/report" 
-                  onClick={handleClose}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors py-2"
-                >
-                  My Report
-                </Link>
-                <Link 
-                  href="/program" 
-                  onClick={handleClose}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors py-2"
-                >
-                  30-Day Program
-                </Link>
-                <Link 
-                  href="/preferences" 
-                  onClick={handleClose}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors py-2"
-                >
-                  Preferences
-                </Link>
-              </>
-            )}
-          </nav>
-          
-          <hr className="my-6" />
-          
-          {isLoaded && (
-            <div className="space-y-4">
-              {isSignedIn ? (
-                <div className="text-center">
-                  <UserButton />
-                </div>
-              ) : (
-                <>
-                  <Button 
-                    variant="outline" 
-                    asChild
-                    size="lg"
-                    className="w-full"
-                    onClick={handleClose}
-                  >
-                    <Link href="/sign-in">
-                      Sign In
-                    </Link>
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    asChild
-                    size="lg"
-                    className="w-full"
-                    onClick={handleClose}
-                  >
-                    <Link href="/sign-up">
-                      Get Started
-                    </Link>
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+    </div>
   )
 }

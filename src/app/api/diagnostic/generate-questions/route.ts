@@ -4,7 +4,7 @@ import { db, users } from '../../../../db'
 import { eq } from 'drizzle-orm'
 import { AIOnboardingAnalyzer } from '../../../../lib/ai-onboarding-analyzer'
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { userId } = await auth()
     
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { userId } = await auth()
     

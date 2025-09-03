@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ChevronDown, ChevronUp, FileText, Download } from 'lucide-react'
+import { ChevronDown, ChevronUp, FileText, Download, Brain, Target, Sparkles } from 'lucide-react'
 
 interface DiagnosticResponse {
   question: string
@@ -35,7 +35,7 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
       }
       const data = await response.json()
       setResponses(data.responses || [])
-    } catch (err) {
+    } catch {
       setError('Failed to load diagnostic responses')
     } finally {
       setLoading(false)
@@ -70,23 +70,23 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `diagnostic-report-${new Date().toISOString().split('T')[0]}.pdf`
+      a.download = `diagnostic-report-${new Date().toISOString().split('T')[0]}.txt`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
-    } catch (err) {
+    } catch {
       setError('Failed to export report')
     }
   }
 
   if (loading) {
     return (
-      <Card>
+      <Card variant="glass">
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            <span className="ml-2">Loading diagnostic report...</span>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2 text-foreground">Loading diagnostic report...</span>
           </div>
         </CardContent>
       </Card>
@@ -95,9 +95,9 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
 
   if (error) {
     return (
-      <Card>
+      <Card variant="destructive">
         <CardContent className="p-6">
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700">
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive">
             {error}
           </div>
         </CardContent>
@@ -107,10 +107,10 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
 
   if (responses.length === 0) {
     return (
-      <Card>
+      <Card variant="glass">
         <CardContent className="p-6">
-          <div className="text-center text-gray-500">
-            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <div className="text-center text-muted-foreground">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
             <p>No diagnostic responses found.</p>
             <p className="text-sm">Complete the diagnostic section to generate your report.</p>
           </div>
@@ -122,8 +122,8 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Diagnostic Report</h2>
-        <Button onClick={handleExport} className="flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-foreground">Diagnostic Report</h2>
+        <Button onClick={handleExport} variant="outline" className="flex items-center gap-2">
           <Download className="h-4 w-4" />
           Export Report
         </Button>
@@ -131,23 +131,23 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
 
       <div className="space-y-4">
         {responses.map((response, index) => (
-          <Card key={index} className="overflow-hidden">
+          <Card key={index} variant="feature" className="overflow-hidden">
             <CardHeader 
-              className="cursor-pointer hover:bg-gray-50 transition-colors"
+              className="cursor-pointer hover:bg-accent/20 transition-colors"
               onClick={() => toggleExpanded(index)}
             >
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">
+                <CardTitle className="text-lg text-foreground">
                   Question {index + 1}
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">
+                  <Badge variant="outline">
                     {new Date(response.timestamp).toLocaleDateString()}
                   </Badge>
                   {expandedItems.has(index) ? (
-                    <ChevronUp className="h-5 w-5" />
+                    <ChevronUp className="h-5 w-5 text-foreground" />
                   ) : (
-                    <ChevronDown className="h-5 w-5" />
+                    <ChevronDown className="h-5 w-5 text-foreground" />
                   )}
                 </div>
               </div>
@@ -156,20 +156,29 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
             {expandedItems.has(index) && (
               <CardContent className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Question:</h4>
-                  <p className="text-gray-700">{response.question}</p>
+                  <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    Question:
+                  </h4>
+                  <p className="text-foreground">{response.question}</p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Your Response:</h4>
-                  <p className="text-gray-700 bg-gray-50 p-3 rounded-md">
+                  <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <Brain className="h-4 w-4 text-accent-foreground" />
+                    Your Response:
+                  </h4>
+                  <p className="text-foreground bg-muted/30 p-3 rounded-md">
                     {response.response}
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">AI Insight:</h4>
-                  <p className="text-gray-700 bg-blue-50 p-3 rounded-md">
+                  <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    AI Insight:
+                  </h4>
+                  <p className="text-foreground bg-primary/5 p-3 rounded-md border border-primary/20">
                     {response.insight}
                   </p>
                 </div>
@@ -179,9 +188,12 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
         ))}
       </div>
 
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h3 className="font-semibold text-blue-900 mb-2">Report Summary</h3>
-        <p className="text-blue-800 text-sm">
+      <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+        <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+          <Brain className="h-4 w-4 text-primary" />
+          Report Summary
+        </h3>
+        <p className="text-foreground text-sm">
           This report contains {responses.length} diagnostic responses with AI-generated insights. 
           Each response has been analyzed to provide personalized recommendations for your healing journey.
         </p>

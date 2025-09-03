@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { db, purchases, users } from '../../../../db'
+import { db, purchases } from '../../../../db'
 import { verifyPaymentIntent } from '../../../../lib/stripe'
 import { eq, and } from 'drizzle-orm'
 

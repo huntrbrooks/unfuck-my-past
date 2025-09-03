@@ -1,54 +1,44 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
-import { useTheme } from './ThemeProvider'
-import { Moon, Sun } from 'lucide-react'
+import { Sun, Moon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-interface ThemeToggleProps {
-  size?: 'sm' | 'md' | 'lg'
-  variant?: 'outline' | 'ghost'
-  className?: string
-}
-
-export default function ThemeToggle({ 
-  size = 'sm', 
-  variant = 'ghost',
-  className = ''
-}: ThemeToggleProps) {
+export default function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Prevent hydration mismatch
   if (!mounted) {
-    return <div className="w-9 h-9" />
+    return (
+      <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl">
+        <div className="w-4 h-4 bg-muted-foreground/20 rounded animate-pulse" />
+      </Button>
+    )
   }
-
-  const getIcon = () => {
-    return theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />
-  }
-
-  const getLabel = () => {
-    return theme === 'light' ? 'Dark Mode' : 'Light Mode'
-  }
-
-  // Map size to Button size
-  const buttonSize = size === 'md' ? 'default' : size
 
   return (
-    <Button
-      variant={variant}
-      size={buttonSize as any}
-      onClick={toggleTheme}
-      className={className}
-      title={getLabel()}
-    >
-      {getIcon()}
-      <span className="sr-only">{getLabel()}</span>
-    </Button>
+    <div className="relative group">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+        className="w-10 h-10 rounded-xl hover:bg-accent/50 transition-all duration-300 group-hover:scale-105"
+        aria-label="Toggle theme"
+      >
+        <Sun className="h-4 w-4 rotate-0 scale-100 transition-all duration-300 dark:-rotate-90 dark:scale-0" />
+        <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all duration-300 dark:rotate-0 dark:scale-100" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+      
+      {/* Tooltip */}
+      <div className="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs text-muted-foreground bg-popover border border-border rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+        {theme === 'light' ? 'Switch to dark' : 'Switch to light'}
+      </div>
+    </div>
   )
 }

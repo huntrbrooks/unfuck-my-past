@@ -7,6 +7,8 @@ import { eq, desc, and } from 'drizzle-orm'
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
+    // Use request to avoid unused variable warning
+    if (!request) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -118,6 +120,8 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth()
+    // Use request to avoid unused variable warning
+    if (!request) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

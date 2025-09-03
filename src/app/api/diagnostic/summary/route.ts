@@ -4,7 +4,7 @@ import { db, users, diagnosticResponses, diagnosticSummaries } from '../../../..
 import { AIService } from '../../../../lib/ai-service'
 import { eq, desc } from 'drizzle-orm'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { userId } = await auth()
     
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { userId } = await auth()
     

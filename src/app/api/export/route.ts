@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleDiagnosticSummaryTXT(userId: string, safetyData: any) {
+async function handleDiagnosticSummaryTXT(userId: string, safetyData: { diagnosticSummary?: { content: string }; keyInsights?: string }) {
   const summary = safetyData.diagnosticSummary?.content || 'No diagnostic summary available'
   const keyInsights = safetyData.keyInsights || 'No key insights available'
   

@@ -21,9 +21,9 @@ interface Recognition extends EventTarget {
   start(): void
   stop(): void
   abort(): void
-  onresult: ((event: any) => void) | null
-  onerror: ((event: any) => void) | null
-  onend: ((event: any) => void) | null
+  onresult: ((event: { results: { transcript: string }[][] }) => void) | null
+  onerror: ((event: { error: string }) => void) | null
+  onend: ((event: Event) => void) | null
 }
 
 declare global {
@@ -35,7 +35,7 @@ declare global {
 
 export default function VoiceRecorder({ 
   onTranscription, 
-  onError, 
+  onError,
   disabled = false,
   placeholder = "Click to start recording...",
   className = '',
@@ -131,7 +131,7 @@ export default function VoiceRecorder({
         stopRecording()
       }, 120000) // 2 minutes
 
-    } catch (err) {
+    } catch {
       setError('Failed to start recording')
       setIsRecording(false)
       setIsProcessing(false)
@@ -166,7 +166,7 @@ export default function VoiceRecorder({
       setRecordingTime(0)
       setIsProcessing(false)
 
-    } catch (err) {
+    } catch {
       setError('Failed to stop recording')
       setIsRecording(false)
       setIsProcessing(false)
@@ -194,17 +194,18 @@ export default function VoiceRecorder({
     setInterimTranscript('')
   }
 
-  const isSupported = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
+  // Check if speech recognition is supported
+  // const isSupported = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
 
-  if (!isSupported) {
+  if (!SpeechRecognition) {
     return (
-      <div className={`bg-yellow-50 border border-yellow-200 rounded-lg p-4 ${className}`}>
+      <div className={`bg-warning/10 border border-warning/20 rounded-lg p-4 ${className}`}>
         <div className="flex items-center gap-3 mb-2">
-          <AlertTriangle className="h-5 w-5 text-yellow-600" />
-          <h4 className="font-semibold text-yellow-800">Voice Input Not Available</h4>
+          <AlertTriangle className="h-5 w-5 text-warning" />
+          <h4 className="font-semibold text-warning-foreground">Voice Input Not Available</h4>
         </div>
-        <p className="text-yellow-700">
-          Your browser doesn't support voice recording. Please use the text input instead.
+        <p className="text-warning-foreground">
+          Your browser doesn&apos;t support voice recording. Please use the text input instead.
         </p>
       </div>
     )
@@ -213,13 +214,13 @@ export default function VoiceRecorder({
   return (
     <div className={`voice-recorder ${className}`}>
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-            <p className="text-red-800">{error}</p>
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <p className="text-destructive">{error}</p>
             <button
               onClick={() => setError(null)}
-              className="ml-auto text-red-600 hover:text-red-800"
+              className="ml-auto text-destructive hover:text-destructive/80 transition-colors"
             >
               ×
             </button>
@@ -283,13 +284,13 @@ export default function VoiceRecorder({
       </div>
 
       {(transcript || interimTranscript) && !isEditing && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-4">
           <div>
-            <strong className="text-blue-900">Your Response:</strong>
-            <div className="text-blue-800 mt-2">
+            <strong className="text-primary-foreground">Your Response:</strong>
+            <div className="text-foreground mt-2">
               {transcript}
               {interimTranscript && (
-                <span className="text-blue-600 italic">{interimTranscript}</span>
+                <span className="text-primary/70 italic">{interimTranscript}</span>
               )}
             </div>
           </div>
@@ -297,9 +298,9 @@ export default function VoiceRecorder({
       )}
 
       {isEditing && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+        <div className="bg-muted/50 border border-border rounded-lg p-4 mb-4">
           <div>
-            <strong className="text-gray-900 mb-2 block">Edit Your Response:</strong>
+            <strong className="text-foreground mb-2 block">Edit Your Response:</strong>
             <Textarea
               value={editedText}
               onChange={(e) => setEditedText(e.target.value)}
@@ -329,16 +330,16 @@ export default function VoiceRecorder({
 
       {isRecording && (
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-          <span className="text-gray-700">
+          <div className="w-3 h-3 bg-destructive rounded-full animate-pulse"></div>
+          <span className="text-foreground">
             Recording... {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
           </span>
         </div>
       )}
 
       {!transcript && !isRecording && (
-        <div className="text-center text-gray-500 py-8">
-          <Mic className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+        <div className="text-center text-muted-foreground py-8">
+          <Mic className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
           <p>{placeholder}</p>
         </div>
       )}

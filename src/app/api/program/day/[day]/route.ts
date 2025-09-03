@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, programDays, users } from '../../../../../db'
-import { eq, and } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 export async function GET(
   request: NextRequest,

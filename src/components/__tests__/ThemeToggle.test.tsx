@@ -9,15 +9,7 @@ jest.mock('../ThemeProvider', () => ({
   useTheme: jest.fn(),
 }))
 
-const mockUseTheme = require('../ThemeProvider').useTheme
-
-const renderWithTheme = (component: React.ReactElement) => {
-  return render(
-    <ThemeProvider>
-      {component}
-    </ThemeProvider>
-  )
-}
+const mockUseTheme = jest.mocked(require('../ThemeProvider').useTheme)
 
 describe('ThemeToggle', () => {
 

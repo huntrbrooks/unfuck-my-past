@@ -3,14 +3,12 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Mic, Pencil, CheckCircle, Bot } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Mic, Pencil, CheckCircle, Bot, Brain, Target, Sparkles } from 'lucide-react'
 import LoadingSpinner from '../../components/LoadingSpinner'
-import SkeletonCard from '../../components/SkeletonCard'
 import VoiceRecorder from '../../components/VoiceRecorder'
 import QuestionGenerationLoader from '../../components/QuestionGenerationLoader'
 import { DiagnosticQuestion } from '../../lib/diagnostic-questions'
@@ -34,7 +32,7 @@ export default function Diagnostic() {
   const [error, setError] = useState('')
   const [inputMode, setInputMode] = useState<'text' | 'voice'>('text')
   const [voiceError, setVoiceError] = useState<string | null>(null)
-  const [userPreferences, setUserPreferences] = useState<any>(null)
+  // Removed userPreferences state as it's not currently used
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false)
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
@@ -57,7 +55,7 @@ export default function Diagnostic() {
       loadQuestions()
       }
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Show loader if we're generating questions
   useEffect(() => {
@@ -66,7 +64,7 @@ export default function Diagnostic() {
     }
   }, [isGeneratingQuestions])
 
-  const loadQuestions = async () => {
+  const loadQuestions = async (retryCount = 0) => {
     // Prevent multiple simultaneous requests
     if (isLoadingQuestions) {
       console.log('Questions already loading, skipping duplicate request')
@@ -87,107 +85,90 @@ export default function Diagnostic() {
           throw new Error('Please sign in to access your personalized diagnostic questions')
         }
         if (response.status === 429) {
-          throw new Error('Questions are being generated, please wait a moment and try again')
+          // If it's a 429 error and we haven't retried too many times, retry after a delay
+          if (retryCount < 3) {
+            console.log(`Questions are being generated, retrying in ${(retryCount + 1) * 2} seconds...`)
+            setError(`Questions are being personalized for you, please wait...`)
+            setTimeout(() => {
+              loadQuestions(retryCount + 1)
+            }, (retryCount + 1) * 2000) // 2s, 4s, 6s delays
+            return
+          }
+          throw new Error('Questions are taking longer than expected to generate. Please try refreshing the page.')
         }
         throw new Error(errorData.error || 'Failed to load questions')
       }
-      
+
       const data = await response.json()
-      console.log('API Response data:', data)
-      console.log('Questions in response:', data.questions?.length || 0)
+      console.log('Questions loaded:', data.questions?.length || 0)
       
-      if (!data.questions || data.questions.length === 0) {
-        throw new Error('No questions available. Please try again.')
+      if (data.questions && data.questions.length > 0) {
+        setQuestions(data.questions)
+        // setUserPreferences(data.userPreferences) // Currently unused
+      } else {
+        throw new Error('No questions found. Please try generating personalized questions.')
       }
-      
-      // Update questions state
-      console.log('Setting questions:', data.questions.length)
-      setQuestions(data.questions)
-      setUserPreferences(data.userPreferences)
-      console.log('Questions state updated successfully')
-      console.log('Successfully loaded questions:', data.questions.length, 'isPersonalized:', data.isPersonalized)
     } catch (error) {
-      setError(`Failed to load diagnostic questions: ${error instanceof Error ? error.message : 'Unknown error'}`)
       console.error('Error loading questions:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load questions')
     } finally {
-      setLoading(false)
       setIsLoadingQuestions(false)
+      setLoading(false)
     }
   }
 
   const generatePersonalizedQuestions = async () => {
+    setLoading(true)
+    setError('')
+    
     try {
-      setIsGeneratingQuestions(true)
-      setShowLoader(true)
-      console.log('Generating personalized questions...')
-      
       const response = await fetch('/api/diagnostic/generate-questions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        console.error('Failed to generate personalized questions:', errorData)
-        throw new Error('Failed to generate questions')
+        throw new Error(errorData.error || 'Failed to generate questions')
       }
 
       const data = await response.json()
-      console.log('Personalized questions generated:', data)
       
-      // Wait a bit to show the completion state
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Reload questions to get the personalized ones
-      await loadQuestions()
+      if (data.questions && data.questions.length > 0) {
+        setQuestions(data.questions)
+        // setUserPreferences(data.userPreferences) // Currently unused
+        setError('')
+      } else {
+        throw new Error('No questions were generated. Please try again.')
+      }
     } catch (error) {
-      setError(`Failed to generate questions: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      console.error('Error generating personalized questions:', error)
+      console.error('Error generating questions:', error)
+      setError(error instanceof Error ? error.message : 'Failed to generate questions')
     } finally {
-      setIsGeneratingQuestions(false)
+      setLoading(false)
     }
   }
 
-  const handleQuestionsReady = () => {
-    setShowLoader(false)
-    loadQuestions()
-  }
+  // These functions are used by QuestionGenerationLoader when it's properly configured
+  // const handleQuestionsReady = () => {
+  //   setShowLoader(false)
+  //   setIsGeneratingQuestions(false)
+  //   loadQuestions()
+  // }
 
-  const handleRetryGeneration = () => {
-    setShowLoader(false)
-    setIsGeneratingQuestions(false)
-    generatePersonalizedQuestions()
-  }
+  // const handleRetryGeneration = () => {
+  //   setShowLoader(false)
+  //   setIsGeneratingQuestions(false)
+  //   generatePersonalizedQuestions()
+  // }
 
   const testAIServices = async () => {
     try {
-      console.log('Testing AI services...')
-      const response = await fetch('/api/test-ai')
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('Failed to test AI services:', errorData)
-        return
-      }
-
-      const data = await response.json()
-      console.log('AI services test results:', data)
-      
-      // Show results in alert
-      const results = data.results
-      const message = `
-AI Services Test Results:
-
-OpenAI: ${results.openai.available ? '✅ Working' : '❌ Failed'}
-${results.openai.error ? `Error: ${results.openai.error}` : ''}
-${results.openai.response ? `Response: ${results.openai.response}` : ''}
-
-Claude: ${results.claude.available ? '✅ Working' : '❌ Failed'}
-${results.claude.error ? `Error: ${results.claude.error}` : ''}
-${results.claude.response ? `Response: ${results.claude.response}` : ''}
-      `.trim()
+      const message = await fetch('/api/diagnostic/test-ai', {
+        method: 'POST',
+      }).then(res => res.json()).then(data => data.message)
       
       alert(message)
     } catch (error) {
@@ -300,59 +281,55 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
 
   if (loading && questions.length === 0) {
     return (
-      <>
-         <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
-           <div className="max-w-2xl w-full">
-             <Card className="border-0 shadow-xl">
-               <CardContent className="p-8">
-                  <LoadingSpinner 
-                    size="lg" 
-                    text="Loading your personalized questions..." 
-                  />
-               </CardContent>
-              </Card>
-           </div>
-         </div>
-      </>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full">
+          <Card className="glass-card border-0 shadow-xl">
+            <CardContent className="p-8">
+              <LoadingSpinner 
+                size="lg" 
+                text="Loading your personalized questions..." 
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     )
   }
 
   if (error) {
     return (
-      <>
-         <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
-           <div className="max-w-2xl w-full">
-             <Card className="border-0 shadow-xl">
-               <CardContent className="p-8">
-                 <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
-                   <div className="flex items-center gap-3 mb-4">
-                     <AlertTriangle className="h-6 w-6 text-red-600" />
-                     <h3 className="text-lg font-semibold text-red-800">Error</h3>
-                   </div>
-                   <p className="text-red-700 mb-6">{error}</p>
-                   <div className="flex flex-col sm:flex-row gap-3">
-                     <Button variant="outline" onClick={loadQuestions}>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full">
+          <Card className="glass-card border-0 shadow-xl">
+            <CardContent className="p-8">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-6 mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <AlertTriangle className="h-6 w-6 text-destructive" />
+                  <h3 className="text-lg font-semibold text-destructive">Error</h3>
+                </div>
+                <p className="text-destructive/80 mb-6">{error}</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button variant="outline" onClick={() => loadQuestions()}>
                     Try Again
                   </Button>
-                     <Button variant="outline" onClick={generatePersonalizedQuestions}>
+                  <Button variant="outline" onClick={generatePersonalizedQuestions}>
                     Generate Personalized Questions
                   </Button>
-                     <Button variant="outline" onClick={testAIServices}>
+                  <Button variant="outline" onClick={testAIServices}>
                     Test AI Services
                   </Button>
                   {error.includes('sign in') && (
-                       <Button onClick={() => router.push('/sign-in?redirect=/diagnostic')}>
+                    <Button onClick={() => router.push('/sign-in?redirect=/diagnostic')}>
                       Sign In
                     </Button>
                   )}
                 </div>
-                 </div>
-               </CardContent>
-             </Card>
-           </div>
-         </div>
-        </>
-      )
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   // Show the beautiful loader when generating questions
@@ -360,8 +337,6 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
     return (
       <QuestionGenerationLoader
         isGenerating={isGeneratingQuestions}
-        onQuestionsReady={handleQuestionsReady}
-        onRetry={handleRetryGeneration}
       />
     )
   }
@@ -369,23 +344,23 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
   // If we have no questions and no error, show a message
   if (!loading && questions.length === 0 && !error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 py-8">
+      <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="border-0 shadow-xl">
+          <Card className="glass-card border-0 shadow-xl">
             <CardContent className="p-8">
               <div className="text-center">
                 <div className="mb-6">
-                  <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">No Questions Available</h2>
-                  <p className="text-gray-600 mb-6">No diagnostic questions were found. This might be because:</p>
-                  <ul className="text-left text-gray-600 mb-6 space-y-2">
-                    <li>• You haven't completed the onboarding process</li>
+                  <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
+                  <h2 className="responsive-heading text-foreground mb-4">No Questions Available</h2>
+                  <p className="responsive-body text-muted-foreground mb-6">No diagnostic questions were found. This might be because:</p>
+                  <ul className="text-left text-muted-foreground mb-6 space-y-2">
+                    <li>• You haven&apos;t completed the onboarding process</li>
                     <li>• The AI service failed to generate questions</li>
                     <li>• There was an issue loading your personalized questions</li>
-                </ul>
+                  </ul>
                 </div>
                 <div className="flex gap-3 justify-center">
-                  <Button variant="outline" onClick={loadQuestions}>
+                  <Button variant="outline" onClick={() => loadQuestions()}>
                     Try Loading Again
                   </Button>
                   <Button variant="outline" onClick={generatePersonalizedQuestions}>
@@ -401,191 +376,213 @@ ${results.claude.response ? `Response: ${results.claude.response}` : ''}
   }
 
   return (
-    <>
-       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 py-8">
-         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-           <Card className="border-0 shadow-xl">
-             <CardContent className="p-8">
-                {/* Progress */}
-               <div className="mb-8">
-                 <div className="flex justify-between items-center mb-3">
-                   <span className="text-sm text-gray-600">Question {currentQuestionIndex + 1} of {questions.length}</span>
-                   <span className="text-sm text-gray-600">{Math.round(progress)}% complete</span>
-                  </div>
-                 <Progress value={progress} className="h-2" />
-                </div>
+    <div className="min-h-screen bg-background py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-3 mb-4">
+            <div className="p-3 rounded-full bg-primary/10">
+              <Brain className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h1 className="responsive-heading text-foreground">Personal Diagnostic</h1>
+              <p className="responsive-body text-muted-foreground">Your journey to self-discovery starts here</p>
+            </div>
+          </div>
+        </div>
 
-                {/* Question */}
-               <div className="mb-8">
-                  {currentQuestion ? (
-                    <>
-                     <h2 className="text-2xl font-bold text-gray-900 mb-4">{currentQuestion.question}</h2>
+        <Card className="glass-card border-0 shadow-xl">
+          <CardContent className="p-8">
+            {/* Progress */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm text-muted-foreground">Question {currentQuestionIndex + 1} of {questions.length}</span>
+                <span className="text-sm text-muted-foreground">{Math.round(progress)}% complete</span>
+              </div>
+              <Progress value={progress} variant="gradient" className="h-3" />
+            </div>
+
+            {/* Question */}
+            <div className="mb-8">
+              {currentQuestion ? (
+                <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-6 border border-primary/20">
+                  <div className="flex items-start gap-3 mb-4">
+                    <Target className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h2 className="text-xl font-semibold text-foreground mb-3">{currentQuestion.question}</h2>
                       {currentQuestion.followUp && (
-                       <p className="text-lg text-gray-600 mb-4">{currentQuestion.followUp}</p>
+                        <p className="text-muted-foreground italic">💡 {currentQuestion.followUp}</p>
                       )}
-                    </>
-                  ) : (
-                    <div className="text-center">
-                      <LoadingSpinner size="md" text="Loading question..." />
                     </div>
-                  )}
-                </div>
-
-                {/* Response Options or Text/Voice Input */}
-                {currentQuestion?.options && currentQuestion.options.length > 0 ? (
-                 <div className="mb-8">
-                   <div className="space-y-3">
-                    {currentQuestion.options.map((option, index) => (
-                      <Button
-                        key={index}
-                         variant={currentResponse === option ? "default" : "outline"}
-                         className={`w-full justify-start p-4 h-auto text-left ${
-                           currentResponse === option 
-                             ? 'bg-green-600 hover:bg-green-700 border-green-600' 
-                             : 'hover:bg-gray-50'
-                         }`}
-                        onClick={() => setCurrentResponse(option)}
-                        disabled={generatingInsight}
-                      >
-                         <div className="flex items-center gap-3">
-                           {currentResponse === option && (
-                             <CheckCircle className="h-5 w-5 text-white" />
-                           )}
-                           <span className="text-base">{option}</span>
-                         </div>
-                      </Button>
-                    ))}
-                   </div>
                   </div>
-                ) : (
-                 <div className="mb-8">
-                    {/* Input Mode Toggle */}
-                   <div className="mb-6">
-                     <div className="flex bg-gray-100 rounded-lg p-1">
-                        <Button
-                         variant={inputMode === 'text' ? 'default' : 'ghost'}
-                          onClick={() => setInputMode('text')}
-                          disabled={generatingInsight}
-                         className="flex-1 flex items-center gap-2"
-                        >
-                         <Pencil className="h-4 w-4" />
-                          Type
-                        </Button>
-                        <Button
-                         variant={inputMode === 'voice' ? 'default' : 'ghost'}
-                          onClick={() => setInputMode('voice')}
-                          disabled={generatingInsight}
-                         className="flex-1 flex items-center gap-2"
-                        >
-                         <Mic className="h-4 w-4" />
-                          Voice
-                        </Button>
-                     </div>
-                    </div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <LoadingSpinner size="md" text="Loading question..." />
+                </div>
+              )}
+            </div>
 
-                    {/* Voice Input */}
-                    {inputMode === 'voice' && (
-                     <div className="mb-6">
-                        <VoiceRecorder
-                          onTranscription={handleVoiceTranscription}
-                          onError={handleVoiceError}
-                          disabled={generatingInsight}
-                          placeholder="Click to start recording your response..."
-                         className="mb-4"
-                          allowEdit={true}
-                        />
-                        {voiceError && (
-                         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                           <div className="flex items-center gap-3">
-                             <AlertTriangle className="h-5 w-5 text-red-600" />
-                             <p className="text-red-800">{voiceError}</p>
-                           </div>
-                         </div>
+            {/* Response Options or Text/Voice Input */}
+            {currentQuestion?.options && currentQuestion.options.length > 0 ? (
+              <div className="mb-8">
+                <div className="space-y-3">
+                  {currentQuestion.options.map((option, index) => (
+                    <Button
+                      key={index}
+                      variant={currentResponse === option ? "default" : "outline"}
+                      className={`w-full justify-start p-4 h-auto text-left transition-all duration-200 ${
+                        currentResponse === option 
+                          ? 'bg-primary hover:bg-primary/90 border-primary shadow-lg scale-[1.02]' 
+                          : 'hover:bg-accent hover:border-accent-foreground/20'
+                      }`}
+                      onClick={() => setCurrentResponse(option)}
+                      disabled={generatingInsight}
+                    >
+                      <div className="flex items-center gap-3">
+                        {currentResponse === option && (
+                          <CheckCircle className="h-5 w-5 text-primary-foreground" />
                         )}
+                        <span className="text-base">{option}</span>
                       </div>
-                    )}
-
-                    {/* Text Input */}
-                    {inputMode === 'text' && (
-                     <div className="mb-6">
-                       <Textarea
-                          placeholder="Share your thoughts here..."
-                          value={currentResponse}
-                          onChange={(e) => setCurrentResponse(e.target.value)}
-                          disabled={generatingInsight}
-                         className="min-h-[120px] text-base"
-                        />
-                     </div>
-                    )}
-
-                    {/* Current Response Display */}
-                    {currentResponse && (
-                     <div className="mb-6">
-                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                         <h4 className="font-semibold text-blue-900 mb-2">Your Response:</h4>
-                         <p className="text-blue-800">{currentResponse}</p>
-                       </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-               {/* Previous Insights - Updated to show only 1 */}
-                {responses.length > 0 && (
-                 <div className="mb-8">
-                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Previous Insights</h3>
-                   <div className="space-y-4">
-                     {responses.slice(-1).map((response, index) => (
-                       <Card key={index} className="border-l-4 border-l-green-500">
-                         <CardContent className="p-4">
-                           <div className="flex items-center gap-2 mb-2">
-                             <Badge variant="secondary" className="text-xs">
-                               <Bot className="h-4 w-4 text-gray-500" />
-                               Powered by AI
-                             </Badge>
-                           </div>
-                           <p className="text-gray-700">{response.insight}</p>
-                         </CardContent>
-                      </Card>
-                    ))}
-                   </div>
-                  </div>
-                )}
-
-                {/* Navigation */}
-               <div className="flex justify-between">
-                  <Button
-                   variant="outline"
-                    onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
-                    disabled={currentQuestionIndex === 0 || generatingInsight}
-                   className="flex items-center gap-2"
-                  >
-                   <ArrowLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  
-                  <Button
-                    onClick={handleSubmitResponse}
-                    disabled={!currentResponse.trim() || generatingInsight}
-                   className="flex items-center gap-2"
-                  >
-                    {generatingInsight ? (
-                      <>
-                       <Loader2 className="h-4 w-4 animate-spin" />
-                       Analyzing...
-                      </>
-                    ) : (
-                     <>
-                       {currentQuestionIndex === questions.length - 1 ? 'Complete Assessment' : 'Next Question'}
-                       <ArrowRight className="h-4 w-4" />
-                     </>
-                    )}
-                  </Button>
+                    </Button>
+                  ))}
                 </div>
-             </CardContent>
-            </Card>
-         </div>
-       </div>
-    </>
+              </div>
+            ) : (
+              <div className="mb-8">
+                {/* Input Mode Toggle */}
+                <div className="mb-6">
+                  <div className="flex bg-muted rounded-xl p-1">
+                    <Button
+                      variant={inputMode === 'text' ? 'default' : 'ghost'}
+                      onClick={() => setInputMode('text')}
+                      disabled={generatingInsight}
+                      className="flex-1 flex items-center gap-2"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Type
+                    </Button>
+                    <Button
+                      variant={inputMode === 'voice' ? 'default' : 'ghost'}
+                      onClick={() => setInputMode('voice')}
+                      disabled={generatingInsight}
+                      className="flex-1 flex items-center gap-2"
+                    >
+                      <Mic className="h-4 w-4" />
+                      Voice
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Voice Input */}
+                {inputMode === 'voice' && (
+                  <div className="mb-6">
+                    <VoiceRecorder
+                      onTranscription={handleVoiceTranscription}
+                      onError={handleVoiceError}
+                      disabled={generatingInsight}
+                      placeholder="Click to start recording your response..."
+                      className="mb-4"
+                      allowEdit={true}
+                    />
+                    {voiceError && (
+                      <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
+                        <div className="flex items-center gap-3">
+                          <AlertTriangle className="h-5 w-5 text-destructive" />
+                          <p className="text-destructive/80">{voiceError}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Text Input */}
+                {inputMode === 'text' && (
+                  <div className="mb-6">
+                    <Textarea
+                      placeholder="Share your thoughts here... Be as open and honest as you feel comfortable with."
+                      value={currentResponse}
+                      onChange={(e) => setCurrentResponse(e.target.value)}
+                      disabled={generatingInsight}
+                      className="min-h-[120px] text-base resize-none"
+                    />
+                  </div>
+                )}
+
+                {/* Current Response Display */}
+                {currentResponse && (
+                  <div className="mb-6">
+                    <div className="bg-accent/50 border border-accent/20 rounded-xl p-4">
+                      <h4 className="font-semibold text-accent-foreground mb-2 flex items-center gap-2">
+                        <Sparkles className="h-4 w-4" />
+                        Your Response:
+                      </h4>
+                      <p className="text-accent-foreground/80">{currentResponse}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Previous Insights - Updated to show only 1 */}
+            {responses.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-primary" />
+                  Latest AI Insight
+                </h3>
+                <div className="space-y-4">
+                  {responses.slice(-1).map((response, index) => (
+                    <Card key={index} className="feature-card border-l-4 border-l-primary">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="glass" className="text-xs">
+                            <Bot className="h-4 w-4 text-primary" />
+                            Powered by AI
+                          </Badge>
+                        </div>
+                        <p className="text-foreground">{response.insight}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
+                disabled={currentQuestionIndex === 0 || generatingInsight}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              
+              <Button
+                onClick={handleSubmitResponse}
+                disabled={!currentResponse.trim() || generatingInsight}
+                className="flex items-center gap-2"
+              >
+                {generatingInsight ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    {currentQuestionIndex === questions.length - 1 ? 'Complete Assessment' : 'Next Question'}
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }

@@ -20,7 +20,7 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: 'Unfuck Your Past - 30-Day Healing Journey',
   description: 'Transform your life through structured self-discovery and healing',
-  generator: 'v0.app',
+  generator: 'v0.app:v1:jVA3d1a89lPg2x2a1iI5yXpB:N2Gc5BD5rG1IFGTgxxP2rOGT',
   icons: {
     icon: [
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },

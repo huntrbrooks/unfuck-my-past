@@ -51,7 +51,7 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
       } else {
         setError(data.error || 'Export failed')
       }
-    } catch (err) {
+    } catch {
       setError('Failed to export data. Please try again.')
     } finally {
       setIsExporting(false)
@@ -63,13 +63,13 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Download className="h-5 w-5" />
+          <Download className="h-5 w-5 text-primary" />
           Export Your Data
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
             {error}
           </div>
         )}
@@ -77,13 +77,13 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
         <div className="space-y-6">
           {/* General Data Export */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">General Data Export</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-3">General Data Export</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Button
                 onClick={() => handleExport('json')}
                 disabled={isExporting}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
               >
                 {isExporting && exportType === 'json' ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -97,7 +97,7 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
                 onClick={() => handleExport('csv')}
                 disabled={isExporting}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
               >
                 {isExporting && exportType === 'csv' ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -111,7 +111,7 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
                 onClick={() => handleExport('pdf')}
                 disabled={isExporting}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
               >
                 {isExporting && exportType === 'pdf' ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -125,13 +125,13 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
 
           {/* Diagnostic TXT Exports */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Diagnostic Reports (TXT)</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Diagnostic Reports (TXT)</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Button
                 onClick={() => handleExport('diagnostic-summary-txt')}
                 disabled={isExporting}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
               >
                 {isExporting && exportType === 'diagnostic-summary-txt' ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -145,7 +145,7 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
                 onClick={() => handleExport('diagnostic-comprehensive-txt')}
                 disabled={isExporting}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
               >
                 {isExporting && exportType === 'diagnostic-comprehensive-txt' ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -159,7 +159,7 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
                 onClick={() => handleExport('diagnostic-questions-txt')}
                 disabled={isExporting}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
               >
                 {isExporting && exportType === 'diagnostic-questions-txt' ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -173,13 +173,13 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
 
           {/* Program TXT Exports */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">30-Day Program (TXT)</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-3">30-Day Program (TXT)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button
                 onClick={() => handleExport('program-structure-txt')}
                 disabled={isExporting}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
               >
                 {isExporting && exportType === 'program-structure-txt' ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -193,7 +193,7 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
                 onClick={() => handleExport('program-daily-txt')}
                 disabled={isExporting}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
               >
                 {isExporting && exportType === 'program-daily-txt' ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -206,7 +206,7 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
           </div>
         </div>
         
-        <p className="text-sm text-gray-600 mt-4">
+        <p className="text-sm text-muted-foreground mt-4">
           Export your diagnostic responses, insights, program progress, and individual reports as text files (.txt) for easy reading and sharing.
         </p>
       </CardContent>

@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { db, purchases } from '../../../../db'
 import { eq, and } from 'drizzle-orm'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { userId } = await auth()
     
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     .from(purchases)
     .where(and(eq(purchases.userId, userId), eq(purchases.active, true)))
 
-    const purchasesList = userPurchases.map((p: any) => ({
+    const purchasesList = userPurchases.map((p: { product: string; active: boolean; createdAt: Date }) => ({
       product: p.product,
       active: p.active,
       createdAt: p.createdAt

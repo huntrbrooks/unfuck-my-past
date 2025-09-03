@@ -4,115 +4,148 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Target, Bot, TrendingUp, CheckCircle, Lock, ArrowRight } from 'lucide-react'
+import { Target, Bot, TrendingUp, CheckCircle, Lock, ArrowRight, Sparkles, Heart, Brain, Zap, Shield, BookOpen } from 'lucide-react'
 
 export default function HowItWorks() {
   return (
-    <>
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-gray-900 mb-6">How It Works</h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            {/* Floating Elements */}
+            <div className="relative mb-8">
+              <div className="absolute -top-8 -left-8 p-4 rounded-full bg-primary/10 animate-float">
+                <Target className="h-8 w-8 text-primary" />
+              </div>
+              <div className="absolute -top-4 -right-8 p-4 rounded-full bg-accent/10 animate-float-delayed">
+                <Bot className="h-8 w-8 text-accent-foreground" />
+              </div>
+              <div className="absolute -bottom-8 left-1/4 p-4 rounded-full bg-primary/10 animate-float-slow">
+                <TrendingUp className="h-8 w-8 text-primary" />
+              </div>
+              <div className="absolute -bottom-4 right-1/4 p-4 rounded-full bg-accent/10 animate-float-delayed-slow">
+                <Heart className="h-8 w-8 text-accent-foreground" />
+              </div>
+            </div>
+
+            <h1 className="responsive-heading text-foreground mb-6">
+              How It Works
+            </h1>
+            <p className="responsive-body text-muted-foreground max-w-4xl mx-auto leading-relaxed">
               Your journey to healing is simple, personalized, and proven to work. 
-              Here's how we'll help you transform your life.
+              Here&apos;s how we&apos;ll help you transform your life through AI-powered insights and structured healing.
             </p>
           </div>
 
+          {/* Process Steps */}
           <div className="grid md:grid-cols-3 gap-8 mb-16">
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card variant="glass" className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
               <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Target className="h-8 w-8 text-green-600" />
+                <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/30 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Target className="h-10 w-10 text-primary" />
                 </div>
-                <CardTitle className="text-xl font-semibold mb-4">1. Personalize</CardTitle>
-                <p className="text-gray-600 leading-relaxed">
-                  Complete our 10-step onboarding to customize your experience. 
-                  We'll adapt to your communication style, learning preferences, 
-                  and comfort level.
+                <CardTitle className="text-xl font-semibold mb-4 text-foreground">1. Personalize</CardTitle>
+                <p className="text-muted-foreground leading-relaxed">
+                  Complete our comprehensive onboarding to customize your experience. 
+                  We&apos;ll adapt to your communication style, learning preferences, 
+                  and comfort level for a truly personalized journey.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card variant="glass" className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
               <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Bot className="h-8 w-8 text-blue-600" />
+                <div className="w-20 h-20 bg-gradient-to-br from-accent/20 to-accent/30 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Bot className="h-10 w-10 text-accent-foreground" />
                 </div>
-                <CardTitle className="text-xl font-semibold mb-4">2. Diagnose</CardTitle>
-                <p className="text-gray-600 leading-relaxed">
+                <CardTitle className="text-xl font-semibold mb-4 text-foreground">2. Diagnose</CardTitle>
+                <p className="text-muted-foreground leading-relaxed">
                   Answer 3-10 adaptive questions about your past and patterns. 
-                  Our AI analyzes your responses to provide deep, actionable insights.
+                  Our advanced AI analyzes your responses to provide deep, actionable insights 
+                  and identify your unique healing path.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card variant="glass" className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
               <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <TrendingUp className="h-8 w-8 text-purple-600" />
+                <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/30 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="h-10 w-10 text-primary" />
                 </div>
-                <CardTitle className="text-xl font-semibold mb-4">3. Transform</CardTitle>
-                <p className="text-gray-600 leading-relaxed">
+                <CardTitle className="text-xl font-semibold mb-4 text-foreground">3. Transform</CardTitle>
+                <p className="text-muted-foreground leading-relaxed">
                   Follow your personalized 30-day program with daily tasks, 
-                  journaling, and mood tracking. See measurable progress over time.
+                  journaling, and mood tracking. See measurable progress over time 
+                  and build lasting positive changes in your life.
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          <div className="max-w-4xl mx-auto mb-16">
-            <Card className="border-0 shadow-xl">
+          {/* What You'll Get Section */}
+          <div className="max-w-5xl mx-auto mb-16">
+            <Card className="glass-card border-0 shadow-2xl overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/10 to-accent/10 border-b border-border/50 px-8 py-6">
+                <h2 className="text-3xl font-bold text-foreground text-center">What You&apos;ll Get</h2>
+              </div>
               <CardContent className="p-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">What You'll Get</h2>
-                
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      Free Assessment
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="text-gray-700">10-step personalization</span>
+                <div className="grid md:grid-cols-2 gap-12">
+                  {/* Free Assessment */}
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 rounded-full bg-success/20">
+                        <CheckCircle className="h-6 w-6 text-success" />
                       </div>
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="text-gray-700">3-10 diagnostic questions</span>
+                      <h3 className="text-xl font-semibold text-foreground">Free Assessment</h3>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 group">
+                        <CheckCircle className="h-5 w-5 text-success group-hover:scale-110 transition-transform duration-200" />
+                        <span className="text-foreground">10-step personalization</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="text-gray-700">AI-powered insights</span>
+                      <div className="flex items-center gap-3 group">
+                        <CheckCircle className="h-5 w-5 text-success group-hover:scale-110 transition-transform duration-200" />
+                        <span className="text-foreground">3-10 diagnostic questions</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="text-gray-700">Trauma mapping preview</span>
+                      <div className="flex items-center gap-3 group">
+                        <CheckCircle className="h-5 w-5 text-success group-hover:scale-110 transition-transform duration-200" />
+                        <span className="text-foreground">AI-powered insights</span>
+                      </div>
+                      <div className="flex items-center gap-3 group">
+                        <CheckCircle className="h-5 w-5 text-success group-hover:scale-110 transition-transform duration-200" />
+                        <span className="text-foreground">Trauma mapping preview</span>
                       </div>
                     </div>
                   </div>
                   
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <Lock className="h-5 w-5 text-blue-600" />
-                      Premium Features
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <Lock className="h-5 w-5 text-blue-600" />
-                        <span className="text-gray-700">Full diagnostic report <Badge variant="secondary" className="ml-2">$10</Badge></span>
+                  {/* Premium Features */}
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 rounded-full bg-primary/20">
+                        <Lock className="h-6 w-6 text-primary" />
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Lock className="h-5 w-5 text-blue-600" />
-                        <span className="text-gray-700">30-day healing program <Badge variant="secondary" className="ml-2">$29.95</Badge></span>
+                      <h3 className="text-xl font-semibold text-foreground">Premium Features</h3>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 group">
+                        <Lock className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-200" />
+                        <span className="text-foreground">Full diagnostic report</span>
+                        <Badge variant="success" className="ml-auto">$10</Badge>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Lock className="h-5 w-5 text-blue-600" />
-                        <span className="text-gray-700">Daily journaling & mood tracking</span>
+                      <div className="flex items-center gap-3 group">
+                        <Lock className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-200" />
+                        <span className="text-foreground">30-day healing program</span>
+                        <Badge variant="success" className="ml-auto">$29.95</Badge>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Lock className="h-5 w-5 text-blue-600" />
-                        <span className="text-gray-700">Progress analytics</span>
+                      <div className="flex items-center gap-3 group">
+                        <Lock className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-200" />
+                        <span className="text-foreground">Daily journaling & mood tracking</span>
+                      </div>
+                      <div className="flex items-center gap-3 group">
+                        <Lock className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-200" />
+                        <span className="text-foreground">Progress analytics</span>
                       </div>
                     </div>
                   </div>
@@ -121,16 +154,109 @@ export default function HowItWorks() {
             </Card>
           </div>
 
+          {/* Features Grid */}
+          <div className="max-w-6xl mx-auto mb-16">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-foreground mb-4">Why Choose Our Approach?</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                We combine cutting-edge AI technology with proven therapeutic principles 
+                to create a healing experience that&apos;s both effective and accessible.
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 rounded-full bg-primary/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                    <Brain className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">AI-Powered Insights</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Advanced AI analysis provides deep, personalized insights into your patterns and healing needs.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 rounded-full bg-accent/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                    <Shield className="h-8 w-8 text-accent-foreground" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">Safe & Secure</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your privacy and emotional safety are our top priorities throughout your healing journey.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 rounded-full bg-primary/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                    <Zap className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">Proven Results</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Structured approach based on evidence-based therapeutic techniques and real user success stories.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 rounded-full bg-accent/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                    <BookOpen className="h-8 w-8 text-accent-foreground" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">Comprehensive Learning</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Learn about trauma, healing, and personal growth through our extensive knowledge base.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 rounded-full bg-primary/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                    <Heart className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">Compassionate Support</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Experience genuine care and understanding as you navigate your healing journey.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-6 text-center">
+                  <div className="p-3 rounded-full bg-accent/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                    <Sparkles className="h-8 w-8 text-accent-foreground" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">Personalized Experience</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Every aspect of your journey is tailored to your unique needs, preferences, and goals.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* CTA Section */}
           <div className="text-center">
-            <Button asChild size="lg" className="text-lg px-8 py-3">
+            <div className="inline-flex items-center gap-2 bg-accent/20 rounded-full px-6 py-3 mb-8 border border-accent/30">
+              <Sparkles className="h-4 w-4 text-accent-foreground" />
+              <span className="text-sm text-accent-foreground font-medium">
+                Ready to begin your transformation?
+              </span>
+            </div>
+            
+            <Button asChild size="lg" className="text-lg px-8 py-4 group hover:scale-105 transition-transform duration-200">
               <a href="/onboarding">
                 Start Your Journey
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
               </a>
             </Button>
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }

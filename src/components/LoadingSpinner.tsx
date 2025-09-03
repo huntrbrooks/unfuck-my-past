@@ -1,45 +1,78 @@
 'use client'
 
 import React from 'react'
-import { Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg'
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark'
-  text?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  variant?: 'default' | 'primary' | 'glass' | 'gradient'
   className?: string
+  text?: string
 }
 
 export default function LoadingSpinner({ 
   size = 'md', 
-  variant = 'primary', 
-  text = 'Loading...',
-  className = ''
+  variant = 'default',
+  className,
+  text
 }: LoadingSpinnerProps) {
-  const sizeMap: Record<string, string> = {
+  const sizeClasses = {
     sm: 'h-4 w-4',
-    md: 'h-6 w-6',
-    lg: 'h-8 w-8'
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12',
+    xl: 'h-16 w-16'
   }
 
-  const colorMap: Record<string, string> = {
-    primary: 'text-green-600',
-    secondary: 'text-gray-600',
-    success: 'text-green-600',
-    danger: 'text-red-600',
-    warning: 'text-yellow-600',
-    info: 'text-blue-600',
-    light: 'text-gray-300',
-    dark: 'text-gray-900'
+  const variantClasses = {
+    default: 'border-primary',
+    primary: 'border-primary',
+    glass: 'border-white/30',
+    gradient: 'border-gradient'
   }
 
   return (
-    <div className={`text-center ${className}`}>
-      <Loader2 
-        className={`${sizeMap[size]} ${colorMap[variant]} animate-spin mx-auto mb-2`}
-        role="status"
-      />
-      {text && <p className="text-gray-600 mb-0">{text}</p>}
+    <div className={cn('flex flex-col items-center justify-center', className)}>
+      <div className={cn(
+        'animate-spin rounded-full border-2 border-t-transparent',
+        sizeClasses[size],
+        variantClasses[variant]
+      )} />
+      {text && (
+        <p className="mt-3 text-sm text-muted-foreground animate-pulse">
+          {text}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Enhanced loading states
+export function LoadingDots({ className }: { className?: string }) {
+  return (
+    <div className={cn('flex items-center justify-center space-x-1', className)}>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="w-2 h-2 bg-primary rounded-full animate-bounce"
+          style={{ animationDelay: `${i * 0.1}s` }}
+        />
+      ))}
+    </div>
+  )
+}
+
+export function LoadingPulse({ className }: { className?: string }) {
+  return (
+    <div className={cn('flex items-center justify-center', className)}>
+      <div className="w-4 h-4 bg-primary rounded-full animate-pulse" />
+    </div>
+  )
+}
+
+export function LoadingShimmer({ className }: { className?: string }) {
+  return (
+    <div className={cn('w-full h-4 bg-muted rounded-md overflow-hidden', className)}>
+      <div className="loading-shimmer w-full h-full" />
     </div>
   )
 }

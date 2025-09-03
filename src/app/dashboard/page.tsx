@@ -1,26 +1,71 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
+import Link from 'next/link'
+import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { Heart, Sparkles, TrendingUp, Calendar, Target, Clock, BookOpen, Activity } from 'lucide-react'
-import DataExport from '../../components/DataExport'
-import DiagnosticReport from '../../components/DiagnosticReport'
+import { Progress } from '@/components/ui/progress'
+import DiagnosticReport from '@/components/DiagnosticReport'
+import DataExport from '@/components/DataExport'
+import { 
+  Target, 
+  TrendingUp, 
+  Calendar, 
+  Heart, 
+  BookOpen, 
+  BarChart3, 
+  Activity, 
+  Clock,
+  Sparkles,
+  Zap,
+  ArrowRight,
+  CheckCircle,
+  Star,
+  Award
+} from 'lucide-react'
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser()
+  const [currentStreak, setCurrentStreak] = useState(0)
+  const [totalSessions, setTotalSessions] = useState(0)
+  const [moodAverage, setMoodAverage] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+
   const userId = user?.id
+
+  useEffect(() => {
+    if (isLoaded) {
+      // Simulate loading data
+      setTimeout(() => {
+        setCurrentStreak(7)
+        setTotalSessions(23)
+        setMoodAverage(8.2)
+        setIsLoading(false)
+      }, 1000)
+    }
+  }, [isLoaded])
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-4">Please sign in to view your dashboard</h1>
+          <Button asChild>
+            <Link href="/sign-in">Sign In</Link>
+          </Button>
         </div>
       </div>
     )
@@ -28,244 +73,306 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4 text-balance">
-            Welcome back, {user?.firstName || 'Friend'}!
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance">
-            Continue your healing journey where you left off
-          </p>
-        </div>
-
-        {/* Main Program Card */}
-        <Card className="mb-8 border-primary/20 bg-gradient-to-br from-card to-primary/5">
-          <CardContent className="p-8 text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Heart className="w-5 h-5 text-primary" />
-              <h3 className="text-xl font-semibold text-foreground">Your Healing Journey</h3>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-primary/5 via-accent/5 to-secondary/5 border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl flex items-center justify-center">
+              <Target className="h-8 w-8 text-primary" />
             </div>
-            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              Based on your diagnostic responses, we'll create a unique 30-day program tailored specifically to your
-              trauma patterns and healing goals.
-            </p>
-            <Button size="lg" className="gap-2" asChild>
-              <a href="/onboarding">
-                <Sparkles className="w-4 h-4" />
-                Continue Journey
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Progress Overview */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                Progress Overview
-              </CardTitle>
-              <Badge variant="secondary" className="bg-primary/10 text-primary">
-                40% Complete
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-6">
-                <Progress value={40} className="h-2" />
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary mb-1">12</div>
-                  <div className="text-sm text-muted-foreground">Days Completed</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-accent mb-1">12</div>
-                  <div className="text-sm text-muted-foreground">Day Streak</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-secondary mb-1">13</div>
-                  <div className="text-sm text-muted-foreground">Current Day</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-muted-foreground mb-1">18</div>
-                  <div className="text-sm text-muted-foreground">Days Remaining</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-primary" />
-                Quick Stats
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Current Streak</span>
-                <Badge variant="secondary">12 days</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Total Sessions</span>
-                <Badge variant="secondary">24</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Mood Average</span>
-                <Badge variant="secondary">7.2/10</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Daily Tools Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Mood Tracker */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Heart className="w-5 h-5 text-primary" />
-                Daily Mood Tracker
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Track your emotional well-being daily.
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Today's Mood:</span>
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    😊 Good
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Energy Level:</span>
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                    ⚡ High
-                  </Badge>
-                </div>
-                <Button variant="outline" className="w-full mt-3" asChild>
-                  <a href="/mood">Update Mood</a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Daily Journal */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-primary" />
-                Daily Journal
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Reflect on your healing journey.
-              </p>
-              <div className="space-y-3">
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">Today's Entry:</span>
-                  <p className="mt-1 text-foreground line-clamp-2">
-                    "Feeling more grounded today. The breathing exercises really helped..."
-                  </p>
-                </div>
-                <Button variant="outline" className="w-full" asChild>
-                  <a href="/journal">Write Entry</a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 30-Day Program */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                30-Day Program
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Access your personalized healing program.
-              </p>
-              <Button variant="outline" className="w-full" asChild>
-                <a href="/program">View Program</a>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Bottom Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Current Day */}
-          <Card className="lg:col-span-2 border-primary/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <Badge variant="outline" className="mb-2">
-                    Day 13
-                  </Badge>
-                  <h3 className="text-lg font-semibold text-foreground">Navigating Grief: Unearthing the Guilt</h3>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <a href="/onboarding">Start Session</a>
-                </Button>
-              </div>
-              <Progress value={0} className="h-1" />
-            </CardContent>
-          </Card>
-
-          {/* Today's Focus */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-primary" />
-                Today's Focus
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">Category:</div>
-                <div className="font-medium text-foreground">Processing</div>
-                <div className="text-sm text-muted-foreground mt-4">Estimated time:</div>
-                <div className="flex items-center gap-1 text-foreground">
-                  <Clock className="w-4 h-4" />
-                  <span className="font-medium">15-20 minutes</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Reports Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-          <div className="lg:col-span-2">
-            {userId && <DiagnosticReport userId={userId} />}
-            {userId && <DataExport userId={userId} />}
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Welcome back, {user.firstName || 'Friend'}!</h1>
+              <p className="text-muted-foreground">Ready to continue your healing journey?</p>
+            </div>
           </div>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a href="/program">30-Day Program</a>
-              </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a href="/diagnostic">Take Diagnostic</a>
-              </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a href="/how-it-works">How It Works</a>
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="modern-card border-0 group hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-xl flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <Badge variant="success" size="sm">Active</Badge>
+                </div>
+                <CardTitle className="text-2xl font-bold text-foreground mb-2">
+                  {isLoading ? '...' : currentStreak}
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Day Streak
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="modern-card border-0 group hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl flex items-center justify-center">
+                    <Activity className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <Badge variant="info" size="sm">Total</Badge>
+                </div>
+                <CardTitle className="text-2xl font-bold text-foreground mb-2">
+                  {isLoading ? '...' : totalSessions}
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Sessions Completed
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="modern-card border-0 group hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl flex items-center justify-center">
+                    <Heart className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <Badge variant="warning" size="sm">Average</Badge>
+                </div>
+                <CardTitle className="text-2xl font-bold text-foreground mb-2">
+                  {isLoading ? '...' : moodAverage}
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Mood Rating
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Main Features */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* 30-Day Program Card */}
+            <Card className="feature-card border-0 group">
+              <CardContent className="p-8">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl flex items-center justify-center">
+                      <Calendar className="h-8 w-8 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl font-bold text-foreground mb-2">
+                        30-Day Healing Program
+                      </CardTitle>
+                      <CardDescription className="text-muted-foreground">
+                        Continue your personalized healing journey
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant="gradient" size="lg">Active</Badge>
+                </div>
+                
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Progress</span>
+                    <span className="text-sm font-medium text-foreground">Day 7 of 30</span>
+                  </div>
+                  <Progress value={23} variant="gradient" size="lg" className="h-3" />
+                </div>
+                
+                <Button asChild className="w-full group">
+                  <a href="/program">
+                    Continue Program
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Daily Tools Grid */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Daily Mood Tracker */}
+              <Card className="modern-card border-0 group hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl flex items-center justify-center">
+                      <BarChart3 className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-foreground">
+                        Daily Mood Tracker
+                      </CardTitle>
+                      <CardDescription className="text-sm text-muted-foreground">
+                        Track your emotional journey
+                      </CardDescription>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Today&apos;s Mood</span>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            className={`h-4 w-4 ${star <= 4 ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Last updated: 2 hours ago
+                    </div>
+                  </div>
+                  
+                  <Button variant="outline" asChild className="w-full group">
+                    <a href="/mood">
+                      Update Mood
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Daily Journal */}
+              <Card className="modern-card border-0 group hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-xl flex items-center justify-center">
+                      <BookOpen className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-foreground">
+                        Daily Journal
+                      </CardTitle>
+                      <CardDescription className="text-sm text-muted-foreground">
+                        Reflect and grow through writing
+                      </CardDescription>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Today&apos;s Entry</span>
+                      <Badge variant="success" size="sm">Completed</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      &quot;Today I practiced self-compassion and noticed...&quot;
+                    </div>
+                  </div>
+                  
+                  <Button variant="outline" asChild className="w-full group">
+                    <a href="/journal">
+                      Write Today&apos;s Entry
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Achievements */}
+            <Card className="modern-card border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl flex items-center justify-center">
+                    <Award className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-semibold text-foreground">
+                      Recent Achievements
+                    </CardTitle>
+                    <CardDescription className="text-muted-foreground">
+                      Celebrate your progress
+                    </CardDescription>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/20">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <span className="text-sm text-foreground">Completed 7 consecutive days</span>
+                    <Badge variant="success" size="sm">New!</Badge>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/20">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <span className="text-sm text-foreground">First journal entry completed</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/20">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <span className="text-sm text-foreground">Mood tracking streak: 5 days</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            {/* Diagnostic Report */}
+            {userId && (
+              <Card className="glass-card border-0">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl flex items-center justify-center">
+                      <Sparkles className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-foreground">
+                        Diagnostic Report
+                      </CardTitle>
+                      <CardDescription className="text-sm text-muted-foreground">
+                        View your insights
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <DiagnosticReport userId={userId} />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Data Export */}
+            {userId && (
+              <Card className="glass-card border-0">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-xl flex items-center justify-center">
+                      <Zap className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-foreground">
+                        Export Your Data
+                      </CardTitle>
+                      <CardDescription className="text-sm text-muted-foreground">
+                        Download your progress
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <DataExport userId={userId} />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Quick Actions */}
+            <Card className="modern-card border-0">
+              <CardContent className="p-6">
+                <CardTitle className="text-lg font-semibold text-foreground mb-4">
+                  Quick Actions
+                </CardTitle>
+                <div className="space-y-3">
+                  <Button variant="outline" asChild className="w-full justify-start group">
+                    <a href="/onboarding">
+                      <Clock className="h-4 w-4 mr-2" />
+                      Update Preferences
+                      <ArrowRight className="ml-auto h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </a>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full justify-start group">
+                    <a href="/how-it-works">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      How It Works
+                      <ArrowRight className="ml-auto h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

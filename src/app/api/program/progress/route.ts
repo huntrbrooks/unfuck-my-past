@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { db, progress, users } from '../../../../db'
+import { db, progress } from '../../../../db'
 import { eq, desc, and } from 'drizzle-orm'
 import { getProgramProgress } from '../../../../lib/program-content'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { userId } = await auth()
     

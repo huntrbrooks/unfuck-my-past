@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { report, summary, keyInsights } = body
+    const { report } = body
 
     if (!report) {
       return NextResponse.json({ error: 'Report content is required' }, { status: 400 })
