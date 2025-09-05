@@ -7,6 +7,46 @@
     text-wrap: balance;
   }
   
+  /* Neon heading utility */
+  .neon-heading {
+    color: #ccff00;
+    -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.35);
+    text-shadow:
+      0 0 2px rgba(0, 0, 0, 0.55),
+      0 1px 1px rgba(0, 0, 0, 0.25),
+      0 0 8px rgba(204, 255, 0, 0.6),
+      0 0 14px rgba(204, 255, 0, 0.45),
+      0 0 22px rgba(204, 255, 0, 0.3);
+  }
+
+  .dark .neon-heading {
+    -webkit-text-stroke: 0.4px rgba(0, 0, 0, 0.2);
+    text-shadow:
+      0 0 1px rgba(0, 0, 0, 0.2),
+      0 0 6px rgba(204, 255, 0, 0.5),
+      0 0 12px rgba(204, 255, 0, 0.35),
+      0 0 18px rgba(204, 255, 0, 0.2);
+  }
+
+  /* Neon CTA button */
+  .neon-cta {
+    background-color: #ccff00;
+    color: #0a0a0a;
+    box-shadow: 0 0 14px rgba(204, 255, 0, 0.45), 0 0 28px rgba(204, 255, 0, 0.35);
+    transition: transform 200ms ease, box-shadow 200ms ease, filter 200ms ease;
+  }
+
+  .neon-cta:hover {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: 0 0 18px rgba(204, 255, 0, 0.6), 0 0 36px rgba(204, 255, 0, 0.45);
+    filter: brightness(1.02);
+  }
+
+  .neon-cta:active {
+    transform: translateY(0);
+    box-shadow: 0 0 10px rgba(204, 255, 0, 0.45);
+  }
+  
   /* Fluid Design System */
   .glass-morphism {
     @apply bg-white/10 backdrop-blur-md border border-white/20;
@@ -129,9 +169,9 @@
   
   .form-label {
     @apply block text-sm font-medium text-foreground mb-2;
-  }
-  
-  /* Loading States */
+}
+
+/* Loading States */
   .loading-shimmer {
     background: linear-gradient(90deg, 
       hsl(var(--muted)) 25%, 
@@ -424,3 +464,97 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Edgy display font for metric cards */
+.edgy-font {
+  font-family: Impact, Haettenschweiler, 'Arial Black', 'Segoe UI Black', system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+
+.status-completed-glow {
+  color: #000000;
+  text-shadow: 0 0 10px #22c55e;
+}
+.dark .status-completed-glow {
+  color: #ffffff;
+}
+
+.status-not-completed-glow {
+  color: #000000;
+  text-shadow: 0 0 10px #ef4444;
+}
+
+.dark .status-not-completed-glow {
+  color: #ffffff;
+}
+
+.glow-green-icon {
+  filter: drop-shadow(0 0 8px #22c55e);
+}
+
+.glow-red-icon {
+  filter: drop-shadow(0 0 8px #ef4444);
+}
+
+/* Global slow spin for line art/emblems */
+.spin-slow {
+  animation: spin 14s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Key info text: bold and auto light/dark color */
+.key-info {
+  font-weight: 700;
+  color: #000000;
+}
+.dark .key-info { color: #ffffff; }
+
+/* Light/dark color swap for line icons/text */
+.icon-line {
+  color: #000000;
+}
+.dark .icon-line {
+  color: #ffffff;
+}
+.text-swap {
+  color: #000000;
+}
+.dark .text-swap {
+  color: #ffffff;
+}
+
+/* Daily Journal page theme (scoped via .journal-theme) */
+.journal-theme {
+  --background: #f2f2f2;
+  --foreground: #000000;
+  --card: #f2f2f2;
+  --card-foreground: #000000;
+  --popover: #f2f2f2;
+  --popover-foreground: #000000;
+  --primary: #ccff00;
+  --primary-foreground: #000000;
+  --secondary: #3d3d3d;
+  --secondary-foreground: #f2f2f2;
+  --muted: #f2f2f2;
+  --muted-foreground: #6b6b6b;
+  --accent: #3d3d3d;
+  --accent-foreground: #f2f2f2;
+  --destructive: #3d3d3d;
+  --destructive-foreground: #f2f2f2;
+  --border: #c2c2c2;
+  --input: #ffffff;
+  --ring: #ccff00;
+  --sidebar: #f2f2f2;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #ccff00;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #3d3d3d;
+  --sidebar-accent-foreground: #f2f2f2;
+  --sidebar-border: #c2c2c2;
+  --sidebar-ring: #ccff00;
+}
+

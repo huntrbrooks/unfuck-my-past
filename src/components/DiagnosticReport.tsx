@@ -82,7 +82,7 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
 
   if (loading) {
     return (
-      <Card variant="glass">
+      <Card className="modern-card border-0">
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -95,9 +95,9 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
 
   if (error) {
     return (
-      <Card variant="destructive">
+      <Card className="bg-destructive/5 border-0">
         <CardContent className="p-6">
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive">
+          <div className="p-3 bg-destructive/10 rounded-md text-destructive">
             {error}
           </div>
         </CardContent>
@@ -107,7 +107,7 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
 
   if (responses.length === 0) {
     return (
-      <Card variant="glass">
+      <Card className="modern-card border-0">
         <CardContent className="p-6">
           <div className="text-center text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
@@ -121,8 +121,7 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-foreground">Diagnostic Report</h2>
+      <div className="flex justify-center mb-2">
         <Button onClick={handleExport} variant="outline" className="flex items-center gap-2">
           <Download className="h-4 w-4" />
           Export Report
@@ -130,16 +129,20 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
       </div>
 
       <div className="space-y-4">
-        {responses.map((response, index) => (
-          <Card key={index} variant="feature" className="overflow-hidden">
+        {responses.map((response, index) => {
+          let title = `Question ${index + 1}`
+          try {
+            const q = typeof response.question === 'string' ? JSON.parse(response.question) : response.question
+            title = q?.question || q?.text || title
+          } catch {}
+          return (
+          <Card key={index} className="modern-card border-0 overflow-hidden">
             <CardHeader 
-              className="cursor-pointer hover:bg-accent/20 transition-colors"
+              className="cursor-pointer hover:bg-accent/20 transition-colors py-2 px-4"
               onClick={() => toggleExpanded(index)}
             >
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg text-foreground">
-                  Question {index + 1}
-                </CardTitle>
+                <CardTitle className="text-lg text-foreground">{title}</CardTitle>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">
                     {new Date(response.timestamp).toLocaleDateString()}
@@ -154,13 +157,32 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
             </CardHeader>
             
             {expandedItems.has(index) && (
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 py-3 px-4">
                 <div>
                   <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
                     <Target className="h-4 w-4 text-primary" />
-                    Question:
+                    Question
                   </h4>
-                  <p className="text-foreground">{response.question}</p>
+                  <div className="space-y-1">
+                    <p className="text-foreground">
+                      {(() => {
+                        try {
+                          const q = typeof response.question === 'string' ? JSON.parse(response.question) : response.question
+                          return q?.question || 'Question'
+                        } catch {
+                          return String(response.question)
+                        }
+                      })()}
+                    </p>
+                    {(() => {
+                      try {
+                        const q = typeof response.question === 'string' ? JSON.parse(response.question) : response.question
+                        return q?.followUp ? (
+                          <p className="text-sm text-muted-foreground">{q.followUp}</p>
+                        ) : null
+                      } catch { return null }
+                    })()}
+                  </div>
                 </div>
                 
                 <div>
@@ -178,17 +200,17 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
                     <Sparkles className="h-4 w-4 text-primary" />
                     AI Insight:
                   </h4>
-                  <p className="text-foreground bg-primary/5 p-3 rounded-md border border-primary/20">
+                  <p className="text-foreground bg-primary/5 p-3 rounded-md">
                     {response.insight}
                   </p>
                 </div>
               </CardContent>
             )}
           </Card>
-        ))}
+        )})}
       </div>
 
-      <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+      <div className="mt-6 p-4 bg-primary/5 rounded-lg">
         <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
           <Brain className="h-4 w-4 text-primary" />
           Report Summary

@@ -40,6 +40,8 @@ interface PersonalizedDay {
     difficulty: 'easy' | 'moderate' | 'challenging'
     traumaFocus: string[]
   }
+  theme?: string
+  poeticTitle?: string
 }
 
 export default function Program() {
@@ -62,6 +64,84 @@ export default function Program() {
   const [completedDays, setCompletedDays] = useState<Set<number>>(new Set())
   const [completingDay, setCompletingDay] = useState(false)
   const [showNextDayButton, setShowNextDayButton] = useState(false)
+
+  // Simple helpers for theme/title and glow classes
+  const NEON_CLASSES = ['neon-glow-cyan', 'neon-glow-pink', 'neon-glow-orange'] as const
+  const hashString = (s: string) => {
+    let h = 0
+    for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i)
+    return Math.abs(h)
+  }
+  const pickGlowClass = (key: string) => NEON_CLASSES[hashString(key) % NEON_CLASSES.length]
+  const stopwords = new Set(['the','and','a','an','to','of','in','on','for','with','your','you','we','our','is','are','be','this','that','by','from','at','as','into','without','being','their','them','it','about'])
+  const extractKeywords = (text: string, limit = 3) => text
+    .replace(/[^a-zA-Z\s]/g, ' ')
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !stopwords.has(w))
+    .slice(0, limit)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+
+  const deriveTheme = (mainFocus: string): string => {
+    const rules: Array<{ re: RegExp; themes: string[] }> = [
+      { re: /(emotion|overwhelm|feeling|regulate|regulation)/i, themes: ['Emotional Resilience', 'Calm Response', 'Steady Heart', 'Clear Feeling'] },
+      { re: /(boundary|boundaries|limit|space)/i, themes: ['Gentle Boundaries', 'Sacred Space', 'Firm Kindness', 'Quiet Strength'] },
+      { re: /(shame|guilt|worth|worthless)/i, themes: ['Self‑Forgiveness', 'Soft Worth', 'Inner Kindness', 'Belonging'] },
+      { re: /(trust|relationship|attach|intimacy|connection|connect)/i, themes: ['Honest Connection', 'Open Trust', 'Brave Intimacy', 'Kind Presence'] },
+      { re: /(mindful|breath|breathe|ground|present|awareness)/i, themes: ['Grounded Presence', 'Slow Breath', 'Calm Anchor', 'Still Mind'] },
+      { re: /(sleep|rest|restore|fatigue|tired)/i, themes: ['Deep Rest', 'Soft Night', 'Restful Mind', 'Gentle Unwind'] },
+      { re: /(trigger|react|reaction)/i, themes: ['Pause Power', 'Trigger Tamer', 'Chosen Response', 'Steady Pause'] }
+    ]
+    for (const r of rules) {
+      if (r.re.test(mainFocus)) {
+        const idx = hashString(mainFocus) % r.themes.length
+        return r.themes[idx]
+      }
+    }
+    const kws = extractKeywords(mainFocus, 3)
+    return kws.length ? kws.join(' ') : 'Daily Intention'
+  }
+
+  const derivePoeticTitle = (mainFocus: string, theme: string): string => {
+    const base = extractKeywords(mainFocus, 2)
+    const noun = base[0] || 'Heart'
+    const noun2 = base[1] || 'Calm'
+    const pools: Record<string, string[]> = {
+      default: [
+        `Breathing Room for the ${noun}`,
+        `A Soft Spine in Storms`,
+        `Walking Toward the Quiet ${noun2}`,
+        `Where ${noun}s Learn to Rest`,
+        `Holding Yourself with Gentle Hands`,
+        `Turning Toward the ${noun2}`
+      ],
+      emotion: [
+        `Listening Beneath the Waves`,
+        `Tides That Teach ${noun2}`,
+        `The Weather Inside Learns Sunlight`
+      ],
+      boundary: [
+        `Fences Made of Light`,
+        `A Gate You Hold from Love`,
+        `Rooms with Open Windows`
+      ],
+      trust: [
+        `Bridges Built Slowly`,
+        `Open Hands, Open Door`,
+        `A Yes You Can Believe`
+      ]
+    }
+    const key = /(emotion|overwhelm|feeling)/i.test(mainFocus)
+      ? 'emotion'
+      : /(boundary|boundaries)/i.test(mainFocus)
+      ? 'boundary'
+      : /(trust|connect|intimacy|relationship)/i.test(mainFocus)
+      ? 'trust'
+      : 'default'
+    const choices = pools[key]
+    const picked = choices[hashString(mainFocus + theme) % choices.length]
+    return picked
+  }
 
   useEffect(() => {
     checkProgramAccess()
@@ -111,11 +191,41 @@ export default function Program() {
   const checkProgramAccess = async () => {
     try {
       setCheckingAccess(true)
+      
+      // First check if program data exists (bypass paywall if so)
+      const progressResponse = await fetch('/api/program/progress')
+      if (progressResponse.ok) {
+        const progressData = await progressResponse.json()
+        console.log('Program progress check:', progressData)
+        
+        // If progress exists and program isn't completed (less than 30 days), grant access
+        if (progressData.completed !== undefined && progressData.currentDay <= 30) {
+          console.log('🎯 Found existing program data - bypassing paywall')
+          setHasAccess(true)
+          loadProgramData()
+          return
+        }
+        
+        // If 30 days completed, check if it's been 30 days since completion
+        if (progressData.completed >= 30) {
+          // For now, always allow access to completed programs
+          // TODO: Add 30-day expiry logic based on completion date
+          console.log('🎯 Program completed - allowing access to review')
+          setHasAccess(true)
+          loadProgramData()
+          return
+        }
+      }
+      
+      // If no existing progress, check payment status
       const response = await fetch('/api/payments/user-purchases')
       
       if (response.ok) {
         const data = await response.json()
-        const hasProgramAccess = data.some((purchase: { product: string }) => purchase.product === 'program')
+        const hasProgramAccess = data.some((purchase: { product: string; active: boolean }) => 
+          purchase.product === 'program' && purchase.active === true
+        )
+        console.log('Program access check:', { hasProgramAccess, purchases: data })
         setHasAccess(hasProgramAccess)
         
         if (hasProgramAccess) {
@@ -136,23 +246,55 @@ export default function Program() {
     try {
       setLoading(true)
       setError('')
-
+      
       // Load progress
       const progressResponse = await fetch('/api/program/progress')
       if (progressResponse.ok) {
-        const progressData = await progressResponse.json()
-        setProgress(progressData.progress)
+      const progressData = await progressResponse.json()
+        console.log('Program progress data:', progressData)
+        
+        // The API returns progress directly, not nested under .progress
+        if (progressData.completed !== undefined) {
+      setProgress(progressData)
+        } else {
+          console.log('No progress found, creating initial progress...')
+          setProgress({
+            completed: 0,
+            total: 30,
+            percentage: 0,
+            currentDay: 1,
+            streak: 0
+          })
+        }
         
         // Load current day content
-        if (progressData.progress.currentDay <= 30) {
-          const dayResponse = await fetch(`/api/program/daily?day=${progressData.progress.currentDay}`)
+        const currentDay = progressData.currentDay || 1
+        if (currentDay <= 30) {
+          // Try to load existing content first
+          let dayResponse = await fetch(`/api/program/daily?day=${currentDay}`)
+          
+          // If no existing content, generate it
+          if (!dayResponse.ok) {
+            console.log('No existing content for day', currentDay, '- generating...')
+            dayResponse = await fetch('/api/program/daily', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                dayNumber: currentDay,
+                weatherData: weatherData 
+              })
+            })
+          }
+          
           if (dayResponse.ok) {
             const dayData = await dayResponse.json()
+            console.log('Day data loaded for day', currentDay)
             const parsedContent = parseDailyContent(dayData.content, weatherData)
-            
+            const theme = dayData.theme || deriveTheme(parsedContent.mainFocus)
+            const poeticTitle = dayData.poeticTitle || derivePoeticTitle(parsedContent.mainFocus, theme)
             setCurrentDay({
-              day: progressData.progress.currentDay,
-              title: `Day ${progressData.progress.currentDay}`,
+              day: currentDay,
+              title: `Day ${currentDay}`,
               focus: parsedContent.mainFocus,
               content: {
                 introduction: '',
@@ -171,14 +313,22 @@ export default function Program() {
                 duration: 30,
                 difficulty: 'moderate',
                 traumaFocus: []
-              }
+              },
+              theme,
+              poeticTitle
             })
           } else {
+            console.error('Failed to load/generate day content, response:', dayResponse.status)
+            const errorText = await dayResponse.text().catch(() => 'Unknown error')
+            console.error('Error details:', errorText)
             setError('Failed to generate daily content')
           }
         } else {
-          setError('Failed to load daily content')
+          setError('Program completed - all 30 days finished')
         }
+      } else {
+        console.error('Failed to load progress, response:', progressResponse.status)
+        setError('Failed to load program progress')
       }
     } catch (error) {
       setError('Failed to load program data')
@@ -333,7 +483,7 @@ export default function Program() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ day: progress.currentDay }),
+        body: JSON.stringify({ day: currentDay.day }),
       })
 
       if (!response.ok) {
@@ -341,7 +491,17 @@ export default function Program() {
       }
 
       const result = await response.json()
+      // Update progress from server response
+      if (result.progress) {
       setProgress(result.progress)
+      } else {
+        // Fallback: update locally
+        setProgress(prev => prev ? {
+          ...prev,
+          completed: prev.completed + 1,
+          percentage: ((prev.completed + 1) / prev.total) * 100
+        } : null)
+      }
       
     } catch (error) {
       setError('Failed to complete day')
@@ -365,25 +525,33 @@ export default function Program() {
       setLoading(true)
       setShowNextDayButton(false)
       
-      // Generate next day content
+      // Generate next day content with context of previous days
+      const nextDay = progress.currentDay + 1
+      console.log('Generating content for day', nextDay)
+      
       const response = await fetch('/api/program/daily', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          day: progress.currentDay + 1,
-          weatherData: weatherData
+          dayNumber: nextDay,
+          weatherData: weatherData,
+          previousDays: Array.from(completedDays),
+          currentProgress: progress
         })
       })
 
       if (response.ok) {
         const dayData = await response.json()
         const parsedContent = parseDailyContent(dayData.content, weatherData)
+        const theme = dayData.theme || deriveTheme(parsedContent.mainFocus)
+        const poeticTitle = dayData.poeticTitle || derivePoeticTitle(parsedContent.mainFocus, theme)
+        console.log('Successfully generated day', nextDay, 'content')
         
         setCurrentDay({
-          day: progress.currentDay + 1,
-          title: `Day ${progress.currentDay + 1}`,
+          day: nextDay,
+          title: `Day ${nextDay}`,
           focus: parsedContent.mainFocus,
           content: {
             introduction: '',
@@ -402,18 +570,16 @@ export default function Program() {
             duration: 30,
             difficulty: 'moderate',
             traumaFocus: []
-          }
+          },
+          theme,
+          poeticTitle
         })
 
-        // Update progress
-        setProgress(prev => prev ? {
-          ...prev,
-          currentDay: prev.currentDay + 1,
-          completed: prev.completed + 1,
-          percentage: ((prev.completed + 1) / prev.total) * 100
-        } : null)
+        // Don't update progress here - it will be updated when the day is completed
       } else {
-        throw new Error('Failed to generate next day content')
+        const errorText = await response.text().catch(() => 'Unknown error')
+        console.error('Failed to generate next day content:', response.status, errorText)
+        throw new Error(`Failed to generate next day content: ${response.status}`)
       }
     } catch (error) {
       setError('Failed to start next day')
@@ -457,7 +623,7 @@ export default function Program() {
                 <Heart className="h-10 w-10 text-primary" />
               </div>
               <div>
-                <h1 className="responsive-heading text-foreground">30-Day Healing Program</h1>
+                <h1 className="responsive-heading neon-heading">30-Day Healing Program</h1>
                 <p className="responsive-body text-muted-foreground">Access your personalized healing journey</p>
               </div>
             </div>
@@ -481,8 +647,11 @@ export default function Program() {
                 productName="30-Day Healing Program"
                 amount={2995} // $29.95 in cents
                 onSuccess={() => {
+                  console.log('🎯 Program payment successful - setting access')
                   setHasAccess(true)
-                  checkProgramAccess()
+                  setCheckingAccess(false)
+                  // Load program data immediately instead of re-checking access
+                  loadProgramData()
                 }}
                 onCancel={() => router.push('/dashboard')}
               />
@@ -543,84 +712,49 @@ export default function Program() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10"></div>
-        <div className="relative max-w-6xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            {/* Floating Elements */}
-            <div className="relative mb-8">
-              <div className="absolute -top-4 -left-4 p-3 rounded-full bg-primary/10 animate-float">
-                <Heart className="h-6 w-6 text-primary" />
-              </div>
-              <div className="absolute -top-2 -right-4 p-3 rounded-full bg-accent/10 animate-float-delayed">
-                <Brain className="h-6 w-6 text-accent-foreground" />
-              </div>
-              <div className="absolute -bottom-4 left-1/4 p-3 rounded-full bg-primary/10 animate-float-slow">
-                <Target className="h-6 w-6 text-primary" />
-              </div>
-              <div className="absolute -bottom-2 right-1/4 p-3 rounded-full bg-accent/10 animate-float-delayed-slow">
-                <Zap className="h-6 w-6 text-accent-foreground" />
-              </div>
+      {/* Header (aligned with Dashboard) */}
+      <div className="bg-background border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-6 py-10">
+          <div className="flex flex-col items-center text-center gap-3 mb-6">
+            <div className="w-14 h-14 flex items-center justify-center">
+              <Calendar className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
             </div>
-
-            <h1 className="responsive-heading text-foreground mb-6">
-              30-Day Healing Program
-            </h1>
-            <p className="responsive-body text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Your personalized journey to healing and transformation. Each day brings new insights, 
-              practices, and opportunities for growth.
-            </p>
+            <h1 className="text-3xl font-bold neon-heading">30-Day Healing Program</h1>
+            <p className="text-muted-foreground">Day {progress.currentDay} of 30</p>
           </div>
-
-          {/* Progress Overview */}
-          <div className="max-w-4xl mx-auto mb-12">
-            <Card className="glass-card border-0 shadow-xl overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/20 border-b border-primary/20 px-8 py-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-primary/20">
-                      <Calendar className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-semibold text-foreground">Your Progress</h2>
-                      <p className="text-sm text-muted-foreground">Day {progress.currentDay} of 30</p>
-                    </div>
+          {/* Centered progress overview */}
+          <Card className="feature-card border-0 group max-w-4xl mx-auto">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div className="flex items-center gap-4 md:flex-1">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-primary">{progress.completed}</div>
-                    <div className="text-sm text-muted-foreground">Days Completed</div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-8">
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-foreground">Progress</span>
-                      <span className="text-sm text-muted-foreground">{Math.round(progress.percentage)}%</span>
-                    </div>
-                    <Progress value={progress.percentage} variant="gradient" className="h-3" />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center p-4 bg-accent/5 rounded-xl border border-accent/20">
-                      <div className="text-2xl font-bold text-accent-foreground">{progress.currentDay}</div>
-                      <div className="text-sm text-muted-foreground">Current Day</div>
-                    </div>
-                    <div className="text-center p-4 bg-primary/5 rounded-xl border border-primary/20">
-                      <div className="text-2xl font-bold text-primary">{progress.streak}</div>
-                      <div className="text-sm text-muted-foreground">Day Streak</div>
-                    </div>
-                    <div className="text-center p-4 bg-success/5 rounded-xl border border-success/20">
-                      <div className="text-2xl font-bold text-success">{30 - progress.currentDay}</div>
-                      <div className="text-sm text-muted-foreground">Days Remaining</div>
+                  <div className="w-full">
+                    <div className="text-sm text-muted-foreground text-left">Overall Progress</div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1"><Progress value={progress.percentage} variant="gradient" className="h-2" /></div>
+                      <div className="text-sm font-medium text-foreground whitespace-nowrap">{Math.round(progress.percentage)}%</div>
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:ml-6">
+                  <div className="text-center">
+                    <div className="text-base text-muted-foreground">Current</div>
+                    <div className="text-xl font-semibold text-foreground">Day {progress.currentDay}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-base text-muted-foreground">Completed</div>
+                    <div className="text-xl font-semibold text-foreground">{progress.completed}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-base text-muted-foreground">Streak</div>
+                    <div className="text-xl font-semibold text-foreground">{progress.streak}</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -629,11 +763,11 @@ export default function Program() {
         {/* Location Permission Request */}
         {locationPermission === 'pending' && (
           <div className="mb-8">
-            <Card className="glass-card border-0 shadow-xl overflow-hidden">
+            <Card className="modern-card border-0">
               <CardContent className="p-6">
                 <div className="text-center">
-                  <div className="p-3 rounded-full bg-primary/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
-                    <Target className="h-8 w-8 text-primary" />
+                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <Target className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">Enable Location for Weather Insights</h3>
                   <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
@@ -643,7 +777,7 @@ export default function Program() {
                   <div className="flex gap-3 justify-center">
                     <Button 
                       onClick={requestLocationPermission}
-                      className="group hover:scale-105 transition-transform duration-200"
+                      className="group hover:scale-105 transition-transform duration-200 neon-cta"
                     >
                       <Sun className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform duration-200" />
                       Enable Location Access
@@ -676,7 +810,7 @@ export default function Program() {
           <div className="mb-8">
             <Button 
               onClick={startNextDay}
-              className="w-full h-16 text-lg group hover:scale-105 transition-transform duration-200"
+              className="w-full h-16 text-lg group hover:scale-105 transition-transform duration-200 neon-cta"
               disabled={loading}
             >
               {loading ? (
@@ -700,10 +834,10 @@ export default function Program() {
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
               {/* Day Header */}
-              <Card className="glass-card border-0 shadow-xl overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/20 border-b border-primary/20 px-6 py-4">
+              <Card className="modern-card border-0">
+                <CardHeader className="px-6 py-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-semibold text-foreground">Day {currentDay.day}: {currentDay.title}</h3>
+                    <h3 className="text-xl font-semibold text-foreground">Day {currentDay.day}: {currentDay.poeticTitle || currentDay.title}</h3>
                     <Badge variant="success" className="text-sm">
                       {currentDay.metadata.duration} min
                     </Badge>
@@ -712,24 +846,24 @@ export default function Program() {
                 <CardContent className="p-6">
                   <div className="space-y-6">
                     {/* Main Focus */}
-                    <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
+                    <div className="rounded-xl p-4 bg-background">
                       <div className="flex items-center gap-3 mb-3">
-                        <Target className="h-5 w-5 text-primary" />
+                        <Target className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                         <h4 className="font-semibold text-foreground">Today&apos;s Main Focus</h4>
                       </div>
                       <p className="text-foreground">{currentDay.content.mainFocus || 'Daily Healing Practice'}</p>
                     </div>
 
                     {/* Guided Practice */}
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-                      <h5 className="font-bold text-foreground mb-3 flex items-center gap-2 text-lg border-b-2 border-blue-200 pb-2">
-                        <Sun className="h-5 w-5 text-blue-600" />
+                    <div className="rounded-xl p-6 bg-background">
+                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                        <Sun className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                         Guided Practice
                       </h5>
                       <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                         {currentDay.content.guidedPractice.split('\n').map((line, index) => {
                           if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-blue-600 mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
                           } else if (line.trim() && !line.trim().startsWith('🌅')) {
                             return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
                           }
@@ -739,105 +873,105 @@ export default function Program() {
                     </div>
                     
                     {/* Daily Challenge */}
-                    <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
-                      <h5 className="font-bold text-foreground mb-3 flex items-center gap-2 text-lg border-b-2 border-green-200 pb-2">
-                        <Zap className="h-5 w-5 text-green-600" />
+                    <div className="rounded-xl p-6 bg-background">
+                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                        <Zap className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #22c55e)' }} />
                         Daily Challenge
                       </h5>
                       <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                         {currentDay.content.challenge.split('\n').map((line, index) => {
                           if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-green-600 mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
                           } else if (line.trim() && !line.trim().startsWith('⚡')) {
                             return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
                           }
                           return null
                         })}
                       </div>
-                    </div>
-                    
+                  </div>
+                  
                     {/* Journaling Prompt */}
-                    <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
-                      <h5 className="font-bold text-foreground mb-3 flex items-center gap-2 text-lg border-b-2 border-purple-200 pb-2">
-                        <Sparkles className="h-5 w-5 text-purple-600" />
+                    <div className="rounded-xl p-6 bg-background">
+                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                        <Sparkles className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
                         Journaling Prompt
                       </h5>
                       <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                         {currentDay.content.journalingPrompt.split('\n').map((line, index) => {
                           if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-purple-600 mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
                           } else if (line.trim() && !line.trim().startsWith('📝')) {
                             return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
                           }
                           return null
                         })}
                       </div>
-                    </div>
-                    
+                  </div>
+                  
                     {/* Reflection */}
-                    <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-6 border border-indigo-200">
-                      <h5 className="font-bold text-foreground mb-3 flex items-center gap-2 text-lg border-b-2 border-indigo-200 pb-2">
-                        <Moon className="h-5 w-5 text-indigo-600" />
+                    <div className="rounded-xl p-6 bg-background">
+                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                        <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #60a5fa)' }} />
                         Reflection
                       </h5>
                       <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                         {currentDay.content.reflection.split('\n').map((line, index) => {
                           if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-indigo-600 mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
                           } else if (line.trim() && !line.trim().startsWith('🌙')) {
                             return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
                           }
                           return null
                         })}
                       </div>
-                    </div>
-                    
+                  </div>
+                  
                     {/* Weather & Environment */}
-                    <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200">
-                      <h5 className="font-bold text-foreground mb-3 flex items-center gap-2 text-lg border-b-2 border-yellow-200 pb-2">
-                        <Sun className="h-5 w-5 text-yellow-600" />
+                    <div className="rounded-xl p-6 bg-background">
+                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                        <Sun className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #f59e0b)' }} />
                         Weather & Environment
                       </h5>
                       <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                         {currentDay.content.weather.split('\n').map((line, index) => {
                           if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-yellow-600 mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
                           } else if (line.trim() && !line.trim().startsWith('🌤️')) {
                             return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
                           }
                           return null
                         })}
                       </div>
-                    </div>
-                    
+                  </div>
+                  
                     {/* Sleep & Wellness */}
-                    <div className="bg-gradient-to-r from-pink-50 to-pink-100 rounded-xl p-6 border border-pink-200">
-                      <h5 className="font-bold text-foreground mb-3 flex items-center gap-2 text-lg border-b-2 border-pink-200 pb-2">
-                        <Moon className="h-5 w-5 text-pink-600" />
+                    <div className="rounded-xl p-6 bg-background">
+                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                        <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #fb7185)' }} />
                         Sleep & Wellness
                       </h5>
                       <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                         {currentDay.content.sleep.split('\n').map((line, index) => {
                           if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-pink-600 mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
                           } else if (line.trim() && !line.trim().startsWith('😴')) {
                             return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
                           }
                           return null
                         })}
                       </div>
-                    </div>
-                    
+                  </div>
+                  
                     {/* Holistic Healing Bonus */}
-                    <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl p-6 border border-emerald-200 border-l-4 border-emerald-400">
-                      <h5 className="font-bold text-foreground mb-3 flex items-center gap-2 text-lg border-b-2 border-emerald-200 pb-2">
-                        <Leaf className="h-5 w-5 text-emerald-600" />
+                    <div className="rounded-xl p-6 bg-background">
+                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                        <Leaf className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #10b981)' }} />
                         Holistic Healing Bonus
                       </h5>
                       <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                         {currentDay.content.holistic.split('\n').map((line, index) => {
                           if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-emerald-600 mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
                           } else if (line.trim() && !line.trim().startsWith('🌿')) {
                             return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
                           }
@@ -855,11 +989,11 @@ export default function Program() {
                         <Badge className={getDifficultyColor(currentDay.metadata.difficulty)}>
                           {currentDay.metadata.difficulty}
                         </Badge>
-                      </div>
-                      
-                      <Button 
-                        size="lg" 
-                        onClick={completeDay}
+                  </div>
+                  
+                  <Button 
+                    size="lg" 
+                    onClick={completeDay}
                         disabled={completingDay || completedDays.has(currentDay.day)}
                         className={`w-full h-14 text-lg group hover:scale-105 transition-transform duration-200 ${
                           completedDays.has(currentDay.day)
@@ -880,10 +1014,10 @@ export default function Program() {
                         ) : (
                           <>
                             <Trophy className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" />
-                            Complete Day {currentDay.day}
+                    Complete Day {currentDay.day}
                           </>
                         )}
-                      </Button>
+                  </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -893,18 +1027,18 @@ export default function Program() {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Today's Focus Card */}
-              <Card className="glass-card border-0 shadow-xl overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-accent/10 to-accent/20 border-b border-accent/20 px-6 py-4">
+              <Card className="modern-card border-0">
+                <CardHeader className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <Target className="h-5 w-5 text-accent-foreground" />
+                    <Target className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                     <h4 className="text-lg font-semibold text-foreground">Today&apos;s Focus</h4>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Main Focus</p>
-                      <p className="font-medium text-foreground">{currentDay.content.mainFocus || 'Daily Healing'}</p>
+                      <p className="text-sm text-muted-foreground mb-1">Theme</p>
+                      <p className={`font-bold text-foreground ${pickGlowClass(currentDay.theme || currentDay.content.mainFocus)}`}>{currentDay.theme || deriveTheme(currentDay.content.mainFocus)}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Duration</p>
@@ -919,10 +1053,10 @@ export default function Program() {
               </Card>
 
               {/* Progress Summary Card */}
-              <Card className="feature-card border-0 shadow-xl overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/20 border-b border-primary/20 px-6 py-4">
+              <Card className="modern-card border-0">
+                <CardHeader className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <TrendingUp className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                     <h4 className="text-lg font-semibold text-foreground">Your Journey</h4>
                   </div>
                 </CardHeader>
@@ -930,21 +1064,15 @@ export default function Program() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Days Completed</span>
-                      <Badge variant="success" className="text-xs">
-                        {progress.completed}
-                      </Badge>
+                      <span className={`text-base font-bold text-foreground ${pickGlowClass('completed-' + progress.completed)}`}>{progress.completed}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Current Streak</span>
-                      <Badge variant="info" className="text-xs">
-                        {progress.streak}
-                      </Badge>
+                      <span className={`text-base font-bold text-foreground ${pickGlowClass('streak-' + progress.streak)}`}>{progress.streak}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Completion Rate</span>
-                      <Badge variant="gradient" className="text-xs">
-                        {Math.round(progress.percentage)}%
-                      </Badge>
+                      <span className={`text-base font-bold text-foreground ${pickGlowClass('rate-' + progress.percentage)}`}>{Math.round(progress.percentage)}%</span>
                     </div>
                   </div>
                 </CardContent>
@@ -956,21 +1084,21 @@ export default function Program() {
         {/* Program Complete */}
         {progress.completed === 30 && (
           <div className="mb-12">
-            <Card className="glass-card border-0 shadow-2xl border-l-4 border-l-success overflow-hidden">
+            <Card className="modern-card border-0">
               <CardContent className="p-12 text-center">
-                <div className="p-4 rounded-full bg-success/20 mx-auto mb-6 w-24 h-24 flex items-center justify-center">
-                  <Trophy className="h-12 w-12 text-success" />
+                <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                  <Trophy className="h-12 w-12 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 10px #22c55e)' }} />
                 </div>
                 <h2 className="text-3xl font-bold text-foreground mb-4">Congratulations!</h2>
                 <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                   You&apos;ve completed all 30 days of your healing journey. 
-                  This is just the beginning of your transformation.
-                </p>
-                <Button asChild size="lg" className="text-lg px-8 py-3 group hover:scale-105 transition-transform duration-200">
+                    This is just the beginning of your transformation.
+                  </p>
+                <Button asChild size="lg" className="text-lg px-8 py-3 group hover:scale-105 transition-transform duration-200 neon-cta">
                   <a href="/dashboard">Continue Your Journey</a>
-                </Button>
+                  </Button>
               </CardContent>
-            </Card>
+              </Card>
           </div>
         )}
       </div>

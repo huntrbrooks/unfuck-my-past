@@ -231,14 +231,13 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
   const total = steps.length;
   const step = steps[stepIndex];
 
-  const validateStep = () => {
+  const computeStepErrors = () => {
     const newErrors: Record<string, string> = {};
     step.fields.forEach(field => {
       if (isChoice(field)) {
-        // Choice fields are always required unless the step is optional
-        if (!step.optional && (values[field.id] === undefined || values[field.id] === null || 
-            (field.multi && (values[field.id] as string[]).length === 0) || 
-            (!field.multi && values[field.id] === ""))) {
+        if (!step.optional && (values[field.id] === undefined || values[field.id] === null ||
+          (field.multi && (values[field.id] as string[])?.length === 0) ||
+          (!field.multi && values[field.id] === ""))) {
           newErrors[field.id] = "This field is required.";
         }
       } else if (isText(field)) {
@@ -247,19 +246,26 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
         }
       }
     });
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
   const next = () => {
-    if (validateStep()) {
-      const isLast = stepIndex >= total - 1 || step.final;
-      if (onChange) onChange(values);
-      if (isLast) {
-        onComplete(values);
-      } else {
-        setStepIndex(stepIndex + 1);
-      }
+    const newErrors = computeStepErrors();
+    setErrors(newErrors);
+    const isValid = Object.keys(newErrors).length === 0;
+    if (!isValid) return;
+    const isLast = stepIndex >= total - 1 || step.final;
+    if (onChange) onChange(values);
+    if (isLast) {
+      onComplete(values);
+    } else {
+      setStepIndex(stepIndex + 1);
+      try {
+        // Smoothly scroll the onboarding container to top for next step
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 0);
+      } catch {}
     }
   };
 
@@ -283,8 +289,8 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
         setValues={(v) => { setValues(v); if (onChange) onChange(v); }}
         next={next}
         prev={prev}
-        errors={errors}
-        canProceed={validateStep()}
+        errors={{ ...computeStepErrors(), ...errors }}
+        canProceed={Object.keys(computeStepErrors()).length === 0}
       />
       {step.final ? (
         <div className="max-w-2xl mx-auto mt-6 flex justify-end">

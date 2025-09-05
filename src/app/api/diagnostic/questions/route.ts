@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, users } from '../../../../db'
 import { eq } from 'drizzle-orm'
@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm'
 // Global flag to prevent multiple simultaneous generations
 let isGeneratingQuestions = false
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth()
     

@@ -103,7 +103,8 @@ Keep the same structure but make it more detailed and actionable. Use their pref
     }
   }
 
-  private generateFallbackProgram(userPreferences: UserPreferences): string {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private generateFallbackProgram(_userPreferences: UserPreferences): string {
     return `# 🎯 30-Day "Unfuck Your Life" Healing Program
 
 ## Program Overview
@@ -177,7 +178,7 @@ Remember: This is your journey. Take it at your own pace and be gentle with your
     dayNumber: number,
     responses: DiagnosticResponse[],
     userPreferences: UserPreferences,
-    weatherData?: any
+    weatherData?: { insight: { weatherSummary: string; activityRecommendations: string; environmentalAdaptations: string; seasonalPractices: string } }
   ): Promise<string> {
     try {
       // Define unique main focuses for each day
@@ -285,7 +286,7 @@ Keep each section brief but complete. Personalize based on their responses. Use 
     }
   }
 
-  private generateFallbackDailyContent(dayNumber: number, weatherData?: any): string {
+  private generateFallbackDailyContent(dayNumber: number, weatherData?: { insight: { weatherSummary: string; activityRecommendations: string } }): string {
     return `🌅 GUIDED PRACTICE
 Morning Intention Setting (5 minutes)
 Find a quiet space and set an intention for today's healing work. Take 3 deep breaths and repeat your intention with conviction.

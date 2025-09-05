@@ -14,6 +14,21 @@ interface VoiceRecorderProps {
   allowEdit?: boolean
 }
 
+interface SpeechRecognitionResultItem {
+  transcript: string
+}
+
+interface SpeechRecognitionResult {
+  0: SpeechRecognitionResultItem
+  isFinal: boolean
+  length: number
+}
+
+interface SpeechRecognitionEventLike {
+  results: SpeechRecognitionResult[]
+  resultIndex: number
+}
+
 interface Recognition extends EventTarget {
   continuous: boolean
   interimResults: boolean
@@ -21,7 +36,7 @@ interface Recognition extends EventTarget {
   start(): void
   stop(): void
   abort(): void
-  onresult: ((event: { results: { transcript: string }[][] }) => void) | null
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null
   onerror: ((event: { error: string }) => void) | null
   onend: ((event: Event) => void) | null
 }
@@ -132,7 +147,9 @@ export default function VoiceRecorder({
       }, 120000) // 2 minutes
 
     } catch {
-      setError('Failed to start recording')
+      const errorMsg = 'Failed to start recording'
+      setError(errorMsg)
+      onError(errorMsg)
       setIsRecording(false)
       setIsProcessing(false)
     }
@@ -167,7 +184,9 @@ export default function VoiceRecorder({
       setIsProcessing(false)
 
     } catch {
-      setError('Failed to stop recording')
+      const errorMsg = 'Failed to stop recording'
+      setError(errorMsg)
+      onError(errorMsg)
       setIsRecording(false)
       setIsProcessing(false)
     }
@@ -195,9 +214,9 @@ export default function VoiceRecorder({
   }
 
   // Check if speech recognition is supported
-  // const isSupported = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
+  const isSupported = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
 
-  if (!SpeechRecognition) {
+  if (!isSupported) {
     return (
       <div className={`bg-warning/10 border border-warning/20 rounded-lg p-4 ${className}`}>
         <div className="flex items-center gap-3 mb-2">

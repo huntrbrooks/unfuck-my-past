@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db, programDays } from '../../../db'
 import { programDays as programContent } from '../../../lib/program-content'
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     // Clear existing program days
     await db.delete(programDays)

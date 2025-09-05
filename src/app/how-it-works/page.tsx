@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,30 +11,30 @@ export default function HowItWorks() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10"></div>
+      <div className="relative overflow-hidden bg-background">
+        <div className="absolute inset-0"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center mb-16">
             {/* Floating Elements */}
             <div className="relative mb-8">
-              <div className="absolute -top-8 -left-8 p-4 rounded-full bg-primary/10 animate-float">
-                <Target className="h-8 w-8 text-primary" />
+              <div className="absolute -top-8 -left-8 p-4 animate-float">
+                <Target className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
               </div>
-              <div className="absolute -top-4 -right-8 p-4 rounded-full bg-accent/10 animate-float-delayed">
-                <Bot className="h-8 w-8 text-accent-foreground" />
+              <div className="absolute -top-4 -right-8 p-4 animate-float-delayed">
+                <Bot className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
               </div>
-              <div className="absolute -bottom-8 left-1/4 p-4 rounded-full bg-primary/10 animate-float-slow">
-                <TrendingUp className="h-8 w-8 text-primary" />
+              <div className="absolute -bottom-8 left-1/4 p-4 animate-float-slow">
+                <TrendingUp className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ff6600)' }} />
               </div>
-              <div className="absolute -bottom-4 right-1/4 p-4 rounded-full bg-accent/10 animate-float-delayed-slow">
-                <Heart className="h-8 w-8 text-accent-foreground" />
+              <div className="absolute -bottom-4 right-1/4 p-4 animate-float-delayed-slow">
+                <Heart className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
               </div>
             </div>
 
-            <h1 className="responsive-heading text-foreground mb-6">
+            <h1 className="responsive-heading mb-6 neon-heading">
               How It Works
             </h1>
-            <p className="responsive-body text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+            <p className="responsive-body text-muted-foreground max-w-4xl mx-auto leading-relaxed drop-shadow-[0_0_8px_rgba(99,102,241,0.15)]">
               Your journey to healing is simple, personalized, and proven to work. 
               Here&apos;s how we&apos;ll help you transform your life through AI-powered insights and structured healing.
             </p>
@@ -41,9 +42,9 @@ export default function HowItWorks() {
 
           {/* Process Steps */}
           <div className="grid md:grid-cols-3 gap-8 mb-16">
-            <Card variant="glass" className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
+            <Card className="glass-card border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
               <CardContent className="p-8 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/30 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                   <Target className="h-10 w-10 text-primary" />
                 </div>
                 <CardTitle className="text-xl font-semibold mb-4 text-foreground">1. Personalize</CardTitle>
@@ -55,9 +56,9 @@ export default function HowItWorks() {
               </CardContent>
             </Card>
 
-            <Card variant="glass" className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
+            <Card className="glass-card border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
               <CardContent className="p-8 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-accent/20 to-accent/30 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                   <Bot className="h-10 w-10 text-accent-foreground" />
                 </div>
                 <CardTitle className="text-xl font-semibold mb-4 text-foreground">2. Diagnose</CardTitle>
@@ -69,9 +70,9 @@ export default function HowItWorks() {
               </CardContent>
             </Card>
 
-            <Card variant="glass" className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
+            <Card className="glass-card border-0 shadow-2xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
               <CardContent className="p-8 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/30 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                   <TrendingUp className="h-10 w-10 text-primary" />
                 </div>
                 <CardTitle className="text-xl font-semibold mb-4 text-foreground">3. Transform</CardTitle>
@@ -88,14 +89,14 @@ export default function HowItWorks() {
           <div className="max-w-5xl mx-auto mb-16">
             <Card className="glass-card border-0 shadow-2xl overflow-hidden">
               <div className="bg-gradient-to-r from-primary/10 to-accent/10 border-b border-border/50 px-8 py-6">
-                <h2 className="text-3xl font-bold text-foreground text-center">What You&apos;ll Get</h2>
+                <h2 className="text-3xl font-bold text-center neon-heading">What You&apos;ll Get</h2>
               </div>
               <CardContent className="p-8">
                 <div className="grid md:grid-cols-2 gap-12">
                   {/* Free Assessment */}
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="p-2 rounded-full bg-success/20">
+                      <div className="p-2 rounded-full">
                         <CheckCircle className="h-6 w-6 text-success" />
                       </div>
                       <h3 className="text-xl font-semibold text-foreground">Free Assessment</h3>
@@ -123,7 +124,7 @@ export default function HowItWorks() {
                   {/* Premium Features */}
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="p-2 rounded-full bg-primary/20">
+                      <div className="p-2 rounded-full">
                         <Lock className="h-6 w-6 text-primary" />
                       </div>
                       <h3 className="text-xl font-semibold text-foreground">Premium Features</h3>
@@ -132,12 +133,14 @@ export default function HowItWorks() {
                       <div className="flex items-center gap-3 group">
                         <Lock className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-200" />
                         <span className="text-foreground">Full diagnostic report</span>
-                        <Badge variant="success" className="ml-auto">$10</Badge>
+                        <span className="ml-2"></span>
+                        <Badge variant="success" className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#0a0a0a' }}>$10</Badge>
                       </div>
                       <div className="flex items-center gap-3 group">
                         <Lock className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-200" />
                         <span className="text-foreground">30-day healing program</span>
-                        <Badge variant="success" className="ml-auto">$29.95</Badge>
+                        <span className="ml-2"></span>
+                        <Badge variant="success" className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#0a0a0a' }}>$29.95</Badge>
                       </div>
                       <div className="flex items-center gap-3 group">
                         <Lock className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-200" />
@@ -157,7 +160,7 @@ export default function HowItWorks() {
           {/* Features Grid */}
           <div className="max-w-6xl mx-auto mb-16">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-foreground mb-4">Why Choose Our Approach?</h2>
+              <h2 className="text-3xl font-bold mb-4 neon-heading">Why Choose Our Approach?</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 We combine cutting-edge AI technology with proven therapeutic principles 
                 to create a healing experience that&apos;s both effective and accessible.
@@ -167,7 +170,7 @@ export default function HowItWorks() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardContent className="p-6 text-center">
-                  <div className="p-3 rounded-full bg-primary/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                  <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <Brain className="h-8 w-8 text-primary" />
                   </div>
                   <h3 className="font-semibold text-foreground mb-2">AI-Powered Insights</h3>
@@ -179,7 +182,7 @@ export default function HowItWorks() {
 
               <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardContent className="p-6 text-center">
-                  <div className="p-3 rounded-full bg-accent/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                  <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <Shield className="h-8 w-8 text-accent-foreground" />
                   </div>
                   <h3 className="font-semibold text-foreground mb-2">Safe & Secure</h3>
@@ -191,7 +194,7 @@ export default function HowItWorks() {
 
               <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardContent className="p-6 text-center">
-                  <div className="p-3 rounded-full bg-primary/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                  <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <Zap className="h-8 w-8 text-primary" />
                   </div>
                   <h3 className="font-semibold text-foreground mb-2">Proven Results</h3>
@@ -203,7 +206,7 @@ export default function HowItWorks() {
 
               <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardContent className="p-6 text-center">
-                  <div className="p-3 rounded-full bg-accent/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                  <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <BookOpen className="h-8 w-8 text-accent-foreground" />
                   </div>
                   <h3 className="font-semibold text-foreground mb-2">Comprehensive Learning</h3>
@@ -215,7 +218,7 @@ export default function HowItWorks() {
 
               <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardContent className="p-6 text-center">
-                  <div className="p-3 rounded-full bg-primary/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                  <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <Heart className="h-8 w-8 text-primary" />
                   </div>
                   <h3 className="font-semibold text-foreground mb-2">Compassionate Support</h3>
@@ -227,7 +230,7 @@ export default function HowItWorks() {
 
               <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardContent className="p-6 text-center">
-                  <div className="p-3 rounded-full bg-accent/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                  <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <Sparkles className="h-8 w-8 text-accent-foreground" />
                   </div>
                   <h3 className="font-semibold text-foreground mb-2">Personalized Experience</h3>
@@ -248,11 +251,11 @@ export default function HowItWorks() {
               </span>
             </div>
             
-            <Button asChild size="lg" className="text-lg px-8 py-4 group hover:scale-105 transition-transform duration-200">
-              <a href="/onboarding">
+            <Button asChild size="lg" variant="cta" className="text-lg px-8 py-4 group">
+              <Link href="/onboarding">
                 Start Your Journey
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-              </a>
+              </Link>
             </Button>
           </div>
         </div>

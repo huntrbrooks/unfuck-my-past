@@ -4,7 +4,7 @@ import { db, progress } from '../../../../db'
 import { eq, desc, and } from 'drizzle-orm'
 import { getProgramProgress } from '../../../../lib/program-content'
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth()
     

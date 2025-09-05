@@ -1,258 +1,298 @@
 'use client'
 
 import React, { useState } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowRight, Bot, CheckCircle, TrendingUp, Sparkles, AlertTriangle, Target, Heart, Zap } from 'lucide-react'
+import { ArrowRight, Bot, CheckCircle, TrendingUp, Sparkles, AlertTriangle, Target, Heart, Zap, Brain, Shield, BookOpen, Lock } from 'lucide-react'
 
 export default function Home() {
   const [showSafetyAlert, setShowSafetyAlert] = useState(true)
 
   return (
     <>
-      <main className="min-h-screen">
-        {/* Safety Banner */}
-        {showSafetyAlert && (
-          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 border-b border-yellow-200 dark:border-yellow-800/30 px-4 py-3 animate-slide-in-from-top">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  <strong>Important:</strong> This is not therapy. If you&apos;re in crisis, 
-                  please call 000 (Australia) or Lifeline 13 11 14.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowSafetyAlert(false)}
-                className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200 transition-colors duration-200"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        )}
+      <main className="min-h-screen bg-background">
+        {/* Safety Banner (moved below bottom CTA) */}
 
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/20 dark:via-emerald-950/20 dark:to-teal-950/20 py-20">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-          
+        <section className="relative overflow-hidden bg-background py-12">
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <Badge variant="glass" size="lg" className="animate-fade-in">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    AI-Powered Healing
-                  </Badge>
-                  <h1 className="responsive-heading font-bold text-gray-900 dark:text-gray-100 animate-fade-in">
-                    Unfuck Your Past
-                  </h1>
-                  <p className="responsive-body text-gray-600 dark:text-gray-300 leading-relaxed animate-fade-in">
-                    AI-driven self-healing that actually works. No therapy waitlists, 
-                    no bullshit. Just raw, honest guidance to help you break free from 
-                    what&apos;s holding you back.
-                  </p>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-4 animate-fade-in">
-                  <Button 
-                    asChild 
-                    size="lg" 
-                    className="btn-primary text-lg px-8 py-4 group"
-                  >
-                    <a href="/onboarding">
-                      Start Free Assessment
-                      <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-                    </a>
-                  </Button>
-                  <Button 
-                    asChild 
-                    variant="outline" 
-                    size="lg" 
-                    className="btn-outline text-lg px-8 py-4 group"
-                  >
-                    <a href="/how-it-works">
-                      How It Works
-                      <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-                    </a>
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="relative">
-                <Card className="glass-card border-0 p-8 shadow-2xl animate-scale-in">
-                  <CardTitle className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
-                    What You&apos;ll Get
-                  </CardTitle>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/50 dark:hover:bg-gray-900/50 transition-all duration-300">
-                      <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                        <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      </div>
-                      <span className="text-gray-700 dark:text-gray-300">Personalized healing journey</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/50 dark:hover:bg-gray-900/50 transition-all duration-300">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                        <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <span className="text-gray-700 dark:text-gray-300">AI-powered insights</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/50 dark:hover:bg-gray-900/50 transition-all duration-300">
-                      <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                        <TrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <span className="text-gray-700 dark:text-gray-300">Proven results</span>
-                    </div>
-                  </div>
-                </Card>
-                
-                {/* Floating Elements */}
-                <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-xl animate-float"></div>
-                <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-gradient-to-br from-secondary/20 to-muted/20 rounded-full blur-xl animate-float [animation-delay:1s]"></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section className="py-20 bg-background">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="responsive-subheading font-bold text-foreground mb-6">
-                Your Journey to Healing
-              </h2>
-              <p className="responsive-body text-muted-foreground max-w-3xl mx-auto">
-                A comprehensive approach to self-discovery and transformation, designed to work with your unique needs and preferences.
+              {/* Floating Elements */}
+              <div className="relative mb-8">
+                <div className="absolute -top-8 -left-8 p-4 animate-float">
+                  <Target className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+                </div>
+                <div className="absolute -top-4 -right-8 p-4 animate-float-delayed">
+                  <Bot className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
+                </div>
+                <div className="absolute -bottom-8 left-1/4 p-4 animate-float-slow">
+                  <TrendingUp className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+                </div>
+                <div className="absolute -bottom-4 right-1/4 p-4 animate-float-delayed-slow">
+                  <Heart className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
+                </div>
+              </div>
+
+              <h1 className="responsive-heading neon-heading mb-6">
+                Unfuck My Past
+              </h1>
+              <p className="responsive-body text-muted-foreground max-w-4xl mx-auto leading-relaxed mb-8">
+                Your journey to healing is simple, personalized, and proven to work. 
+                AI-driven self-healing that actually works. No therapy waitlists, no bullshit.
               </p>
+              
+              <p className="text-lg text-foreground font-medium mb-6 text-center">
+                Ready to begin your transformation?
+              </p>
+              
+              <div className="flex justify-center">
+                <Button asChild size="lg" className="text-lg px-8 py-4 group neon-cta">
+                  <Link href="/onboarding">
+                    Start Your Journey
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                  </Link>
+                </Button>
+              </div>
+              {/* Safety Banner placed directly under the first CTA */}
+              {showSafetyAlert && (
+                <div className="mt-8 mb-8 flex items-center justify-center">
+                  <div className="inline-flex items-center gap-3 px-5 py-3 rounded-xl border border-red-500/30 shadow-[0_0_24px_rgba(239,68,68,0.55)] bg-background/90">
+                    <AlertTriangle className="h-5 w-5 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                    <p className="text-sm text-foreground text-center">
+                      <strong>Important:</strong> This is not therapy. If you&apos;re in crisis, please call 000 (Australia) or Lifeline 13 11 14.
+                    </p>
+                    <button
+                      onClick={() => setShowSafetyAlert(false)}
+                      className="ml-3 text-muted-foreground hover:text-foreground transition-colors duration-200"
+                      aria-label="Dismiss safety notice"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card className="feature-card border-0 group">
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <Target className="h-8 w-8 text-green-600 dark:text-green-400" />
+            {/* Process Steps */}
+            <div className="grid md:grid-cols-3 gap-6 mb-16">
+              <Card className="feature-card border-0 hover:-translate-y-1 transition-all duration-300 group">
+                <CardContent className="p-6 text-center">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Target className="h-9 w-9 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                   </div>
-                  <CardTitle className="text-xl font-semibold mb-4">1. Personalize</CardTitle>
+                  <CardTitle className="text-xl font-semibold mb-4 text-foreground">1. Personalize</CardTitle>
                   <p className="text-muted-foreground leading-relaxed">
-                    Complete our 10-step onboarding to customize your experience. 
+                    Complete our comprehensive onboarding to customize your experience. 
                     We&apos;ll adapt to your communication style, learning preferences, 
-                    and comfort level.
+                    and comfort level for a truly personalized journey.
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="feature-card border-0 group">
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <Bot className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              <Card className="feature-card border-0 hover:-translate-y-1 transition-all duration-300 group">
+                <CardContent className="p-6 text-center">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Bot className="h-9 w-9 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                   </div>
-                  <CardTitle className="text-xl font-semibold mb-4">2. Diagnose</CardTitle>
+                  <CardTitle className="text-xl font-semibold mb-4 text-foreground">2. Diagnose</CardTitle>
                   <p className="text-muted-foreground leading-relaxed">
                     Answer 3-10 adaptive questions about your past and patterns. 
-                    Our AI analyzes your responses to provide deep, actionable insights.
+                    Our advanced AI analyzes your responses to provide deep, actionable insights 
+                    and identify your unique healing path.
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="feature-card border-0 group">
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              <Card className="feature-card border-0 hover:-translate-y-1 transition-all duration-300 group">
+                <CardContent className="p-6 text-center">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <TrendingUp className="h-9 w-9 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                   </div>
-                  <CardTitle className="text-xl font-semibold mb-4">3. Transform</CardTitle>
+                  <CardTitle className="text-xl font-semibold mb-4 text-foreground">3. Transform</CardTitle>
                   <p className="text-muted-foreground leading-relaxed">
-                    Follow your personalized 30-day program with daily guidance, 
-                    journaling prompts, and progress tracking to build lasting change.
+                    Follow your personalized 30-day program with daily tasks, 
+                    journaling, and mood tracking. See measurable progress over time 
+                    and build lasting positive changes in your life.
                   </p>
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </section>
 
-        {/* Pricing Section */}
-        <section className="py-20 bg-gradient-to-br from-muted/20 to-accent/20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="responsive-subheading font-bold text-foreground mb-6">
-                Choose Your Path
-              </h2>
-              <p className="responsive-body text-muted-foreground max-w-3xl mx-auto">
-                Start free and unlock deeper insights as you&apos;re ready to commit to your healing journey.
-              </p>
-            </div>
-            
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              <Card className="modern-card border-0 group hover:shadow-xl transition-all duration-500">
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <Heart className="h-8 w-8 text-green-600 dark:text-green-400" />
+            {/* What You'll Get Section */}
+            <div className="max-w-5xl mx-auto mb-16">
+              <Card className="glass-card border-0 shadow-2xl overflow-hidden">
+                <div className="bg-secondary border-b border-border/50 px-8 py-6">
+                  <h2 className="text-3xl font-bold text-center neon-heading">What You&apos;ll Get</h2>
+                </div>
+                <CardContent className="p-8">
+                  <div className="grid md:grid-cols-2 gap-12">
+                    {/* Free Assessment */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 rounded-full">
+                          <CheckCircle className="h-6 w-6 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #22c55e)' }} />
+                        </div>
+                        <h3 className="text-xl font-semibold text-foreground">Free Assessment</h3>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3 group">
+                          <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          <span className="text-foreground">10-step personalization</span>
+                        </div>
+                        <div className="flex items-center gap-3 group">
+                          <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          <span className="text-foreground">3-10 diagnostic questions</span>
+                        </div>
+                        <div className="flex items-center gap-3 group">
+                          <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          <span className="text-foreground">AI-powered insights</span>
+                        </div>
+                        <div className="flex items-center gap-3 group">
+                          <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          <span className="text-foreground">Trauma mapping preview</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Premium Features */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 rounded-full">
+                          <Lock className="h-6 w-6 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
+                        </div>
+                        <h3 className="text-xl font-semibold text-foreground">Premium Features</h3>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3 group">
+                          <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ff1aff)' }} />
+                          <span className="text-foreground">Full diagnostic report</span>
+                          <span className="ml-2"></span>
+                          <Badge className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#000000' }}>$10</Badge>
+                        </div>
+                        <div className="flex items-center gap-3 group">
+                          <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #00e5ff)' }} />
+                          <span className="text-foreground">30-day healing program</span>
+                          <span className="ml-2"></span>
+                          <Badge className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#000000' }}>$29.95</Badge>
+                        </div>
+                        <div className="flex items-center gap-3 group">
+                          <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #22c55e)' }} />
+                          <span className="text-foreground">Daily journaling & mood tracking</span>
+                        </div>
+                        <div className="flex items-center gap-3 group">
+                          <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #00e5ff)' }} />
+                          <span className="text-foreground">Progress analytics</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <CardTitle className="text-2xl font-semibold mb-4">Free Assessment</CardTitle>
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      <span className="text-muted-foreground">10-step personalization</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      <span className="text-muted-foreground">3-10 diagnostic questions</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      <span className="text-muted-foreground">AI-powered insights</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      <span className="text-muted-foreground">Trauma mapping preview</span>
-                    </div>
-                  </div>
-                  <Button asChild variant="outline" className="w-full group">
-                    <a href="/onboarding">
-                      Start Free
-                      <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                    </a>
-                  </Button>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Features Grid */}
+            <div className="max-w-6xl mx-auto mb-16">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold mb-4 neon-heading">Why Choose Our Approach?</h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  We combine cutting-edge AI technology with proven therapeutic principles 
+                  to create a healing experience that&apos;s both effective and accessible.
+                </p>
+              </div>
               
-              <Card className="feature-card border-0 group hover:shadow-xl transition-all duration-500">
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <Zap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <CardTitle className="text-2xl font-semibold mb-4">Premium Features</CardTitle>
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <span className="text-muted-foreground">Full diagnostic report</span>
-                      <Badge variant="secondary" className="ml-auto">$10</Badge>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                  <CardContent className="p-6 text-center">
+                    <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                      <Brain className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <span className="text-muted-foreground">30-day healing program</span>
-                      <Badge variant="secondary" className="ml-auto">$29.95</Badge>
+                    <h3 className="font-semibold text-foreground mb-2">AI-Powered Insights</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Advanced AI analysis provides deep, personalized insights into your patterns and healing needs.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                  <CardContent className="p-6 text-center">
+                    <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                      <Shield className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <span className="text-muted-foreground">Progress tracking</span>
+                    <h3 className="font-semibold text-foreground mb-2">Safe & Secure</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your privacy and emotional safety are our top priorities throughout your healing journey.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                  <CardContent className="p-6 text-center">
+                    <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                      <Zap className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff6600)' }} />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <span className="text-muted-foreground">Journaling tools</span>
+                    <h3 className="font-semibold text-foreground mb-2">Proven Results</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Structured approach based on evidence-based therapeutic techniques and real user success stories.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                  <CardContent className="p-6 text-center">
+                    <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                      <BookOpen className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
                     </div>
-                  </div>
-                  <Button asChild className="w-full group">
-                    <a href="/onboarding">
-                      Get Started
-                      <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                    </a>
-                  </Button>
-                </CardContent>
-              </Card>
+                    <h3 className="font-semibold text-foreground mb-2">Comprehensive Learning</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Learn about trauma, healing, and personal growth through our extensive knowledge base.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                  <CardContent className="p-6 text-center">
+                    <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                      <Heart className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #22c55e)' }} />
+                    </div>
+                    <h3 className="font-semibold text-foreground mb-2">Compassionate Support</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Experience genuine care and understanding as you navigate your healing journey.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="feature-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                  <CardContent className="p-6 text-center">
+                    <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                      <Sparkles className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
+                    </div>
+                    <h3 className="font-semibold text-foreground mb-2">Personalized Experience</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Every aspect of your journey is tailored to your unique needs, preferences, and goals.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
+
+            {/* Bottom CTA Section */}
+            <div className="text-center mt-10">
+              <p className="text-lg text-foreground font-medium mb-6">
+                Ready to begin your transformation?
+              </p>
+              
+              <div className="flex justify-center">
+                <Button asChild size="lg" className="text-lg px-8 py-4 group neon-cta">
+                  <Link href="/onboarding">
+                    Start Your Journey
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
           </div>
         </section>
       </main>

@@ -21,7 +21,7 @@ interface UserPreferences {
 }
 
 export default function PreferencesPage() {
-  const { userId } = useAuth()
+  const { userId, isLoaded } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -33,14 +33,27 @@ export default function PreferencesPage() {
     timeCommitment: '5min',
     contentWarnings: true
   })
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [hasExisting, setHasExisting] = useState(false)
 
   useEffect(() => {
+    if (!isLoaded) return
     if (!userId) {
       router.push('/sign-in')
       return
     }
     loadPreferences()
-  }, [userId, router])
+    // Check if user has initial onboarding
+    ;(async () => {
+      try {
+        const res = await fetch('/api/diagnostic/responses')
+        if (res.ok) {
+          const data = await res.json()
+          setHasExisting((data.responses?.length || 0) > 0)
+        }
+      } catch {}
+    })()
+  }, [userId, isLoaded, router])
 
   const loadPreferences = async () => {
     try {
@@ -68,6 +81,13 @@ export default function PreferencesPage() {
 
   const savePreferences = async () => {
     try {
+      if (hasExisting) {
+        const proceed = confirm('Updating preferences will update your master prompt for future content but will NOT overwrite your initial onboarding. Continue?')
+        if (!proceed) {
+          router.push('/dashboard')
+          return
+        }
+      }
       setSaving(true)
       const response = await fetch('/api/user/preferences', {
         method: 'PUT',
@@ -113,27 +133,27 @@ export default function PreferencesPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10"></div>
+      <div className="relative overflow-hidden bg-background">
+        <div className="absolute inset-0"></div>
         <div className="relative max-w-6xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             {/* Floating Elements */}
             <div className="relative mb-8">
-              <div className="absolute -top-4 -left-4 p-3 rounded-full bg-primary/10 animate-float">
+              <div className="absolute -top-4 -left-4 p-3 animate-float">
                 <Settings className="h-6 w-6 text-primary" />
               </div>
-              <div className="absolute -top-2 -right-4 p-3 rounded-full bg-accent/10 animate-float-delayed">
+              <div className="absolute -top-2 -right-4 p-3 animate-float-delayed">
                 <Sparkles className="h-6 w-6 text-accent-foreground" />
               </div>
-              <div className="absolute -bottom-4 left-1/4 p-3 rounded-full bg-primary/10 animate-float-slow">
+              <div className="absolute -bottom-4 left-1/4 p-3 animate-float-slow">
                 <Target className="h-6 w-6 text-primary" />
               </div>
-              <div className="absolute -bottom-2 right-1/4 p-3 rounded-full bg-accent/10 animate-float-delayed-slow">
+              <div className="absolute -bottom-2 right-1/4 p-3 animate-float-delayed-slow">
                 <Shield className="h-6 w-6 text-accent-foreground" />
               </div>
             </div>
 
-            <h1 className="responsive-heading text-foreground mb-6">
+            <h1 className="responsive-heading neon-heading key-info mb-6">
               Your Preferences
             </h1>
             <p className="responsive-body text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -149,11 +169,11 @@ export default function PreferencesPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="space-y-8">
           {/* Goals Section */}
-          <Card variant="glass" className="border-0 shadow-xl overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/20 border-b border-primary/20">
+          <Card className="border-0 shadow-xl overflow-hidden">
+            <CardHeader className="bg-background border-b border-primary/20">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/20">
-                  <Target className="h-6 w-6 text-primary" />
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <Target className="h-6 w-6 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                 </div>
                 <CardTitle className="text-xl font-semibold text-foreground">Healing Goals</CardTitle>
               </div>
@@ -199,11 +219,11 @@ export default function PreferencesPage() {
           </Card>
 
           {/* Experience Level */}
-          <Card variant="glass" className="border-0 shadow-xl overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-accent/10 to-accent/20 border-b border-accent/20">
+          <Card className="border-0 shadow-xl overflow-hidden">
+            <CardHeader className="bg-background border-b border-accent/20">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-accent/20">
-                  <BookOpen className="h-6 w-6 text-accent-foreground" />
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <BookOpen className="h-6 w-6 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                 </div>
                 <CardTitle className="text-xl font-semibold text-foreground">Experience Level</CardTitle>
               </div>
@@ -228,11 +248,11 @@ export default function PreferencesPage() {
           </Card>
 
           {/* Time Commitment */}
-          <Card variant="glass" className="border-0 shadow-xl overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/20 border-b border-primary/20">
+          <Card className="border-0 shadow-xl overflow-hidden">
+            <CardHeader className="bg-background border-b border-primary/20">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/20">
-                  <Clock className="h-6 w-6 text-primary" />
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ff6600)' }} />
                 </div>
                 <CardTitle className="text-xl font-semibold text-foreground">Time Commitment</CardTitle>
               </div>
@@ -258,11 +278,11 @@ export default function PreferencesPage() {
           </Card>
 
           {/* Safety & Comfort Settings */}
-          <Card variant="glass" className="border-0 shadow-xl overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-accent/10 to-accent/20 border-b border-accent/20">
+          <Card className="border-0 shadow-xl overflow-hidden">
+            <CardHeader className="bg-background border-b border-accent/20">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-accent/20">
-                  <Shield className="h-6 w-6 text-accent-foreground" />
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <Shield className="h-6 w-6 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
                 </div>
                 <CardTitle className="text-xl font-semibold text-foreground">Safety & Comfort</CardTitle>
               </div>
@@ -327,6 +347,7 @@ export default function PreferencesPage() {
               onClick={savePreferences} 
               disabled={saving}
               size="lg"
+              variant="cta"
               className="px-12 py-4 text-lg group hover:scale-105 transition-transform duration-200"
             >
               {saving ? (

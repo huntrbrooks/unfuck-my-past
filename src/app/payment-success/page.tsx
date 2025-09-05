@@ -10,8 +10,12 @@ import { useUser } from '@clerk/nextjs'
 export default function PaymentSuccess() {
   const { user, isLoaded } = useUser()
   const router = useRouter()
-  const [purchaseDetails, setPurchaseDetails] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [purchaseDetails, setPurchaseDetails] = useState<{
+    product: string;
+    amount: number;
+    createdAt: string;
+  } | null>(null)
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -20,6 +24,7 @@ export default function PaymentSuccess() {
   }, [isLoaded, user])
 
   const loadPurchaseDetails = async () => {
+    setLoading(true)
     try {
       const response = await fetch('/api/payments/user-purchases')
       if (response.ok) {
@@ -53,7 +58,7 @@ export default function PaymentSuccess() {
     router.push('/dashboard')
   }
 
-  if (!isLoaded) {
+  if (!isLoaded || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -72,7 +77,7 @@ export default function PaymentSuccess() {
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-2xl mx-auto px-4">
-        <Card variant="glass" className="border-0 shadow-2xl overflow-hidden">
+        <Card className="border-0 shadow-2xl overflow-hidden">
           <CardHeader className="pb-4 text-center">
             <div className="flex justify-center mb-4">
               <div className="w-20 h-20 bg-gradient-to-br from-success/20 to-success/10 rounded-full flex items-center justify-center">
@@ -117,7 +122,7 @@ export default function PaymentSuccess() {
               <div className="space-y-4">
                 <Button 
                   onClick={handleContinue}
-                  variant="primary"
+                  variant="cta"
                   size="lg"
                   className="w-full h-14 text-lg flex items-center gap-3 group hover:scale-105 transition-transform duration-200"
                 >
@@ -157,7 +162,7 @@ export default function PaymentSuccess() {
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="h-4 w-4 text-primary" />
                   <p className="font-medium text-foreground">
-                    What's next?
+                    What&apos;s next?
                   </p>
                 </div>
                 <p>
@@ -188,7 +193,7 @@ export default function PaymentSuccess() {
                   </div>
                 )}
                 <p>
-                  If you have any questions or need support, please don't hesitate to reach out.
+                  If you have any questions or need support, please don&apos;t hesitate to reach out.
                 </p>
               </div>
             </div>

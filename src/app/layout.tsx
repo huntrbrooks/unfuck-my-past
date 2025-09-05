@@ -8,7 +8,7 @@ import { Suspense } from 'react'
 import './globals.css'
 import ErrorBoundary from '../components/ErrorBoundary'
 import ThemeProvider from '../components/ThemeProvider'
-import ResponsiveNavigation from '../components/ResponsiveNavigation'
+import MenuBar from '../components/MenuBar'
 import AnalyticsProvider from '../components/AnalyticsProvider'
 
 const dmSans = DM_Sans({
@@ -49,7 +49,9 @@ export default function RootLayout({
           <ErrorBoundary>
             <ThemeProvider>
               <AnalyticsProvider>
-                <ResponsiveNavigation />
+                <div className="w-full flex justify-center border-b border-border/20">
+                  <MenuBar />
+                </div>
                 <Suspense fallback={<div>Loading...</div>}>
                   {children}
                 </Suspense>

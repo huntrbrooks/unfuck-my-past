@@ -59,20 +59,25 @@ export default function DiagnosticResults() {
         console.log('Could not fetch questions count, using responses count')
       }
 
-      // Force regenerate summary and key insights by making a POST request
-      const summaryResponse = await fetch('/api/diagnostic/summary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Load existing summary only (do not regenerate)
+      try {
+        const summaryResponse = await fetch('/api/diagnostic/summary', { method: 'GET' })
+        if (summaryResponse.ok) {
+          const summaryData = await summaryResponse.json()
+          if ((summaryData.summary && summaryData.summary.length > 0) || (summaryData.keyInsights && summaryData.keyInsights.length > 0)) {
+            setSummary(summaryData.summary || '')
+            setKeyInsights(summaryData.keyInsights || '')
+          } else {
+            // If missing, generate once then rely on stored data afterwards
+            const regen = await fetch('/api/diagnostic/summary', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            if (regen.ok) {
+              const regenData = await regen.json()
+              setSummary(regenData.summary || '')
+              setKeyInsights(regenData.keyInsights || '')
+            }
+          }
         }
-      })
-      if (summaryResponse.ok) {
-        const summaryData = await summaryResponse.json()
-        setSummary(summaryData.summary || '')
-        setKeyInsights(summaryData.keyInsights || '')
-      } else {
-        console.error('Failed to load summary:', summaryResponse.status)
-      }
+      } catch {}
     } catch (err) {
       console.error('Error loading results:', err)
       setError('Failed to load diagnostic results')
@@ -85,25 +90,25 @@ export default function DiagnosticResults() {
     setShowProgramPaywall(true)
   }
 
-  const handleViewReport = () => {
-    setShowPaywall(true)
+  const handleViewReport = async () => {
+    router.push('/report')
   }
 
   const handlePurchaseReport = async () => {
     try {
       // Generate comprehensive report
       const response = await fetch('/api/diagnostic/comprehensive-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
         }
-      })
+        })
 
       if (!response.ok) {
         throw new Error('Failed to generate comprehensive report')
       }
-
-      const data = await response.json()
+      
+        const data = await response.json()
       setComprehensiveReport(data.report || '')
       setShowPaywall(false)
     } catch (error) {
@@ -120,6 +125,7 @@ export default function DiagnosticResults() {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const formatReportContent = (report: string) => {
     // Parse the report content and format it for display
     const sections = {
@@ -163,7 +169,7 @@ export default function DiagnosticResults() {
           </h2>
           <div class="bg-primary/5 p-6 rounded-lg border border-primary/20">
             <div class="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-              ${sections.executiveSummary.split('\n').map((line, _) => {
+              ${sections.executiveSummary.split('\n').map((line) => {
                 if (line.trim().startsWith('•')) {
                   return `<div class="flex items-start gap-2"><span class="text-primary mt-1">•</span><span>${line.substring(1).trim()}</span></div>`
                 } else if (line.trim() && !line.trim().startsWith('🎯')) {
@@ -183,7 +189,7 @@ export default function DiagnosticResults() {
           </h2>
           <div class="bg-destructive/5 p-6 rounded-lg border border-destructive/20">
             <div class="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-              ${sections.traumaAnalysis.split('\n').map((line, _) => {
+              ${sections.traumaAnalysis.split('\n').map((line) => {
                 if (line.trim().startsWith('•')) {
                   return `<div class="flex items-start gap-2"><span class="text-destructive mt-1">•</span><span>${line.substring(1).trim()}</span></div>`
                 } else if (line.trim() && !line.trim().startsWith('🧠')) {
@@ -203,7 +209,7 @@ export default function DiagnosticResults() {
           </h2>
           <div class="bg-warning/5 p-6 rounded-lg border border-warning/20">
             <div class="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-              ${sections.toxicityScore.split('\n').map((line, index) => {
+              ${sections.toxicityScore.split('\n').map((line) => {
                 if (line.trim().startsWith('•')) {
                   return `<div class="flex items-start gap-2"><span class="text-warning mt-1">•</span><span>${line.substring(1).trim()}</span></div>`
                 } else if (line.trim() && !line.trim().startsWith('📊')) {
@@ -223,7 +229,7 @@ export default function DiagnosticResults() {
           </h2>
           <div class="bg-success/5 p-6 rounded-lg border border-success/20">
             <div class="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-              ${sections.strengths.split('\n').map((line, index) => {
+              ${sections.strengths.split('\n').map((line) => {
                 if (line.trim().startsWith('•')) {
                   return `<div class="flex items-start gap-2"><span class="text-success mt-1">•</span><span>${line.substring(1).trim()}</span></div>`
                 } else if (line.trim() && !line.trim().startsWith('💪')) {
@@ -243,7 +249,7 @@ export default function DiagnosticResults() {
           </h2>
           <div class="bg-warning/5 p-6 rounded-lg border border-warning/20">
             <div class="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-              ${sections.mostImportant.split('\n').map((line, index) => {
+              ${sections.mostImportant.split('\n').map((line) => {
                 if (line.trim().startsWith('•')) {
                   return `<div class="flex items-start gap-2"><span class="text-warning mt-1">•</span><span>${line.substring(1).trim()}</span></div>`
                 } else if (line.trim() && !line.trim().startsWith('🚨')) {
@@ -263,7 +269,7 @@ export default function DiagnosticResults() {
           </h2>
           <div class="bg-primary/5 p-6 rounded-lg border border-primary/20">
             <div class="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-              ${sections.behavioralPatterns.split('\n').map((line, index) => {
+              ${sections.behavioralPatterns.split('\n').map((line) => {
                 if (line.trim().startsWith('•')) {
                   return `<div class="flex items-start gap-2"><span class="text-primary mt-1">•</span><span>${line.substring(1).trim()}</span></div>`
                 } else if (line.trim() && !line.trim().startsWith('🔄')) {
@@ -283,7 +289,7 @@ export default function DiagnosticResults() {
           </h2>
           <div class="bg-primary/5 p-6 rounded-lg border border-primary/20">
             <div class="space-y-4">
-              ${sections.healingRoadmap.split('\n').map((line, index) => {
+              ${sections.healingRoadmap.split('\n').map((line) => {
                 if (line.trim().match(/^\d+\./)) {
                   const match = line.match(/^\d+/)
                   if (match) {
@@ -311,7 +317,7 @@ export default function DiagnosticResults() {
           </h2>
           <div class="bg-success/5 p-6 rounded-lg border border-success/20">
             <div class="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-              ${sections.actionableRecommendations.split('\n').map((line, index) => {
+              ${sections.actionableRecommendations.split('\n').map((line) => {
                 if (line.trim().startsWith('•')) {
                   return `<div class="flex items-start gap-2"><span class="text-success mt-1">•</span><span>${line.substring(1).trim()}</span></div>`
                 } else if (line.trim() && !line.trim().startsWith('⚡')) {
@@ -331,7 +337,7 @@ export default function DiagnosticResults() {
           </h2>
           <div class="bg-muted/30 p-6 rounded-lg border border-muted-foreground/20">
             <div class="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-              ${sections.resources.split('\n').map((line, index) => {
+              ${sections.resources.split('\n').map((line) => {
                 if (line.trim().startsWith('•')) {
                   return `<div class="flex items-start gap-2"><span class="text-muted-foreground mt-1">•</span><span>${line.substring(1).trim()}</span></div>`
                 } else if (line.trim() && !line.trim().startsWith('📚')) {
@@ -385,7 +391,7 @@ export default function DiagnosticResults() {
         <div className="max-w-2xl w-full">
           <Card className="glass-card border-0 shadow-xl">
             <CardContent className="p-8">
-              <div className="text-center">
+            <div className="text-center">
                 <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
                 <h2 className="text-xl font-semibold text-foreground">Loading Your Results</h2>
                 <p className="text-muted-foreground">Analyzing your diagnostic responses...</p>
@@ -393,7 +399,7 @@ export default function DiagnosticResults() {
             </CardContent>
           </Card>
         </div>
-      </div>
+            </div>
     )
   }
 
@@ -409,7 +415,7 @@ export default function DiagnosticResults() {
                 <p className="text-muted-foreground mb-6">{error}</p>
                 <Button onClick={loadResults} variant="outline">
                   Try Again
-                </Button>
+              </Button>
               </div>
             </CardContent>
           </Card>
@@ -424,15 +430,15 @@ export default function DiagnosticResults() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-4 mb-6">
-            <div className="p-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
-              <Brain className="h-10 w-10 text-primary" />
+            <div>
+              <Brain className="h-10 w-10 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
             </div>
             <div>
-              <h1 className="responsive-heading text-foreground">Your Diagnostic Results</h1>
+              <h1 className="responsive-heading neon-heading key-info">Your Diagnostic Results</h1>
               <p className="responsive-body text-muted-foreground">Discover insights about yourself and your healing journey</p>
             </div>
           </div>
-          
+
           {/* Progress Summary */}
           <div className="inline-flex items-center gap-2 bg-accent/20 rounded-full px-4 py-2 border border-accent/30">
             <CheckCircle className="h-5 w-5 text-accent-foreground" />
@@ -447,11 +453,11 @@ export default function DiagnosticResults() {
           <div className="lg:col-span-2 space-y-8">
             {/* Summary Card */}
             {summary && (
-              <Card className="feature-card border-0 shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b border-primary/20">
+              <Card className="feature-card border-0 shadow-[0_0_18px_rgba(204,255,0,0.25)]">
+                <CardHeader className="bg-background border-b border-border/50">
                   <div className="flex items-center gap-3">
                     <Target className="h-6 w-6 text-primary" />
-                    <CardTitle className="text-xl font-semibold text-foreground">Diagnostic Summary</CardTitle>
+                    <CardTitle className="text-xl font-semibold neon-heading">Diagnostic Summary</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -459,16 +465,16 @@ export default function DiagnosticResults() {
                     <p className="text-foreground leading-relaxed">{summary}</p>
                   </div>
                 </CardContent>
-              </Card>
-            )}
+            </Card>
+          )}
 
             {/* Key Insights Card */}
             {keyInsights && (
-              <Card className="feature-card border-0 shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-accent/5 to-accent/10 border-b border-accent/20">
+              <Card className="feature-card border-0 shadow-[0_0_18px_rgba(0,229,255,0.25)]">
+                <CardHeader className="bg-background border-b border-border/50">
                   <div className="flex items-center gap-3">
                     <Sparkles className="h-6 w-6 text-accent-foreground" />
-                    <CardTitle className="text-xl font-semibold text-foreground">Key Insights</CardTitle>
+                    <CardTitle className="text-xl font-semibold neon-heading">Key Insights</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -487,7 +493,7 @@ export default function DiagnosticResults() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Button 
                 onClick={handleStartProgram}
-variant="default"
+                variant="cta"
                 size="lg"
                 className="h-16 text-lg flex items-center gap-3 group hover:scale-105 transition-transform duration-200"
               >
@@ -504,57 +510,51 @@ variant="default"
                 <BookOpen className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                 View Full Diagnostic Report
               </Button>
-            </div>
+                </div>
 
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
                 Your personalized healing journey is ready to begin. 
                 The program has been tailored based on your diagnostic responses.
-              </p>
-            </div>
-          </div>
+                      </p>
+                    </div>
+                  </div>
 
           {/* Right Sidebar */}
           <div className="space-y-6">
             {/* Quick Stats */}
-            <Card className="feature-card border-0 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b border-primary/20">
+            <Card className="feature-card border-0 shadow-[0_0_18px_rgba(0,229,255,0.25)]">
+              <CardHeader className="bg-background border-b border-border/50">
                 <div className="flex items-center gap-3">
                   <TrendingUp className="h-5 w-5 text-primary" />
                   <CardTitle className="text-lg font-semibold text-foreground">Your Progress</CardTitle>
-                </div>
+                    </div>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Questions Completed</span>
-                    <Badge variant="success" className="text-xs">
-                      {questionCount}
-                    </Badge>
+                    <span className="text-swap font-bold neon-glow-cyan">{questionCount}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Insights Generated</span>
-                    <Badge variant="info" className="text-xs">
-                      {results.length}
-                    </Badge>
+                    <span className="text-swap font-bold neon-glow-pink">{results.length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Completion Rate</span>
-                    <Badge variant="gradient" className="text-xs">
-                      100%
-                    </Badge>
+                    <span className="text-swap font-bold neon-glow-orange">100%</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Next Steps */}
-            <Card className="glass-card border-0 shadow-xl">
-              <CardHeader className="bg-gradient-to-r from-accent/5 to-accent/10 border-b border-accent/20">
+            <Card className="modern-card border-0 shadow-[0_0_18px_rgba(255,26,255,0.25)]">
+              <CardHeader className="bg-background border-b border-border/50">
                 <div className="flex items-center gap-3">
                   <ArrowRight className="h-5 w-5 text-accent-foreground" />
                   <CardTitle className="text-lg font-semibold text-foreground">Next Steps</CardTitle>
-                </div>
+                  </div>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-3 text-sm text-muted-foreground">
@@ -565,24 +565,24 @@ variant="default"
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
-      </div>
-
+                            </div>
+                          </div>
+                        </div>
+                        
       {/* Diagnostic Report Paywall Modal */}
       {showPaywall && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <Card className="glass-card w-full max-w-md border-0 shadow-2xl">
             <CardContent className="p-6">
               <div className="text-center mb-6">
-                <div className="p-3 rounded-full bg-warning/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                <div className="mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                   <AlertTriangle className="h-8 w-8 text-warning" />
                 </div>
                 <h2 className="text-xl font-bold text-foreground mb-2">Comprehensive Diagnostic Report</h2>
                 <p className="text-muted-foreground">
                   Get your complete trauma analysis, personality profile, and personalized healing roadmap.
-                </p>
-              </div>
+                            </p>
+                          </div>
               <PaymentForm
                 productName="Comprehensive Diagnostic Report"
                 amount={1000} // $10.00 in cents
@@ -590,8 +590,8 @@ variant="default"
                 onCancel={() => setShowPaywall(false)}
               />
             </CardContent>
-          </Card>
-        </div>
+                </Card>
+                          </div>
       )}
 
       {/* 30-Day Program Paywall Modal */}
@@ -600,14 +600,14 @@ variant="default"
           <Card className="glass-card w-full max-w-md border-0 shadow-2xl">
             <CardContent className="p-6">
               <div className="text-center mb-6">
-                <div className="p-3 rounded-full bg-primary/10 mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+                <div className="mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                   <Heart className="h-8 w-8 text-primary" />
                 </div>
                 <h2 className="text-xl font-bold text-foreground mb-2">30-Day Healing Program</h2>
                 <p className="text-muted-foreground">
                   Access your personalized 30-day healing journey with daily tasks, journaling, and AI guidance.
-                </p>
-              </div>
+                            </p>
+                          </div>
               <PaymentForm
                 productName="30-Day Healing Program"
                 amount={2995} // $29.95 in cents
@@ -615,8 +615,8 @@ variant="default"
                 onCancel={() => setShowProgramPaywall(false)}
               />
             </CardContent>
-          </Card>
-        </div>
+                </Card>
+              </div>
       )}
 
       
@@ -663,9 +663,9 @@ variant="default"
                 />
               </div>
             </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+            </Card>
+            </div>
+          )}
+            </div>
   )
 }

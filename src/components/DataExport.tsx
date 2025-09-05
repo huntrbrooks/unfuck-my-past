@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Download, FileText, FileSpreadsheet, FileCode, Loader2, BookOpen, Calendar, FileCheck } from 'lucide-react'
+import { Download, Loader2 } from 'lucide-react'
 import { downloadFile } from '../lib/export-utils'
 
 interface ExportResponse {
@@ -36,7 +36,9 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
         },
         body: JSON.stringify({
           userId,
-          type
+          type,
+          // include mood entries from localStorage when exporting all
+          moods: type === 'all-txt' ? JSON.parse(localStorage.getItem('mood-entries') || '[]') : undefined
         }),
       })
 
@@ -60,12 +62,12 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full text-center bg-background border border-border/40">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Download className="h-5 w-5 text-primary" />
+        <CardTitle className="flex items-center justify-center gap-2">
           Export Your Data
         </CardTitle>
+        <div className="text-sm text-muted-foreground">Download your progress</div>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
@@ -74,141 +76,20 @@ const DataExport: React.FC<DataExportProps> = ({ userId }) => {
           </div>
         )}
         
-        <div className="space-y-6">
-          {/* General Data Export */}
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3">General Data Export</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button
-                onClick={() => handleExport('json')}
-                disabled={isExporting}
-                variant="outline"
-                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
-              >
-                {isExporting && exportType === 'json' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4" />
-                )}
-                Export as JSON
-              </Button>
-              
-              <Button
-                onClick={() => handleExport('csv')}
-                disabled={isExporting}
-                variant="outline"
-                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
-              >
-                {isExporting && exportType === 'csv' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileSpreadsheet className="h-4 w-4" />
-                )}
-                Export as CSV
-              </Button>
-              
-              <Button
-                onClick={() => handleExport('pdf')}
-                disabled={isExporting}
-                variant="outline"
-                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
-              >
-                {isExporting && exportType === 'pdf' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileCode className="h-4 w-4" />
-                )}
-                Export as PDF
-              </Button>
-            </div>
-          </div>
-
-          {/* Diagnostic TXT Exports */}
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3">Diagnostic Reports (TXT)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button
-                onClick={() => handleExport('diagnostic-summary-txt')}
-                disabled={isExporting}
-                variant="outline"
-                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
-              >
-                {isExporting && exportType === 'diagnostic-summary-txt' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileCheck className="h-4 w-4" />
-                )}
-                Free Summary Report
-              </Button>
-              
-              <Button
-                onClick={() => handleExport('diagnostic-comprehensive-txt')}
-                disabled={isExporting}
-                variant="outline"
-                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
-              >
-                {isExporting && exportType === 'diagnostic-comprehensive-txt' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <BookOpen className="h-4 w-4" />
-                )}
-                Full Diagnostic Report
-              </Button>
-
-              <Button
-                onClick={() => handleExport('diagnostic-questions-txt')}
-                disabled={isExporting}
-                variant="outline"
-                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
-              >
-                {isExporting && exportType === 'diagnostic-questions-txt' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4" />
-                )}
-                Questions & Insights
-              </Button>
-            </div>
-          </div>
-
-          {/* Program TXT Exports */}
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3">30-Day Program (TXT)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button
-                onClick={() => handleExport('program-structure-txt')}
-                disabled={isExporting}
-                variant="outline"
-                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
-              >
-                {isExporting && exportType === 'program-structure-txt' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Calendar className="h-4 w-4" />
-                )}
-                Program Overview
-              </Button>
-              
-              <Button
-                onClick={() => handleExport('program-daily-txt')}
-                disabled={isExporting}
-                variant="outline"
-                className="flex items-center gap-2 hover:bg-primary/5 hover:border-primary/30 transition-colors"
-              >
-                {isExporting && exportType === 'program-daily-txt' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4" />
-                )}
-                Daily Content (All Days)
-              </Button>
-            </div>
-          </div>
+        <div className="space-y-4">
+          <Button
+            onClick={() => handleExport('all-txt')}
+            disabled={isExporting}
+            className="w-full h-12 neon-cta"
+          >
+            {isExporting && exportType === 'all-txt' ? (
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+            ) : null}
+            Extract All Data (.txt)
+          </Button>
         </div>
         
-        <p className="text-sm text-muted-foreground mt-4">
-          Export your diagnostic responses, insights, program progress, and individual reports as text files (.txt) for easy reading and sharing.
-        </p>
+        <p className="text-sm text-muted-foreground mt-2">One click export of questions, answers, insights, reports, program progress and moods as a .txt file.</p>
       </CardContent>
     </Card>
   )

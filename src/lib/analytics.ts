@@ -1,6 +1,6 @@
 interface AnalyticsEvent {
   event: string
-  properties?: Record<string, any>
+  properties?: Record<string, string | number | boolean>
   userId?: string
   timestamp?: string
 }
@@ -36,7 +36,7 @@ class AnalyticsService {
     })
   }
 
-  trackEvent(event: string, properties: Record<string, any> = {}) {
+  trackEvent(event: string, properties: Record<string, string | number | boolean> = {}) {
     if (!this.isInitialized) {
       console.warn('Analytics not initialized')
       return
@@ -75,14 +75,14 @@ class AnalyticsService {
     })
   }
 
-  trackUserAction(action: string, properties: Record<string, any> = {}) {
+  trackUserAction(action: string, properties: Record<string, string | number | boolean> = {}) {
     this.trackEvent('user_action', {
       action,
       ...properties
     })
   }
 
-  trackConversion(funnel: string, step: string, properties: Record<string, any> = {}) {
+  trackConversion(funnel: string, step: string, properties: Record<string, string | number | boolean> = {}) {
     this.trackEvent('conversion', {
       funnel,
       step,
@@ -90,10 +90,10 @@ class AnalyticsService {
     })
   }
 
-  trackError(error: Error, context: Record<string, any> = {}) {
+  trackError(error: Error, context: Record<string, string | number | boolean> = {}) {
     this.trackEvent('error', {
       message: error.message,
-      stack: error.stack,
+      stack: error.stack || '',
       ...context
     })
   }
@@ -104,13 +104,13 @@ class AnalyticsService {
     console.log('Analytics Event:', event)
 
     // Example: Send to PostHog
-    if (typeof window !== 'undefined' && (window as any).posthog) {
-      (window as any).posthog.capture(event.event, event.properties)
+    if (typeof window !== 'undefined' && (window as unknown as { posthog?: { capture: (event: string, properties?: Record<string, unknown>) => void } }).posthog) {
+      (window as unknown as { posthog: { capture: (event: string, properties?: Record<string, unknown>) => void } }).posthog.capture(event.event, event.properties)
     }
 
     // Example: Send to Google Analytics
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', event.event, event.properties)
+    if (typeof window !== 'undefined' && (window as unknown as { gtag?: (type: string, event: string, properties?: Record<string, unknown>) => void }).gtag) {
+      (window as unknown as { gtag: (type: string, event: string, properties?: Record<string, unknown>) => void }).gtag('event', event.event, event.properties)
     }
 
     // Example: Send to custom API
@@ -166,7 +166,7 @@ class AnalyticsService {
     this.trackEvent('program_complete')
   }
 
-  trackFeatureUsage(feature: string, properties: Record<string, any> = {}) {
+  trackFeatureUsage(feature: string, properties: Record<string, string | number | boolean> = {}) {
     this.trackEvent('feature_usage', { feature, ...properties })
   }
 }

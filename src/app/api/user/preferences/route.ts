@@ -58,8 +58,8 @@ export async function PUT(request: NextRequest) {
         safety: {
           ...validPreferences,
           // Preserve any existing diagnostic data
-          diagnosticAnalysis: (currentSafety as any)?.diagnosticAnalysis || {},
-          personalizedQuestions: (currentSafety as any)?.personalizedQuestions || []
+          diagnosticAnalysis: (currentSafety as { diagnosticAnalysis?: Record<string, unknown> })?.diagnosticAnalysis || {},
+          personalizedQuestions: (currentSafety as { personalizedQuestions?: unknown[] })?.personalizedQuestions || []
         }
       })
       .where(eq(users.id, userId))

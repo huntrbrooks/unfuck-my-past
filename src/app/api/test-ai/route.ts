@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth()
     

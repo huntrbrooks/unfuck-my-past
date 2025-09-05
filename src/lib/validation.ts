@@ -9,7 +9,7 @@ export interface ValidationRule {
   minLength?: number
   maxLength?: number
   pattern?: RegExp
-  custom?: (value: any) => boolean | string
+  custom?: (value: unknown) => boolean | string
 }
 
 export interface ValidationSchema {
@@ -37,7 +37,7 @@ export const PATTERNS = {
 }
 
 // Validation functions
-export function validateField(value: any, rule: ValidationRule, fieldName: string): string[] {
+export function validateField(value: unknown, rule: ValidationRule, fieldName: string): string[] {
   const errors: string[] = []
 
   // Required check
@@ -81,7 +81,7 @@ export function validateField(value: any, rule: ValidationRule, fieldName: strin
   return errors
 }
 
-export function validateObject(data: any, schema: ValidationSchema): ValidationResult {
+export function validateObject(data: Record<string, unknown>, schema: ValidationSchema): ValidationResult {
   const errors: string[] = []
 
   for (const [fieldName, rule] of Object.entries(schema)) {
@@ -145,8 +145,8 @@ export function sanitizeString(input: string): string {
   return input.trim().replace(/[<>]/g, '') // Basic XSS prevention
 }
 
-export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
-  const sanitized: any = {}
+export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
+  const sanitized: Record<string, unknown> = {}
   
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string') {

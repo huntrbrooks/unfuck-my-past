@@ -67,7 +67,8 @@ export class WeatherService {
     }
   }
 
-  generateWeatherInsight(weatherData: WeatherData, userPreferences: any): WeatherInsight {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  generateWeatherInsight(weatherData: WeatherData, _userPreferences: { tone: string; engagement: string }): WeatherInsight {
     const { temperature, condition, humidity, windSpeed, isDay } = weatherData
     
     let activityRecommendations = ''

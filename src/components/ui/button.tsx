@@ -17,6 +17,7 @@ const buttonVariants = cva(
         glass: "glass-morphism text-foreground hover:bg-white/20 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0",
         gradient: "bg-gradient-to-r from-primary via-accent to-secondary text-primary-foreground hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90 hover:-translate-y-0.5 hover:shadow-glow active:translate-y-0",
         floating: "bg-card text-card-foreground shadow-lg hover:shadow-xl hover:-translate-y-1 hover:shadow-glow-lg active:translate-y-0",
+        cta: "neon-cta",
       },
       size: {
         default: "h-12 px-6 py-3",

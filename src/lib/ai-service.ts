@@ -56,7 +56,7 @@ export class AIService {
           if (this.openaiKey) {
             try {
               return await this.generateOpenAIInsight(prompt, userResponse)
-            } catch (fallbackError) {
+            } catch {
               throw new Error('Both AI services failed')
             }
           }
@@ -101,7 +101,7 @@ export class AIService {
                 timestamp: new Date().toISOString()
               }
             }
-          } catch (claudeError) {
+          } catch {
             throw new Error('Both AI services failed')
           }
         }
@@ -112,7 +112,7 @@ export class AIService {
     throw new Error('No AI service available')
   }
 
-  private async generateOpenAIInsight(prompt: string, userResponse: string): Promise<AIResponse> {
+  private async generateOpenAIInsight(prompt: string, userResponse: string, model: string = 'gpt-4o-mini'): Promise<AIResponse> {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -120,7 +120,7 @@ export class AIService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model,
         messages: [
           {
             role: 'user',
@@ -138,14 +138,45 @@ export class AIService {
     const data = await response.json()
     return {
       insight: data.choices[0].message.content,
-      model: 'gpt-4',
+      model,
       timestamp: new Date().toISOString()
+    }
+  }
+
+  // Cheap achievement idea generator (fallback heuristic if key missing)
+  async generateAchievementIdea(context: string): Promise<string> {
+    try {
+      const key = (this as unknown as { openaiKey?: string }).openaiKey
+      if (!key) {
+        // Heuristic fallback
+        const ideas = [
+          'Log your mood 3 days in a row',
+          'Write 2 journal entries this week',
+          'Complete Day 1 of the 30‑day program',
+          'Revisit your diagnostic results',
+          'Add a reflection note to today\'s entry'
+        ]
+        return ideas[Math.floor(Math.random() * ideas.length)]
+      }
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: `Given this user context, propose a short achievement (7 words max) that is concrete and trackable. Context: ${context}` }],
+          max_tokens: 50
+        })
+      })
+      const data = await res.json()
+      return data?.choices?.[0]?.message?.content?.trim() || 'Complete a small win today'
+    } catch {
+      return 'Complete a small win today'
     }
   }
 
   async generateDiagnosticSummary(
     allResponses: Array<{ question: string; response: string; insight: string }>,
-    userPreferences: any
+    userPreferences: { tone: string; voice: string; rawness: string; depth: string }
   ): Promise<AIResponse> {
     const summaryPrompt = `Based on the following diagnostic responses and insights, provide a SHORT, INTRIGUING summary (maximum 3-4 sentences) that creates curiosity and makes the user desperate to learn more. This is for the FREE version - be compelling but don't give away everything.
 
@@ -201,7 +232,7 @@ Create a brief, powerful summary that:
         if (this.openaiKey) {
           try {
             return await this.generateOpenAIInsight(summaryPrompt, '')
-          } catch (fallbackError) {
+          } catch {
             throw new Error('Both AI services failed')
           }
         }
@@ -215,7 +246,7 @@ Create a brief, powerful summary that:
 
   async generateKeyInsights(
     allResponses: Array<{ question: string; response: string; insight: string }>,
-    userPreferences: any
+    userPreferences: { tone: string; voice: string; rawness: string; depth: string }
   ): Promise<AIResponse> {
     const insightsPrompt = `Based on the following diagnostic responses, generate 3-4 powerful, specific key insights that will intrigue the user and make them want to learn more. Each insight should be 1-2 sentences maximum.
 
@@ -273,7 +304,7 @@ Format as a numbered list.`
         if (this.openaiKey) {
           try {
             return await this.generateOpenAIInsight(insightsPrompt, '')
-          } catch (fallbackError) {
+          } catch {
             throw new Error('Both AI services failed')
           }
         }
@@ -287,7 +318,7 @@ Format as a numbered list.`
 
   async generateComprehensiveReport(
     allResponses: Array<{ question: string; response: string; insight: string }>,
-    userPreferences: any
+    userPreferences: { tone: string; voice: string; rawness: string; depth: string }
   ): Promise<AIResponse> {
     const reportPrompt = `Based on the following diagnostic responses and insights, generate a COMPREHENSIVE diagnostic report that provides deep analysis, actionable insights, and valuable guidance. This is for the PAID version - be thorough and insightful.
 
@@ -400,7 +431,7 @@ FORMATTING REQUIREMENTS:
                 timestamp: new Date().toISOString()
               }
             }
-          } catch (fallbackError) {
+          } catch {
             throw new Error('Both AI services failed')
           }
         }
@@ -438,7 +469,7 @@ FORMATTING REQUIREMENTS:
             timestamp: new Date().toISOString()
           }
         }
-      } catch (error) {
+      } catch {
         throw new Error('AI service unavailable')
       }
     }

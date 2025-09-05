@@ -48,7 +48,7 @@ class PerformanceMonitor {
     // First Input Delay
     new PerformanceObserver((entryList) => {
       const entries = entryList.getEntries()
-      entries.forEach((entry: any) => {
+      entries.forEach((entry: { processingStart: number; startTime: number }) => {
         this.recordMetric('FID', entry.processingStart - entry.startTime, 'ms')
       })
     }).observe({ entryTypes: ['first-input'] })
@@ -57,7 +57,7 @@ class PerformanceMonitor {
     new PerformanceObserver((entryList) => {
       let clsValue = 0
       const entries = entryList.getEntries()
-      entries.forEach((entry: any) => {
+      entries.forEach((entry: { hadRecentInput: boolean; value: number }) => {
         if (!entry.hadRecentInput) {
           clsValue += entry.value
         }
@@ -69,7 +69,7 @@ class PerformanceMonitor {
   private observeResourceTiming() {
     new PerformanceObserver((entryList) => {
       const entries = entryList.getEntries()
-      entries.forEach((entry: any) => {
+      entries.forEach((entry: { initiatorType: string; responseStart: number; requestStart: number }) => {
         if (entry.initiatorType === 'navigation') {
           this.recordMetric('TTFB', entry.responseStart - entry.requestStart, 'ms')
         }
@@ -83,7 +83,7 @@ class PerformanceMonitor {
 
     const observer = new PerformanceObserver((entryList) => {
       const entries = entryList.getEntries()
-      entries.forEach((entry: any) => {
+      entries.forEach((entry: { duration: number }) => {
         interactionCount++
         totalInteractionTime += entry.duration
       })
@@ -157,7 +157,7 @@ class PerformanceMonitor {
     
     this.metrics.forEach(metric => {
       if (metric.name in vitals) {
-        (vitals as any)[metric.name] = metric.value
+        (vitals as Record<string, number>)[metric.name] = metric.value
       }
     })
     

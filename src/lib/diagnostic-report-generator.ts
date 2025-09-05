@@ -145,7 +145,7 @@ interface ReportGenerationRequest {
     insight: string
   }>
   diagnosticSummary: string
-  userPreferences: any
+  userPreferences: { tone: string; voice: string; rawness: string; depth: string }
   masterPrompt: string
 }
 
@@ -306,7 +306,8 @@ Return as valid JSON matching this exact structure.`
     }
   }
 
-  private getFallbackFreeSummary(responses: DiagnosticResponse[], userProfile: UserProfile): ComprehensiveReport['freeSummary'] {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private getFallbackFreeSummary(_responses: DiagnosticResponse[], _userProfile: UserProfile): ComprehensiveReport['freeSummary'] {
     return {
       keyInsights: [
         "You show strong self-awareness in your responses",
@@ -329,7 +330,8 @@ Return as valid JSON matching this exact structure.`
     }
   }
 
-  private getFallbackFullReport(responses: DiagnosticResponse[], userProfile: UserProfile): ComprehensiveReport['fullReport'] {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private getFallbackFullReport(_responses: DiagnosticResponse[], _userProfile: UserProfile): ComprehensiveReport['fullReport'] {
     return {
       traumaAvoidanceHierarchy: [
         {
@@ -507,7 +509,7 @@ The report should be:
             const report = JSON.parse(reportText)
             console.log('GPT-4.1 diagnostic report generation successful')
             return report
-          } catch (parseError) {
+          } catch {
             console.log('GPT-4.1 report parsing failed')
             throw new Error('Failed to parse diagnostic report')
           }

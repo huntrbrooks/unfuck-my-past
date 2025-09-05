@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -23,6 +23,7 @@ interface DiagnosticResponse {
 
 export default function Diagnostic() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [questions, setQuestions] = useState<DiagnosticQuestion[]>([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [responses, setResponses] = useState<DiagnosticResponse[]>([])
@@ -36,26 +37,72 @@ export default function Diagnostic() {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false)
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
+  const [loaderStep, setLoaderStep] = useState(1)
+  const [showReadyPrompt, setShowReadyPrompt] = useState(false)
 
   useEffect(() => {
     // Check if we're coming from onboarding with generating=true
-    const urlParams = new URLSearchParams(window.location.search)
-    const isGenerating = urlParams.get('generating') === 'true'
+    console.log('🔍 DIAGNOSTIC PAGE: useEffect running')
+    console.log('🔍 Search params object:', searchParams)
+    
+    const isGenerating = searchParams.get('generating') === 'true'
+    console.log('🔍 isGenerating:', isGenerating)
     
     if (isGenerating) {
+      console.log('🎯 ONBOARDING FLOW: Starting beautiful loader progression')
+      // Clear any existing questions to ensure loader shows
+      setQuestions([])
+      setError('')
       setIsGeneratingQuestions(true)
       setShowLoader(true)
-      generatePersonalizedQuestions()
+      setLoaderStep(1)
+      
+      // Start loader step progression over 20 seconds (4 seconds per step)
+      const stepInterval = setInterval(() => {
+        setLoaderStep(prev => {
+          const nextStep = prev < 5 ? prev + 1 : prev
+          console.log('🎯 Advancing loader step from', prev, 'to', nextStep)
+          return nextStep
+        })
+      }, 4000) // 4 seconds per step for 5 steps = 20 seconds total
+      
+      // Create ref object to pass to generatePersonalizedQuestions
+      const stepIntervalRef = { current: stepInterval }
+      generatePersonalizedQuestions(stepIntervalRef)
+      
       // Clean up the URL
       window.history.replaceState({}, '', '/diagnostic')
+      
+      // Hide loader after exactly 20 seconds (when progression completes)
+      const loaderTimeout = setTimeout(() => {
+        console.log('🎯 20-second progression complete, prompting to begin')
+        setShowReadyPrompt(true)
+        clearInterval(stepInterval)
+      }, 20000) // 20 second progression
+      
+      // Fallback timeout in case something goes wrong with question generation
+      const fallbackTimeout = setTimeout(() => {
+        console.log('⚠️ Fallback: Generation took too long, trying to load existing questions...')
+        setShowLoader(false)
+        setIsGeneratingQuestions(false)
+        clearInterval(stepInterval)
+        loadQuestions()
+      }, 60000) // 60 second fallback timeout
+      
+      return () => {
+        clearTimeout(loaderTimeout)
+        clearTimeout(fallbackTimeout)
+        clearInterval(stepInterval)
+      }
     } else {
-    // Load questions on component mount
-    if (questions.length === 0 && !isLoadingQuestions && !loading) {
-      console.log('Loading questions on mount...')
-      loadQuestions()
+      console.log('🔍 NOT generating - normal page load')
+      // Load questions on component mount
+      if (questions.length === 0 && !isLoadingQuestions && !loading) {
+        console.log('Loading questions on mount...')
+        loadQuestions()
       }
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // run once on mount; we manually clear the URL below
 
   // Show loader if we're generating questions
   useEffect(() => {
@@ -117,11 +164,16 @@ export default function Diagnostic() {
     }
   }
 
-  const generatePersonalizedQuestions = async () => {
+  const generatePersonalizedQuestions = async (stepIntervalRef?: { current: NodeJS.Timeout | null }) => {
     setLoading(true)
     setError('')
     
     try {
+      // Re-engage paywall by clearing previous diagnostic data and deactivating prior diagnostic purchase
+      try {
+        await fetch('/api/diagnostic/reset', { method: 'POST' })
+      } catch {}
+
       const response = await fetch('/api/diagnostic/generate-questions', {
         method: 'POST',
         headers: {
@@ -140,15 +192,30 @@ export default function Diagnostic() {
         setQuestions(data.questions)
         // setUserPreferences(data.userPreferences) // Currently unused
         setError('')
+        console.log('🎯 Questions loaded, but letting loader complete its natural progression')
+        
+        // DON'T jump to step 5 - let the interval naturally progress through all steps
+        // The loader will automatically hide after 20 seconds (when it reaches step 5)
+        
+        // Questions are ready, but we'll wait for the full 20-second progression
+        // The timeout in useEffect will handle hiding the loader after 20 seconds
       } else {
         throw new Error('No questions were generated. Please try again.')
       }
     } catch (error) {
       console.error('Error generating questions:', error)
       setError(error instanceof Error ? error.message : 'Failed to generate questions')
+      // Hide loader on error (but let the interval continue in case user retries)
+      setShowLoader(false)
+      setIsGeneratingQuestions(false)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Wrapper for button clicks
+  const handleGenerateQuestions = () => {
+    generatePersonalizedQuestions()
   }
 
   // These functions are used by QuestionGenerationLoader when it's properly configured
@@ -270,16 +337,73 @@ export default function Diagnostic() {
   const currentQuestion = questions[currentQuestionIndex]
   const progress = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0
 
-  console.log('Diagnostic page state:', {
+  console.log('🔍 Diagnostic page state:', {
     questionsLength: questions.length,
     currentQuestionIndex,
     currentQuestion: currentQuestion?.question,
     loading,
     error,
-    isLoadingQuestions
+    isLoadingQuestions,
+    showLoader,
+    isGeneratingQuestions,
+    loaderStep
   })
 
+  // Show the beautiful loader when generating questions (HIGHEST PRIORITY)
+  if (showLoader) {
+    console.log('🎯 RENDERING: Beautiful loader with step', loaderStep)
+    return (
+      <>
+        <QuestionGenerationLoader
+          currentStep={loaderStep}
+          totalSteps={5}
+          isGenerating={isGeneratingQuestions}
+        />
+
+        {showReadyPrompt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+            <div className="rounded-xl glass-card shadow-xl w-full max-w-md">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2 neon-heading">Preference analysis complete</h3>
+                <p className="text-muted-foreground mb-6">Are you ready to begin?</p>
+                <div className="flex gap-3">
+                  <Button
+                    className="flex-1"
+                    onClick={() => {
+                      setShowReadyPrompt(false)
+                      setShowLoader(false)
+                      setIsGeneratingQuestions(false)
+                    }}
+                  >
+                    Yes, let’s start
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={async () => {
+                      // Persist a simple flag locally so the nav can route to questions next visit
+                      try {
+                        localStorage.setItem('uyp_has_ready_questions', 'true')
+                      } catch {}
+                      setShowReadyPrompt(false)
+                      setShowLoader(false)
+                      setIsGeneratingQuestions(false)
+                      // Stay on page; user can return later via Continue Journey
+                    }}
+                  >
+                    Continue later
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
   if (loading && questions.length === 0) {
+    console.log('🔄 RENDERING: Basic loading spinner (should not happen when coming from onboarding)')
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-2xl w-full">
@@ -312,8 +436,26 @@ export default function Diagnostic() {
                   <Button variant="outline" onClick={() => loadQuestions()}>
                     Try Again
                   </Button>
-                  <Button variant="outline" onClick={generatePersonalizedQuestions}>
+                  <Button variant="outline" onClick={handleGenerateQuestions}>
                     Generate Personalized Questions
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={async () => {
+                      // Ask for confirmation before clearing data
+                      const proceed = confirm('Are you sure you want to proceed? If yes, all previous diagnostic data will be deleted and payment will be required again.')
+                      if (!proceed) return
+                      try {
+                        const res = await fetch('/api/diagnostic/reset', { method: 'POST' })
+                        if (!res.ok) throw new Error('Reset failed')
+                        // After reset, send user to dashboard
+                        router.push('/dashboard')
+                      } catch (e) {
+                        setError('Failed to reset previous data. Please try again.')
+                      }
+                    }}
+                  >
+                    Start Fresh
                   </Button>
                   <Button variant="outline" onClick={testAIServices}>
                     Test AI Services
@@ -332,17 +474,8 @@ export default function Diagnostic() {
     )
   }
 
-  // Show the beautiful loader when generating questions
-  if (showLoader) {
-    return (
-      <QuestionGenerationLoader
-        isGenerating={isGeneratingQuestions}
-      />
-    )
-  }
-
   // If we have no questions and no error, show a message
-  if (!loading && questions.length === 0 && !error) {
+  if (!loading && questions.length === 0 && !error && !showLoader && !showReadyPrompt) {
     return (
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -351,7 +484,7 @@ export default function Diagnostic() {
               <div className="text-center">
                 <div className="mb-6">
                   <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
-                  <h2 className="responsive-heading text-foreground mb-4">No Questions Available</h2>
+                  <h2 className="responsive-heading mb-4 neon-heading">No Questions Available</h2>
                   <p className="responsive-body text-muted-foreground mb-6">No diagnostic questions were found. This might be because:</p>
                   <ul className="text-left text-muted-foreground mb-6 space-y-2">
                     <li>• You haven&apos;t completed the onboarding process</li>
@@ -363,8 +496,24 @@ export default function Diagnostic() {
                   <Button variant="outline" onClick={() => loadQuestions()}>
                     Try Loading Again
                   </Button>
-                  <Button variant="outline" onClick={generatePersonalizedQuestions}>
+                  <Button variant="outline" onClick={handleGenerateQuestions}>
                     Generate New Questions
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={async () => {
+                      const proceed = confirm('Are you sure you want to proceed? If yes, all previous diagnostic data will be deleted and payment will be required again.')
+                      if (!proceed) return
+                      try {
+                        const res = await fetch('/api/diagnostic/reset', { method: 'POST' })
+                        if (!res.ok) throw new Error('Reset failed')
+                        router.push('/dashboard')
+                      } catch (e) {
+                        setError('Failed to reset previous data. Please try again.')
+                      }
+                    }}
+                  >
+                    Start Fresh
                   </Button>
                 </div>
               </div>
@@ -381,11 +530,11 @@ export default function Diagnostic() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-full bg-primary/10">
-              <Brain className="h-8 w-8 text-primary" />
+            <div className="w-12 h-12 flex items-center justify-center">
+              <Brain className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
             </div>
             <div>
-              <h1 className="responsive-heading text-foreground">Personal Diagnostic</h1>
+              <h1 className="responsive-heading neon-heading key-info">Personal Diagnostic</h1>
               <p className="responsive-body text-muted-foreground">Your journey to self-discovery starts here</p>
             </div>
           </div>
@@ -409,7 +558,7 @@ export default function Diagnostic() {
                   <div className="flex items-start gap-3 mb-4">
                     <Target className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                     <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-foreground mb-3">{currentQuestion.question}</h2>
+                      <h2 className="text-xl font-semibold mb-3 text-foreground">{currentQuestion.question}</h2>
                       {currentQuestion.followUp && (
                         <p className="text-muted-foreground italic">💡 {currentQuestion.followUp}</p>
                       )}
@@ -453,9 +602,9 @@ export default function Diagnostic() {
               <div className="mb-8">
                 {/* Input Mode Toggle */}
                 <div className="mb-6">
-                  <div className="flex bg-muted rounded-xl p-1">
+                  <div className="flex rounded-xl p-1">
                     <Button
-                      variant={inputMode === 'text' ? 'default' : 'ghost'}
+                      variant={inputMode === 'text' ? 'cta' : 'ghost'}
                       onClick={() => setInputMode('text')}
                       disabled={generatingInsight}
                       className="flex-1 flex items-center gap-2"
@@ -464,7 +613,7 @@ export default function Diagnostic() {
                       Type
                     </Button>
                     <Button
-                      variant={inputMode === 'voice' ? 'default' : 'ghost'}
+                      variant={inputMode === 'voice' ? 'cta' : 'ghost'}
                       onClick={() => setInputMode('voice')}
                       disabled={generatingInsight}
                       className="flex-1 flex items-center gap-2"
@@ -565,7 +714,8 @@ export default function Diagnostic() {
               <Button
                 onClick={handleSubmitResponse}
                 disabled={!currentResponse.trim() || generatingInsight}
-                className="flex items-center gap-2"
+                variant={!currentResponse.trim() || generatingInsight ? undefined : 'cta'}
+                className={`flex items-center gap-2`}
               >
                 {generatingInsight ? (
                   <>

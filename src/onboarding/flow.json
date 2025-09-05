@@ -152,7 +152,7 @@
           "id": "experienceLevel", 
           "label": "Experience Level", 
           "subheading": "What is your experience level with personal healing work, therapy, or self-development practices?",
-          "multi": true, 
+          "multi": false, 
           "options": ["Beginner","Intermediate","Experienced"], 
           "descriptions": {
             "Beginner": "New to personal development and healing work",
@@ -165,7 +165,7 @@
           "id": "timeCommitment", 
           "label": "Time Commitment", 
           "subheading": "How much time are you willing to put aside each day to focus on your healing journey?",
-          "multi": true, 
+          "multi": false, 
           "options": ["5 min","15 min","30 min","60 min"], 
           "descriptions": {
             "5 min": "Quick daily check-ins and brief reflections",

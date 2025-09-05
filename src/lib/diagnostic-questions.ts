@@ -295,7 +295,7 @@ export function getAdaptiveQuestions(userPreferences: {
   return prioritizedQuestions.slice(0, adjustedCount)
 }
 
-export function generateAIPrompt(question: DiagnosticQuestion, userPreferences: any): string {
+export function generateAIPrompt(question: DiagnosticQuestion, userPreferences: { tone: string; voice: string; rawness: string; depth: string }): string {
   const basePrompt = question.aiPrompt || "Analyze the user's response for patterns and insights."
   
   return `

@@ -39,12 +39,12 @@ export default function MobileMenu() {
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-border/50">
                 <Link 
-                  href="/dashboard" 
-                  className="text-xl font-bold text-foreground hover:text-primary transition-all duration-300 cursor-pointer group"
+                  href="/" 
+                  className="text-xl font-bold transition-all duration-300 cursor-pointer group"
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent group-hover:from-primary/80 group-hover:via-accent/80 group-hover:to-secondary/80 transition-all duration-300">
-                    Unfuck Your Past
+                  <span className="neon-heading">
+                    Unfuck My Past
                   </span>
                 </Link>
                 <Button
@@ -131,7 +131,7 @@ export default function MobileMenu() {
                     </Button>
                     <Button 
                       asChild
-                      className="w-full hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                      className="w-full hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 neon-cta"
                       onClick={() => setIsOpen(false)}
                     >
                       <Link href="/sign-up">Get Started</Link>

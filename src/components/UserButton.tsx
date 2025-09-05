@@ -1,6 +1,6 @@
 'use client'
 
-import { useUser } from '@clerk/nextjs'
+import { useUser, useClerk } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { 
@@ -21,7 +21,8 @@ import {
 import Link from 'next/link'
 
 export default function UserButton() {
-  const { user, signOut } = useUser()
+  const { user } = useUser()
+  const { signOut } = useClerk()
 
   if (!user) return null
 

@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     const weatherService = new WeatherService()
     const weatherData = await weatherService.getWeatherData(latitude, longitude)
-    const insight = weatherService.generateWeatherInsight(weatherData, {})
+    const insight = weatherService.generateWeatherInsight(weatherData, { tone: 'neutral', engagement: 'passive' })
 
     return NextResponse.json({
       weatherData,

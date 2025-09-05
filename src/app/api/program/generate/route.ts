@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, users, diagnosticResponses } from '@/db'
 import { ProgramGenerator } from '@/lib/program-generator'
 import { eq } from 'drizzle-orm'
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const { userId } = await auth()
     
@@ -47,7 +47,7 @@ export async function POST(_request: NextRequest) {
 
     // Transform responses to match expected type
     const transformedResponses = responses.map(resp => ({
-      question: resp.question && typeof resp.question === 'object' && 'text' in resp.question ? (resp.question as any).text : `Question ${resp.id}`,
+      question: resp.question && typeof resp.question === 'object' && 'text' in resp.question ? (resp.question as { text: string }).text : `Question ${resp.id}`,
       response: resp.response || '',
       insight: resp.insight || '',
       createdAt: resp.createdAt || new Date()
@@ -84,7 +84,7 @@ export async function POST(_request: NextRequest) {
   }
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth()
     
@@ -104,15 +104,16 @@ export async function GET(_request: NextRequest) {
     }
 
     const user = userData[0]
-    const programData = (user.safety as any)?.program
+    type ProgramData = { content: unknown; timestamp: string }
+    const programData = (user.safety as { program?: ProgramData })?.program
 
     if (!programData) {
       return NextResponse.json({ error: 'Program not found' }, { status: 404 })
     }
 
     return NextResponse.json({
-      program: programData.content,
-      timestamp: programData.timestamp
+      program: programData?.content,
+      timestamp: programData?.timestamp
     })
 
   } catch (error) {

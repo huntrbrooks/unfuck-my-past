@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, users, diagnosticResponses, diagnosticSummaries } from '../../../../db'
 import { AIService } from '../../../../lib/ai-service'
 import { eq, desc } from 'drizzle-orm'
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth()
     
@@ -43,7 +43,7 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const { userId } = await auth()
     

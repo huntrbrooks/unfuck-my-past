@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     // Transform responses to match expected type
     const transformedResponses = responses.map(resp => ({
-      question: resp.question && typeof resp.question === 'object' && 'text' in resp.question ? (resp.question as any).text : `Question ${resp.id}`,
+      question: resp.question && typeof resp.question === 'object' && 'text' in resp.question ? (resp.question as { text: string }).text : `Question ${resp.id}`,
       response: resp.response || '',
       insight: resp.insight || '',
       createdAt: resp.createdAt || new Date()
@@ -63,6 +63,89 @@ export async function POST(request: NextRequest) {
     // Generate the specific day's content
     const programGenerator = new ProgramGenerator()
     const dailyContent = await programGenerator.generateDailyContent(dayNumber, transformedResponses, userPreferences, weatherData)
+    // Derive theme and poetic title server-side so it's stable across sessions
+    const parseMainFocus = (content: string): string => {
+      const match = content.match(/🎯\s*MAIN\s*FOCUS:\s*(.+)/)
+      if (match && match[1]) return match[1].trim()
+      // fallback: pick first strong line
+      const line = (content.split('\n').find(l => l.trim().length > 8) || '').trim()
+      return line || 'Daily Healing Practice'
+    }
+    const hashString = (s: string) => {
+      let h = 0
+      for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i)
+      return Math.abs(h)
+    }
+    const stop = new Set(['the','and','a','an','to','of','in','on','for','with','your','you','we','our','is','are','be','this','that','by','from','at','as','into','without','being','their','them','it','about'])
+    const extractKeywords = (text: string, limit = 3) => text
+      .replace(/[^a-zA-Z\s]/g, ' ')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !stop.has(w))
+      .slice(0, limit)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    const deriveTheme = (mainFocus: string): string => {
+      const rules: Array<{ re: RegExp; themes: string[] }> = [
+        { re: /(emotion|overwhelm|feeling|regulate|regulation)/i, themes: ['Emotional Resilience', 'Calm Response', 'Steady Heart', 'Clear Feeling'] },
+        { re: /(boundary|boundaries|limit|space)/i, themes: ['Gentle Boundaries', 'Sacred Space', 'Firm Kindness', 'Quiet Strength'] },
+        { re: /(shame|guilt|worth|worthless)/i, themes: ['Self‑Forgiveness', 'Soft Worth', 'Inner Kindness', 'Belonging'] },
+        { re: /(trust|relationship|attach|intimacy|connection|connect)/i, themes: ['Honest Connection', 'Open Trust', 'Brave Intimacy', 'Kind Presence'] },
+        { re: /(mindful|breath|breathe|ground|present|awareness)/i, themes: ['Grounded Presence', 'Slow Breath', 'Calm Anchor', 'Still Mind'] },
+        { re: /(sleep|rest|restore|fatigue|tired)/i, themes: ['Deep Rest', 'Soft Night', 'Restful Mind', 'Gentle Unwind'] },
+        { re: /(trigger|react|reaction)/i, themes: ['Pause Power', 'Trigger Tamer', 'Chosen Response', 'Steady Pause'] }
+      ]
+      for (const r of rules) {
+        if (r.re.test(mainFocus)) {
+          const idx = hashString(mainFocus) % r.themes.length
+          return r.themes[idx]
+        }
+      }
+      const kws = extractKeywords(mainFocus, 3)
+      return kws.length ? kws.join(' ') : 'Daily Intention'
+    }
+    const derivePoeticTitle = (mainFocus: string, theme: string): string => {
+      const base = extractKeywords(mainFocus, 2)
+      const noun = base[0] || 'Heart'
+      const noun2 = base[1] || 'Calm'
+      const pools: Record<string, string[]> = {
+        default: [
+          `Breathing Room for the ${noun}`,
+          `A Soft Spine in Storms`,
+          `Walking Toward the Quiet ${noun2}`,
+          `Where ${noun}s Learn to Rest`,
+          `Holding Yourself with Gentle Hands`,
+          `Turning Toward the ${noun2}`
+        ],
+        emotion: [
+          `Listening Beneath the Waves`,
+          `Tides That Teach ${noun2}`,
+          `The Weather Inside Learns Sunlight`
+        ],
+        boundary: [
+          `Fences Made of Light`,
+          `A Gate You Hold from Love`,
+          `Rooms with Open Windows`
+        ],
+        trust: [
+          `Bridges Built Slowly`,
+          `Open Hands, Open Door`,
+          `A Yes You Can Believe`
+        ]
+      }
+      const key = /(emotion|overwhelm|feeling)/i.test(mainFocus)
+        ? 'emotion'
+        : /(boundary|boundaries)/i.test(mainFocus)
+        ? 'boundary'
+        : /(trust|connect|intimacy|relationship)/i.test(mainFocus)
+        ? 'trust'
+        : 'default'
+      const choices = pools[key]
+      const picked = choices[hashString(mainFocus + theme) % choices.length]
+      return picked
+    }
+    const mainFocus = parseMainFocus(dailyContent)
+    const theme = deriveTheme(mainFocus)
+    const poeticTitle = derivePoeticTitle(mainFocus, theme)
     
     console.log(`Generated content for day ${dayNumber}:`, dailyContent)
     console.log(`Content length:`, dailyContent.length)
@@ -70,7 +153,7 @@ export async function POST(request: NextRequest) {
 
     // Save the daily content to the user's safety data
     const currentSafety = user.safety || {}
-    const currentDailyContent = (user.safety as any)?.dailyContent || {}
+    const currentDailyContent = (user.safety as { dailyContent?: Record<string, unknown> })?.dailyContent || {}
     
     const updatedSafety = {
       ...currentSafety,
@@ -78,6 +161,8 @@ export async function POST(request: NextRequest) {
         ...currentDailyContent,
         [dayNumber]: {
           content: dailyContent,
+          theme,
+          poeticTitle,
           timestamp: new Date().toISOString()
         }
       }
@@ -90,6 +175,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       dayNumber: dayNumber,
       content: dailyContent,
+      theme,
+      poeticTitle,
       timestamp: new Date().toISOString()
     })
 
@@ -129,7 +216,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = userData[0]
-    const dailyContentData = (user.safety as any)?.dailyContent?.[dayNumber]
+    const dailyContentData = (user.safety as { dailyContent?: Record<string, { content: string; theme?: string; poeticTitle?: string; timestamp?: string }> })?.dailyContent?.[dayNumber]
 
     if (!dailyContentData) {
       return NextResponse.json({ error: 'Daily content not found' }, { status: 404 })
@@ -138,6 +225,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       dayNumber: dayNumber,
       content: dailyContentData.content,
+      theme: dailyContentData.theme,
+      poeticTitle: dailyContentData.poeticTitle,
       timestamp: dailyContentData.timestamp
     })
 

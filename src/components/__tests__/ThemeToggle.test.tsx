@@ -1,7 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import ThemeToggle from '../ThemeToggle'
-import { ThemeProvider } from '../ThemeProvider'
 
 // Mock the useTheme hook
 jest.mock('../ThemeProvider', () => ({
@@ -9,7 +8,7 @@ jest.mock('../ThemeProvider', () => ({
   useTheme: jest.fn(),
 }))
 
-const mockUseTheme = jest.mocked(require('../ThemeProvider').useTheme)
+const mockUseTheme = jest.fn()
 
 describe('ThemeToggle', () => {
 

@@ -163,7 +163,7 @@ Respond in JSON format:
             
             console.log('OpenAI analysis successful')
             return analysis
-          } catch (parseError) {
+          } catch {
             console.log('OpenAI response parsing failed, trying Claude...')
             throw new Error('Failed to parse OpenAI response')
           }
@@ -215,7 +215,7 @@ Respond in JSON format:
             
             console.log('Claude analysis successful')
             return analysis
-          } catch (parseError) {
+          } catch {
             console.log('Claude response parsing failed, using fallback...')
             throw new Error('Failed to parse Claude response')
           }
@@ -229,9 +229,9 @@ Respond in JSON format:
       }
     }
 
-    // If both AI services fail, throw error
-    console.log('Both OpenAI and Claude failed')
-    throw new Error('All AI services failed to generate analysis')
+    // If both AI services fail or no keys, use a deterministic fallback
+    console.log('Both OpenAI and Claude failed, using fallback analysis')
+    return this.getFallbackAnalysis(onboardingData)
   }
 
   private async generatePersonalizedQuestions(
@@ -329,7 +329,7 @@ Respond in JSON format:
             const question = JSON.parse(questionText)
             console.log(`OpenAI question ${questionNumber} successful`)
             return question
-          } catch (parseError) {
+          } catch {
             console.log(`OpenAI question ${questionNumber} parsing failed, using fallback...`)
             throw new Error('Failed to parse OpenAI response')
           }
@@ -375,7 +375,7 @@ Respond in JSON format:
               const question = JSON.parse(questionText)
               console.log(`Claude question ${questionNumber} successful`)
               return question
-            } catch (parseError) {
+            } catch {
               console.log(`Claude question ${questionNumber} parsing failed, using fallback...`)
               throw new Error('Failed to parse Claude response')
             }
@@ -455,10 +455,11 @@ Respond in JSON format:
     return questions
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private getFallbackQuestion(
     questionNumber: number,
     onboardingData: OnboardingData,
-    analysis: OnboardingAnalysis
+    _analysis: OnboardingAnalysis
   ): DiagnosticQuestion {
     const questionTemplates = {
       trauma: [
@@ -555,7 +556,7 @@ Respond in JSON format:
 
     return {
       id: questionNumber,
-      category: category as any,
+      category: category as 'trauma' | 'patterns' | 'relationships' | 'self-image' | 'coping' | 'goals',
       question,
       followUp,
       adaptive: {

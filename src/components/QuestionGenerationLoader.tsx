@@ -63,20 +63,20 @@ export default function QuestionGenerationLoader({
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="max-w-2xl w-full space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="relative inline-block">
-            <div className="w-20 h-20 bg-gradient-to-br from-primary via-accent to-secondary rounded-3xl flex items-center justify-center mx-auto mb-4 animate-float">
-              <Sparkles className="h-10 w-10 text-primary-foreground" />
+            <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-4 animate-float glow-box-cyan">
+              <Sparkles className="h-10 w-10 glow-lime spin-slow" />
             </div>
             {/* Floating elements */}
             <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-accent to-secondary rounded-full animate-float" style={{ animationDelay: '0.5s' }} />
             <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-gradient-to-br from-secondary to-muted rounded-full animate-float" style={{ animationDelay: '1s' }} />
           </div>
           
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className="text-3xl font-bold key-info neon-heading">
             Creating Your Personal Journey
           </h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">

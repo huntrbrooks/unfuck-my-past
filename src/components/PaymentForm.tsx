@@ -103,11 +103,21 @@ export default function PaymentForm({ amount, onSuccess, onCancel, productName }
       
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // Simulate successful payment
+      // Simulate successful payment + confirm with backend and record purchase
       const mockPaymentIntent = {
         id: 'pi_' + Math.random().toString(36).substr(2, 9),
         amount: amount,
         status: 'succeeded'
+      }
+
+      try {
+        await fetch('/api/payments/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentIntentId: mockPaymentIntent.id, productType: 'diagnostic' })
+        })
+      } catch (e) {
+        console.warn('Payment confirm request failed (test mode). Proceeding.')
       }
 
       onSuccess(mockPaymentIntent)
@@ -128,14 +138,14 @@ export default function PaymentForm({ amount, onSuccess, onCancel, productName }
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto modern-card border-0">
       <CardHeader className="text-center space-y-2">
         <div className="flex justify-center mb-2">
-          <div className="p-2 rounded-full bg-primary/10">
-            <CreditCard className="h-6 w-6 text-primary" />
+          <div className="w-12 h-12 flex items-center justify-center glow-box-lime rounded-xl">
+            <CreditCard className="h-6 w-6 glow-lime spin-slow" />
           </div>
         </div>
-        <CardTitle className="text-xl font-semibold">Complete Your Purchase</CardTitle>
+        <CardTitle className="text-xl font-bold key-info neon-heading">Complete Your Purchase</CardTitle>
         <p className="text-muted-foreground">
           Secure payment for {productName}
         </p>
@@ -241,6 +251,7 @@ export default function PaymentForm({ amount, onSuccess, onCancel, productName }
             <Button
               type="submit"
               disabled={loading || Object.keys(errors).length > 0}
+              variant="cta"
               className="flex-1"
             >
               {loading ? (

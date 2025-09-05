@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
-  variant?: 'default' | 'primary' | 'glass' | 'gradient'
+  variant?: 'default' | 'primary' | 'glass' | 'gradient' | 'neon'
   className?: string
   text?: string
 }
@@ -23,11 +23,12 @@ export default function LoadingSpinner({
     xl: 'h-16 w-16'
   }
 
-  const variantClasses = {
+  const variantClasses: Record<NonNullable<LoadingSpinnerProps['variant']>, string> = {
     default: 'border-primary',
     primary: 'border-primary',
     glass: 'border-white/30',
-    gradient: 'border-gradient'
+    gradient: 'border-gradient',
+    neon: 'border-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.45)]'
   }
 
   return (
