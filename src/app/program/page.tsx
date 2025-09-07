@@ -67,6 +67,7 @@ export default function Program() {
   const [showNextDayButton, setShowNextDayButton] = useState(false)
   const [nextDayDifficulty, setNextDayDifficulty] = useState<'easy' | 'moderate' | 'challenging'>('easy')
   const [sectionCollapsed, setSectionCollapsed] = useState<Record<string, boolean>>({
+    mainFocus: true,
     guidedPractice: true,
     challenge: true,
     journalingPrompt: true,
@@ -89,7 +90,7 @@ export default function Program() {
 
   useEffect(() => {
     // Reset per-day UI state when day changes
-    setSectionCollapsed({ guidedPractice: true, challenge: true, journalingPrompt: true, reflection: true, weather: true, sleep: true, holistic: true })
+    setSectionCollapsed({ mainFocus: true, guidedPractice: true, challenge: true, journalingPrompt: true, reflection: true, weather: true, sleep: true, holistic: true })
     setSectionTaskCompleted({ guidedPractice: new Set(), challenge: new Set(), journalingPrompt: new Set(), reflection: new Set(), weather: new Set(), sleep: new Set(), holistic: new Set() })
   }, [currentDay?.day])
 
@@ -863,11 +864,18 @@ export default function Program() {
                   <div className="space-y-6">
                     {/* Main Focus */}
                     <div className="rounded-xl p-4 bg-background">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Target className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
-                        <h4 className="font-semibold neon-heading">Today&apos;s Main Focus</h4>
-                      </div>
-                      <p className="text-foreground">{currentDay.content.mainFocus || 'Daily Healing Practice'}</p>
+                      <button onClick={() => toggleSection('mainFocus')} className="w-full text-left">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <Target className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+                            <h4 className="font-semibold neon-heading">Today&apos;s Main Focus</h4>
+                          </div>
+                          <span className="text-muted-foreground">{sectionCollapsed.mainFocus ? '▼' : '▲'}</span>
+                        </div>
+                      </button>
+                      {!sectionCollapsed.mainFocus && (
+                        <p className="text-foreground">{currentDay.content.mainFocus || 'Daily Healing Practice'}</p>
+                      )}
                     </div>
 
                     {/* Guided Practice */}
@@ -934,20 +942,27 @@ export default function Program() {
                   
                     {/* Journaling Prompt */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold neon-glow-pink mb-2 flex items-center gap-2 text-lg">
-                        <Sparkles className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
-                        Journaling Prompt
-                      </h5>
-                      <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-                        {currentDay.content.journalingPrompt.split('\n').map((line, index) => {
-                          if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
-                          } else if (line.trim() && !line.trim().startsWith('📝')) {
-                            return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
-                          }
-                          return null
-                        })}
-                      </div>
+                      <button onClick={() => toggleSection('journalingPrompt')} className="w-full text-left">
+                        <h5 className="font-semibold neon-glow-pink mb-2 flex items-center justify-between gap-2 text-lg">
+                          <span className="flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
+                            Journaling Prompt
+                          </span>
+                          <span className="text-muted-foreground">{sectionCollapsed.journalingPrompt ? '▼' : '▲'}</span>
+                        </h5>
+                      </button>
+                      {!sectionCollapsed.journalingPrompt && (
+                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                          {currentDay.content.journalingPrompt.split('\n').map((line, index) => {
+                            if (line.trim().startsWith('•')) {
+                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            } else if (line.trim() && !line.trim().startsWith('📝')) {
+                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                            }
+                            return null
+                          })}
+                        </div>
+                      )}
                   </div>
                   
                     {/* Reflection */}
@@ -970,56 +985,77 @@ export default function Program() {
                   
                     {/* Weather & Environment */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold neon-glow-teal mb-2 flex items-center gap-2 text-lg">
-                        <Sun className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #f59e0b)' }} />
-                        Weather & Environment
-                      </h5>
-                      <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-                        {currentDay.content.weather.split('\n').map((line, index) => {
-                          if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
-                          } else if (line.trim() && !line.trim().startsWith('🌤️')) {
-                            return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
-                          }
-                          return null
-                        })}
-                      </div>
+                      <button onClick={() => toggleSection('weather')} className="w-full text-left">
+                        <h5 className="font-semibold neon-glow-teal mb-2 flex items-center justify-between gap-2 text-lg">
+                          <span className="flex items-center gap-2">
+                            <Sun className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #f59e0b)' }} />
+                            Weather & Environment
+                          </span>
+                          <span className="text-muted-foreground">{sectionCollapsed.weather ? '▼' : '▲'}</span>
+                        </h5>
+                      </button>
+                      {!sectionCollapsed.weather && (
+                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                          {currentDay.content.weather.split('\n').map((line, index) => {
+                            if (line.trim().startsWith('•')) {
+                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            } else if (line.trim() && !line.trim().startsWith('🌤️')) {
+                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                            }
+                            return null
+                          })}
+                        </div>
+                      )}
                   </div>
                   
                     {/* Sleep & Wellness */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold neon-glow-rose mb-2 flex items-center gap-2 text-lg">
-                        <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #fb7185)' }} />
-                        Sleep & Wellness
-                      </h5>
-                      <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-                        {currentDay.content.sleep.split('\n').map((line, index) => {
-                          if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
-                          } else if (line.trim() && !line.trim().startsWith('😴')) {
-                            return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
-                          }
-                          return null
-                        })}
-                      </div>
+                      <button onClick={() => toggleSection('sleep')} className="w-full text-left">
+                        <h5 className="font-semibold neon-glow-rose mb-2 flex items-center justify-between gap-2 text-lg">
+                          <span className="flex items-center gap-2">
+                            <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #fb7185)' }} />
+                            Sleep & Wellness
+                          </span>
+                          <span className="text-muted-foreground">{sectionCollapsed.sleep ? '▼' : '▲'}</span>
+                        </h5>
+                      </button>
+                      {!sectionCollapsed.sleep && (
+                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                          {currentDay.content.sleep.split('\n').map((line, index) => {
+                            if (line.trim().startsWith('•')) {
+                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            } else if (line.trim() && !line.trim().startsWith('😴')) {
+                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                            }
+                            return null
+                          })}
+                        </div>
+                      )}
                   </div>
                   
                     {/* Holistic Healing Bonus */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold neon-glow-purple mb-2 flex items-center gap-2 text-lg">
-                        <Leaf className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #10b981)' }} />
-                        Holistic Healing Bonus
-                      </h5>
-                      <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-                        {currentDay.content.holistic.split('\n').map((line, index) => {
-                          if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
-                          } else if (line.trim() && !line.trim().startsWith('🌿')) {
-                            return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
-                          }
-                          return null
-                        })}
-                      </div>
+                      <button onClick={() => toggleSection('holistic')} className="w-full text-left">
+                        <h5 className="font-semibold neon-glow-purple mb-2 flex items-center justify-between gap-2 text-lg">
+                          <span className="flex items-center gap-2">
+                            <Leaf className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #10b981)' }} />
+                            Holistic Healing Bonus
+                          </span>
+                          <span className="text-muted-foreground">{sectionCollapsed.holistic ? '▼' : '▲'}</span>
+                        </h5>
+                      </button>
+                      {!sectionCollapsed.holistic && (
+                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                          {currentDay.content.holistic.split('\n').map((line, index) => {
+                            if (line.trim().startsWith('•')) {
+                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            } else if (line.trim() && !line.trim().startsWith('🌿')) {
+                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                            }
+                            return null
+                          })}
+                        </div>
+                      )}
                     </div>
                     
                     {/* Complete Day Button */}
