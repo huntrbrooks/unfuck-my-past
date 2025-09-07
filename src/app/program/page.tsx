@@ -87,11 +87,22 @@ export default function Program() {
       holistic: new Set(),
     }
   )
+  const [sectionCompleted, setSectionCompleted] = useState<Record<string, boolean>>({
+    mainFocus: false,
+    guidedPractice: false,
+    challenge: false,
+    journalingPrompt: false,
+    reflection: false,
+    weather: false,
+    sleep: false,
+    holistic: false,
+  })
 
   useEffect(() => {
     // Reset per-day UI state when day changes
     setSectionCollapsed({ mainFocus: true, guidedPractice: true, challenge: true, journalingPrompt: true, reflection: true, weather: true, sleep: true, holistic: true })
     setSectionTaskCompleted({ guidedPractice: new Set(), challenge: new Set(), journalingPrompt: new Set(), reflection: new Set(), weather: new Set(), sleep: new Set(), holistic: new Set() })
+    setSectionCompleted({ mainFocus: false, guidedPractice: false, challenge: false, journalingPrompt: false, reflection: false, weather: false, sleep: false, holistic: false })
   }, [currentDay?.day])
 
   const toggleSection = (key: string) => setSectionCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
@@ -125,6 +136,12 @@ export default function Program() {
     const done = sectionTaskCompleted[sectionKey] || new Set()
     return indices.every(i => done.has(i))
   }
+  const isSectionDone = (sectionKey: string, lines?: string[]) => {
+    if (sectionCompleted[sectionKey]) return true
+    if (lines) return allTasksCompleted(sectionKey, lines)
+    return false
+  }
+  const toggleSectionCompleted = (key: string) => setSectionCompleted(prev => ({ ...prev, [key]: !prev[key] }))
 
   // Simple helpers for theme/title and glow classes
   const NEON_CLASSES = ['neon-glow-cyan', 'neon-glow-pink', 'neon-glow-orange'] as const
@@ -884,7 +901,11 @@ export default function Program() {
                             <Target className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                             Today&apos;s Main Focus
                           </span>
-                          <span className="text-muted-foreground">{sectionCollapsed.mainFocus ? '▼' : '▲'}</span>
+                          <span className="flex items-center gap-2">
+                            <input type="checkbox" checked={isSectionDone('mainFocus')} onChange={() => toggleSectionCompleted('mainFocus')} />
+                            {isSectionDone('mainFocus') && <span className="text-[#ccff00] text-sm" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
+                            <span className="text-muted-foreground">{sectionCollapsed.mainFocus ? '▼' : '▲'}</span>
+                          </span>
                         </h5>
                       </button>
                       {!sectionCollapsed.mainFocus && (
@@ -898,13 +919,17 @@ export default function Program() {
                         <h5 className="font-semibold neon-glow-cyan mb-2 flex items-center justify-between gap-2 text-lg">
                           <span className="flex items-center gap-2">
                             <Sun className={`h-5 w-5 ${allTasksCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: allTasksCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #00e5ff)' }} />
-                            Guided Practice {allTasksCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n')) && <span className="text-sm text-[#ccff00]">(Completed)</span>}
+                            Guided Practice
                           </span>
-                          <span className="text-muted-foreground">{sectionCollapsed.guidedPractice ? '▼' : '▲'}</span>
+                          <span className="flex items-center gap-2">
+                            <input type="checkbox" checked={isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n'))} onChange={() => toggleSectionCompleted('guidedPractice')} />
+                            {isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
+                            <span className="text-muted-foreground">{sectionCollapsed.guidedPractice ? '▼' : '▲'}</span>
+                          </span>
                         </h5>
                       </button>
                       {!sectionCollapsed.guidedPractice && (
-                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00]' : 'text-foreground'}`}>
                           {currentDay.content.guidedPractice.split('\n').map((line, index) => {
                             if (isSubheadingLine(line)) {
                               return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
@@ -931,13 +956,17 @@ export default function Program() {
                         <h5 className="font-semibold neon-glow-orange mb-2 flex items-center justify-between gap-2 text-lg">
                           <span className="flex items-center gap-2">
                             <Zap className={`h-5 w-5 ${allTasksCompleted('challenge', currentDay.content.challenge.split('\\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: allTasksCompleted('challenge', currentDay.content.challenge.split('\\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #22c55e)' }} />
-                            Daily Challenge {allTasksCompleted('challenge', currentDay.content.challenge.split('\\n')) && <span className="text-sm text-[#ccff00]">(Completed)</span>}
+                            Daily Challenge
                           </span>
-                          <span className="text-muted-foreground">{sectionCollapsed.challenge ? '▼' : '▲'}</span>
+                          <span className="flex items-center gap-2">
+                            <input type="checkbox" checked={isSectionDone('challenge', currentDay.content.challenge.split('\n'))} onChange={() => toggleSectionCompleted('challenge')} />
+                            {isSectionDone('challenge', currentDay.content.challenge.split('\n')) && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
+                            <span className="text-muted-foreground">{sectionCollapsed.challenge ? '▼' : '▲'}</span>
+                          </span>
                         </h5>
                       </button>
                       {!sectionCollapsed.challenge && (
-                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('challenge', currentDay.content.challenge.split('\n')) ? 'text-[#ccff00]' : 'text-foreground'}`}>
                           {currentDay.content.challenge.split('\n').map((line, index) => {
                             if (isSubheadingLine(line)) {
                               return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
@@ -966,11 +995,15 @@ export default function Program() {
                             <Sparkles className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
                             Journaling Prompt
                           </span>
-                          <span className="text-muted-foreground">{sectionCollapsed.journalingPrompt ? '▼' : '▲'}</span>
+                          <span className="flex items-center gap-2">
+                            <input type="checkbox" checked={isSectionDone('journalingPrompt')} onChange={() => toggleSectionCompleted('journalingPrompt')} />
+                            {isSectionDone('journalingPrompt') && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
+                            <span className="text-muted-foreground">{sectionCollapsed.journalingPrompt ? '▼' : '▲'}</span>
+                          </span>
                         </h5>
                       </button>
                       {!sectionCollapsed.journalingPrompt && (
-                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('journalingPrompt') ? 'text-[#ccff00]' : 'text-foreground'}`}>
                           {currentDay.content.journalingPrompt.split('\n').map((line, index) => {
                             if (isSubheadingLine(line)) {
                               return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
@@ -993,11 +1026,15 @@ export default function Program() {
                             <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #60a5fa)' }} />
                             Reflection
                           </span>
-                          <span className="text-muted-foreground">{sectionCollapsed.reflection ? '▼' : '▲'}</span>
+                          <span className="flex items-center gap-2">
+                            <input type="checkbox" checked={isSectionDone('reflection')} onChange={() => toggleSectionCompleted('reflection')} />
+                            {isSectionDone('reflection') && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
+                            <span className="text-muted-foreground">{sectionCollapsed.reflection ? '▼' : '▲'}</span>
+                          </span>
                         </h5>
                       </button>
                       {!sectionCollapsed.reflection && (
-                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('reflection') ? 'text-[#ccff00]' : 'text-foreground'}`}>
                           {currentDay.content.reflection.split('\n').map((line, index) => {
                             if (isSubheadingLine(line)) {
                               return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
@@ -1020,11 +1057,15 @@ export default function Program() {
                             <Sun className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #f59e0b)' }} />
                             Weather & Environment
                           </span>
-                          <span className="text-muted-foreground">{sectionCollapsed.weather ? '▼' : '▲'}</span>
+                          <span className="flex items-center gap-2">
+                            <input type="checkbox" checked={isSectionDone('weather')} onChange={() => toggleSectionCompleted('weather')} />
+                            {isSectionDone('weather') && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
+                            <span className="text-muted-foreground">{sectionCollapsed.weather ? '▼' : '▲'}</span>
+                          </span>
                         </h5>
                       </button>
                       {!sectionCollapsed.weather && (
-                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('weather') ? 'text-[#ccff00]' : 'text-foreground'}`}>
                           {currentDay.content.weather.split('\n').map((line, index) => {
                             if (isSubheadingLine(line)) {
                               return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
@@ -1047,11 +1088,15 @@ export default function Program() {
                             <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #fb7185)' }} />
                             Sleep & Wellness
                           </span>
-                          <span className="text-muted-foreground">{sectionCollapsed.sleep ? '▼' : '▲'}</span>
+                          <span className="flex items-center gap-2">
+                            <input type="checkbox" checked={isSectionDone('sleep', currentDay.content.sleep.split('\n'))} onChange={() => toggleSectionCompleted('sleep')} />
+                            {isSectionDone('sleep', currentDay.content.sleep.split('\n')) && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
+                            <span className="text-muted-foreground">{sectionCollapsed.sleep ? '▼' : '▲'}</span>
+                          </span>
                         </h5>
                       </button>
                       {!sectionCollapsed.sleep && (
-                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('sleep', currentDay.content.sleep.split('\n')) ? 'text-[#ccff00]' : 'text-foreground'}`}>
                           {currentDay.content.sleep.split('\n').map((line, index) => {
                             if (isSubheadingLine(line)) {
                               return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
@@ -1080,11 +1125,15 @@ export default function Program() {
                             <Leaf className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #10b981)' }} />
                             Holistic Healing Bonus
                           </span>
-                          <span className="text-muted-foreground">{sectionCollapsed.holistic ? '▼' : '▲'}</span>
+                          <span className="flex items-center gap-2">
+                            <input type="checkbox" checked={isSectionDone('holistic')} onChange={() => toggleSectionCompleted('holistic')} />
+                            {isSectionDone('holistic') && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
+                            <span className="text-muted-foreground">{sectionCollapsed.holistic ? '▼' : '▲'}</span>
+                          </span>
                         </h5>
                       </button>
                       {!sectionCollapsed.holistic && (
-                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('holistic') ? 'text-[#ccff00]' : 'text-foreground'}`}>
                           {currentDay.content.holistic.split('\n').map((line, index) => {
                             if (isSubheadingLine(line)) {
                               return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
