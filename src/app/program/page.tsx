@@ -98,8 +98,8 @@ export default function Program() {
   const taskLabel = (line: string) => line.trim().startsWith('•') ? line.substring(1).trim() : line.replace(/^\d+\.\s*/, '').trim()
   const markTask = (sectionKey: string, idx: number, checked: boolean) => {
     setSectionTaskCompleted(prev => {
-      const copy = new Map(prev[sectionKey] ?? new Set())
-      const set = new Set(copy as unknown as Set<number>)
+      const existing = (prev[sectionKey] ?? new Set<number>()) as Set<number>
+      const set = new Set<number>(existing)
       if (checked) set.add(idx); else set.delete(idx)
       return { ...prev, [sectionKey]: set }
     })

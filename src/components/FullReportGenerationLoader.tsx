@@ -91,7 +91,7 @@ export default function FullReportGenerationLoader({
               </Badge>
             </div>
             
-            <Progress value={progress} variant="default" glow size="lg" className="h-3 mb-4" />
+            <Progress value={progress} variant="neonPinkGlow" glow size="lg" className="h-3 mb-4" />
             
             <div className="text-center text-sm text-muted-foreground">
               {Math.round(progress)}% Complete
