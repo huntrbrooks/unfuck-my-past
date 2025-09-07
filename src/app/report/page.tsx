@@ -76,6 +76,8 @@ export default function ReportPage() {
     console.log('🎯 Checking completion state:', { showFinalising, loaderDone, generationDone })
     if (showFinalising && loaderDone && generationDone) {
       console.log('🎯 Both loader and generation complete - showing completion prompt')
+      // Ensure the page does not early-return a blank loading state
+      setLoading(false)
       setTimeout(() => {
         setShowFinalising(false)
         setShowThankYou(false)
@@ -178,6 +180,10 @@ export default function ReportPage() {
       setGeneratingReport(true)
       setError('')
       setLoaderStep(2)
+      // Enter finalising/loader state defensively
+      setShowFinalising(true)
+      setShowThankYou(false)
+      setFinalisingStartedAt(Date.now())
       
       // Check if report already exists first
       const existingReportResponse = await fetch('/api/diagnostic/comprehensive-report', {
@@ -196,6 +202,7 @@ export default function ReportPage() {
           setShowPaywall(false)
           setHasAccess(true)
           setGenerationDone(true)
+          setLoading(false)
           return
         }
       }
@@ -223,6 +230,7 @@ export default function ReportPage() {
         setHasAccess(true)
         setLoaderStep(5)
         setGenerationDone(true)
+        setLoading(false)
         console.log('🎯 Report generation complete')
         console.log('🎯 Setting generationDone to true')
         // Force a small delay to ensure state updates are processed
@@ -435,7 +443,7 @@ export default function ReportPage() {
                     amount={999}
                     onSuccess={async () => {
                       console.log('🎯 Payment success - starting loader immediately')
-                      // Hide paywall and start the 5-stage loader immediately
+                      // Enter loader state immediately
                       setShowPaywall(false)
                       setPaymentSuccess(true)
                       setHasAccess(true)
@@ -444,6 +452,7 @@ export default function ReportPage() {
                       setShowFinalising(true)
                       setGeneratingReport(true)
                       setFinalisingStartedAt(Date.now())
+                      setLoading(true)
                       console.log('🎯 States set - should show loader now')
                       // Begin generating report immediately (no await to prevent blocking)
                       generateFullReport()
