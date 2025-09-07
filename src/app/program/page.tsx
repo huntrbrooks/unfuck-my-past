@@ -97,6 +97,20 @@ export default function Program() {
   const toggleSection = (key: string) => setSectionCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
   const isTaskLine = (line: string) => line.trim().startsWith('•') || /^\d+\./.test(line.trim())
   const taskLabel = (line: string) => line.trim().startsWith('•') ? line.substring(1).trim() : line.replace(/^\d+\.\s*/, '').trim()
+  const isSubheadingLine = (line: string) => /:\s*$/.test(line.trim())
+  const renderQuotedText = (text: string): React.ReactNode => {
+    const parts = text.split(/(".*?")/g)
+    return (
+      <>
+        {parts.map((part, idx) => {
+          if (part.startsWith('"') && part.endsWith('"')) {
+            return <em key={idx}>{part}</em>
+          }
+          return <span key={idx}>{part}</span>
+        })}
+      </>
+    )
+  }
   const markTask = (sectionKey: string, idx: number, checked: boolean) => {
     setSectionTaskCompleted(prev => {
       const existing = (prev[sectionKey] ?? new Set<number>()) as Set<number>
@@ -892,16 +906,18 @@ export default function Program() {
                       {!sectionCollapsed.guidedPractice && (
                         <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                           {currentDay.content.guidedPractice.split('\n').map((line, index) => {
-                            if (isTaskLine(line)) {
+                            if (isSubheadingLine(line)) {
+                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
+                            } else if (isTaskLine(line)) {
                               const checked = (sectionTaskCompleted.guidedPractice || new Set()).has(index)
                               return (
                                 <label key={index} className="flex items-start gap-2 cursor-pointer">
                                   <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('guidedPractice', index, e.target.checked)} />
-                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{taskLabel(line)}</span>
+                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(line))}</span>
                                 </label>
                               )
                             } else if (line.trim() && !line.trim().startsWith('🌅')) {
-                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
                             }
                             return null
                           })}
@@ -923,16 +939,18 @@ export default function Program() {
                       {!sectionCollapsed.challenge && (
                         <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                           {currentDay.content.challenge.split('\n').map((line, index) => {
-                            if (isTaskLine(line)) {
+                            if (isSubheadingLine(line)) {
+                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
+                            } else if (isTaskLine(line)) {
                               const checked = (sectionTaskCompleted.challenge || new Set()).has(index)
                               return (
                                 <label key={index} className="flex items-start gap-2 cursor-pointer">
                                   <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('challenge', index, e.target.checked)} />
-                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{taskLabel(line)}</span>
+                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(line))}</span>
                                 </label>
                               )
                             } else if (line.trim() && !line.trim().startsWith('⚡')) {
-                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
                             }
                             return null
                           })}
@@ -954,10 +972,12 @@ export default function Program() {
                       {!sectionCollapsed.journalingPrompt && (
                         <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                           {currentDay.content.journalingPrompt.split('\n').map((line, index) => {
-                            if (line.trim().startsWith('•')) {
-                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            if (isSubheadingLine(line)) {
+                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
+                            } else if (line.trim().startsWith('•')) {
+                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
                             } else if (line.trim() && !line.trim().startsWith('📝')) {
-                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
                             }
                             return null
                           })}
@@ -979,10 +999,12 @@ export default function Program() {
                       {!sectionCollapsed.reflection && (
                         <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                           {currentDay.content.reflection.split('\n').map((line, index) => {
-                            if (line.trim().startsWith('•')) {
-                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            if (isSubheadingLine(line)) {
+                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
+                            } else if (line.trim().startsWith('•')) {
+                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
                             } else if (line.trim() && !line.trim().startsWith('🌙')) {
-                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
                             }
                             return null
                           })}
@@ -1004,10 +1026,12 @@ export default function Program() {
                       {!sectionCollapsed.weather && (
                         <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                           {currentDay.content.weather.split('\n').map((line, index) => {
-                            if (line.trim().startsWith('•')) {
-                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            if (isSubheadingLine(line)) {
+                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
+                            } else if (line.trim().startsWith('•')) {
+                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
                             } else if (line.trim() && !line.trim().startsWith('🌤️')) {
-                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
                             }
                             return null
                           })}
@@ -1029,10 +1053,18 @@ export default function Program() {
                       {!sectionCollapsed.sleep && (
                         <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                           {currentDay.content.sleep.split('\n').map((line, index) => {
-                            if (line.trim().startsWith('•')) {
-                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            if (isSubheadingLine(line)) {
+                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
+                            } else if (isTaskLine(line)) {
+                              const checked = (sectionTaskCompleted.sleep || new Set()).has(index)
+                              return (
+                                <label key={index} className="flex items-start gap-2 cursor-pointer">
+                                  <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('sleep', index, e.target.checked)} />
+                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(line))}</span>
+                                </label>
+                              )
                             } else if (line.trim() && !line.trim().startsWith('😴')) {
-                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
                             }
                             return null
                           })}
@@ -1054,10 +1086,12 @@ export default function Program() {
                       {!sectionCollapsed.holistic && (
                         <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
                           {currentDay.content.holistic.split('\n').map((line, index) => {
-                            if (line.trim().startsWith('•')) {
-                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            if (isSubheadingLine(line)) {
+                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
+                            } else if (line.trim().startsWith('•')) {
+                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
                             } else if (line.trim() && !line.trim().startsWith('🌿')) {
-                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
                             }
                             return null
                           })}
