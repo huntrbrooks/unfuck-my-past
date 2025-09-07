@@ -34,7 +34,7 @@ export default function LoadingSpinner({
   return (
     <div className={cn('flex flex-col items-center justify-center', className)}>
       <div className={cn(
-        'animate-spin rounded-full border-2 border-t-transparent',
+        'rounded-full border-2 border-t-transparent animate-spin animate-[spin_1.1s_linear_infinite]',
         sizeClasses[size],
         variantClasses[variant]
       )} />
