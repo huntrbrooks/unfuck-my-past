@@ -87,13 +87,14 @@ export default function MobileMenu() {
                       <Sparkles className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
                       How It Works
                     </Link>
+                    {/* My Results replaces Continue Journey on mobile */}
                     <Link
-                      href="/onboarding"
+                      href="/diagnostic/results"
                       className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
                       onClick={() => setIsOpen(false)}
                     >
                       <TrendingUp className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-                      Continue Journey
+                      My Results
                     </Link>
                     <Link
                       href="/report"
