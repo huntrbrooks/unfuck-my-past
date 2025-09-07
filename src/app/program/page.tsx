@@ -863,15 +863,15 @@ export default function Program() {
                 <CardContent className="p-6">
                   <div className="space-y-6">
                     {/* Main Focus */}
-                    <div className="rounded-xl p-4 bg-background">
+                    <div className="rounded-xl p-6 bg-background">
                       <button onClick={() => toggleSection('mainFocus')} className="w-full text-left">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
+                        <h5 className="font-semibold mb-2 flex items-center justify-between gap-2 text-lg neon-heading">
+                          <span className="flex items-center gap-2">
                             <Target className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
-                            <h4 className="font-semibold neon-heading">Today&apos;s Main Focus</h4>
-                          </div>
+                            Today&apos;s Main Focus
+                          </span>
                           <span className="text-muted-foreground">{sectionCollapsed.mainFocus ? '▼' : '▲'}</span>
-                        </div>
+                        </h5>
                       </button>
                       {!sectionCollapsed.mainFocus && (
                         <p className="text-foreground">{currentDay.content.mainFocus || 'Daily Healing Practice'}</p>
