@@ -177,7 +177,7 @@ Remember: This is your journey. Take it at your own pace and be gentle with your
   async generateDailyContent(
     dayNumber: number,
     responses: DiagnosticResponse[],
-    userPreferences: UserPreferences,
+    userPreferences: UserPreferences & { difficulty?: 'easy' | 'moderate' | 'challenging' },
     weatherData?: { insight: { weatherSummary: string; activityRecommendations: string; environmentalAdaptations: string; seasonalPractices: string } }
   ): Promise<string> {
     try {
@@ -194,6 +194,8 @@ Remember: This is your journey. Take it at your own pace and be gentle with your
       const mainFocus = mainFocuses[dayNumber - 1] || 'Personal Growth'
 
       const dailyPrompt = `Generate Day ${dayNumber} content for a 30-day healing program with the MAIN FOCUS: "${mainFocus}". Every activity, challenge, and reflection must relate to this main focus. Keep each section concise but complete.
+
+Target difficulty for today: ${userPreferences.difficulty || 'easy'}
 
 User Preferences: ${JSON.stringify(userPreferences)}
 

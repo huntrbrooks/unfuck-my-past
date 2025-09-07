@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { dayNumber, weatherData } = body
+    const { dayNumber, weatherData, difficulty } = body
 
     if (!dayNumber || dayNumber < 1 || dayNumber > 30) {
       return NextResponse.json({ error: 'Invalid day number' }, { status: 400 })
@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
 
     // Generate the specific day's content
     const programGenerator = new ProgramGenerator()
-    const dailyContent = await programGenerator.generateDailyContent(dayNumber, transformedResponses, userPreferences, weatherData)
+    const userPrefsWithDifficulty = { ...userPreferences, difficulty: difficulty || 'easy' }
+    const dailyContent = await programGenerator.generateDailyContent(dayNumber, transformedResponses, userPrefsWithDifficulty, weatherData)
     // Derive theme and poetic title server-side so it's stable across sessions
     const parseMainFocus = (content: string): string => {
       const match = content.match(/🎯\s*MAIN\s*FOCUS:\s*(.+)/)

@@ -65,6 +65,7 @@ export default function Program() {
   const [completedDays, setCompletedDays] = useState<Set<number>>(new Set())
   const [completingDay, setCompletingDay] = useState(false)
   const [showNextDayButton, setShowNextDayButton] = useState(false)
+  const [nextDayDifficulty, setNextDayDifficulty] = useState<'easy' | 'moderate' | 'challenging'>('easy')
 
   // Simple helpers for theme/title and glow classes
   const NEON_CLASSES = ['neon-glow-cyan', 'neon-glow-pink', 'neon-glow-orange'] as const
@@ -500,7 +501,8 @@ export default function Program() {
           dayNumber: nextDay,
           weatherData: weatherData,
           previousDays: Array.from(completedDays),
-          currentProgress: progress
+          currentProgress: progress,
+          difficulty: nextDayDifficulty
         })
       })
 
@@ -530,7 +532,7 @@ export default function Program() {
           metadata: {
             category: 'awareness',
             duration: 30,
-            difficulty: 'moderate',
+            difficulty: nextDayDifficulty,
             traumaFocus: []
           },
           theme,
@@ -756,6 +758,26 @@ export default function Program() {
         {/* Start Next Day Button */}
         {showNextDayButton && currentDay && (
           <div className="mb-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <button
+                className={`px-4 py-2 rounded-full border ${nextDayDifficulty==='easy' ? 'bg-[#ccff00] text-black shadow-[0_0_12px_rgba(204,255,0,0.6)]' : 'bg-background text-foreground border-border'}`}
+                onClick={() => setNextDayDifficulty('easy')}
+              >
+                Beginner
+              </button>
+              <button
+                className={`px-4 py-2 rounded-full border ${nextDayDifficulty==='moderate' ? 'bg-[#fde047] text-black shadow-[0_0_12px_rgba(253,224,71,0.6)]' : 'bg-background text-foreground border-border'}`}
+                onClick={() => setNextDayDifficulty('moderate')}
+              >
+                Moderate
+              </button>
+              <button
+                className={`px-4 py-2 rounded-full border ${nextDayDifficulty==='challenging' ? 'bg-[#ff1a1a] text-white shadow-[0_0_12px_rgba(255,26,26,0.6)]' : 'bg-background text-foreground border-border'}`}
+                onClick={() => setNextDayDifficulty('challenging')}
+              >
+                Expert
+              </button>
+            </div>
             <Button 
               onClick={startNextDay}
               className="w-full h-16 text-lg group hover:scale-105 transition-transform duration-200 neon-cta"
