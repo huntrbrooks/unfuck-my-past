@@ -16,11 +16,10 @@ export default function ReportGenerationLoader({ step, steps }: ReportGeneration
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur">
       <div className="glass-card max-w-md w-full border-0 shadow-2xl p-8 text-center rounded-2xl">
         <div className="relative mb-6">
-          <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center">
-            <div
-              className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin shadow-[0_0_10px_#ff1aff,0_0_20px_#ff1aff]"
-              style={{ borderColor: '#ff1aff' }}
-            />
+          <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center relative">
+            <div className="absolute inset-0 rounded-full border-4 border-[#ff1aff33]" />
+            <div className="absolute inset-0 rounded-full border-4 border-t-[#ff1aff] border-transparent animate-spin shadow-[0_0_10px_#ff1aff,0_0_20px_#ff1aff]" />
+            <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 rounded-full bg-[#ff1aff] shadow-[0_0_10px_#ff1aff,0_0_18px_#ff1aff] animate-spin [animation-duration:0.9s]" />
           </div>
         </div>
         <h3 className="text-xl font-bold key-info neon-heading mb-3">Loading Your Full Diagnostic Report</h3>

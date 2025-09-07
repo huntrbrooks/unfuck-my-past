@@ -33,11 +33,19 @@ export default function LoadingSpinner({
 
   return (
     <div className={cn('flex flex-col items-center justify-center', className)}>
-      <div className={cn(
-        'rounded-full border-2 border-t-transparent animate-spin',
-        sizeClasses[size],
-        variantClasses[variant]
-      )} />
+      <div className={cn('relative inline-flex items-center justify-center', sizeClasses[size])}>
+        <div
+          className={cn(
+            'h-full w-full rounded-full border-4 animate-spin',
+            // faint ring + bright leading arc for visible rotation
+            'border-[#ff1aff33] border-t-[#ff1aff]',
+            variantClasses[variant]
+          )}
+        />
+        <div className="absolute inset-0 animate-spin [animation-duration:0.9s]">
+          <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 rounded-full bg-[#ff1aff] shadow-[0_0_10px_#ff1aff,0_0_18px_#ff1aff]" />
+        </div>
+      </div>
       {text && (
         <p className="mt-3 text-sm text-muted-foreground animate-pulse">
           {text}
