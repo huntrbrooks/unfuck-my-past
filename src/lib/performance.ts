@@ -48,33 +48,38 @@ class PerformanceMonitor {
     // First Input Delay
     new PerformanceObserver((entryList) => {
       const entries = entryList.getEntries()
-      entries.forEach((entry: { processingStart: number; startTime: number }) => {
-        this.recordMetric('FID', entry.processingStart - entry.startTime, 'ms')
+      entries.forEach((entry) => {
+        const e = entry as PerformanceEventTiming
+        if (typeof e.processingStart === 'number') {
+          this.recordMetric('FID', e.processingStart - e.startTime, 'ms')
+        }
       })
-    }).observe({ entryTypes: ['first-input'] })
+    }).observe({ entryTypes: ['first-input'] as any })
 
     // Cumulative Layout Shift
     new PerformanceObserver((entryList) => {
       let clsValue = 0
       const entries = entryList.getEntries()
-      entries.forEach((entry: { hadRecentInput: boolean; value: number }) => {
-        if (!entry.hadRecentInput) {
-          clsValue += entry.value
+      entries.forEach((entry) => {
+        const e = entry as any
+        if (!e.hadRecentInput) {
+          clsValue += e.value as number
         }
       })
       this.recordMetric('CLS', clsValue, 'score')
-    }).observe({ entryTypes: ['layout-shift'] })
+    }).observe({ entryTypes: ['layout-shift'] as any })
   }
 
   private observeResourceTiming() {
     new PerformanceObserver((entryList) => {
       const entries = entryList.getEntries()
-      entries.forEach((entry: { initiatorType: string; responseStart: number; requestStart: number }) => {
-        if (entry.initiatorType === 'navigation') {
-          this.recordMetric('TTFB', entry.responseStart - entry.requestStart, 'ms')
+      entries.forEach((entry) => {
+        const e = entry as PerformanceNavigationTiming
+        if (e.initiatorType === 'navigation') {
+          this.recordMetric('TTFB', e.responseStart - e.requestStart, 'ms')
         }
       })
-    }).observe({ entryTypes: ['navigation', 'resource'] })
+    }).observe({ entryTypes: ['navigation', 'resource'] as any })
   }
 
   private observeUserInteractions() {

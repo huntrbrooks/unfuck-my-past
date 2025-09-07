@@ -24,8 +24,8 @@ export default function LoadingSpinner({
   }
 
   const variantClasses: Record<NonNullable<LoadingSpinnerProps['variant']>, string> = {
-    default: 'border-primary',
-    primary: 'border-primary',
+    default: 'border-[#ff1aff] shadow-[0_0_10px_#ff1aff,0_0_20px_#ff1aff]',
+    primary: 'border-[#ff1aff] shadow-[0_0_10px_#ff1aff,0_0_20px_#ff1aff]',
     glass: 'border-white/30',
     gradient: 'border-gradient',
     neon: 'border-[#ccff00] shadow-[0_0_12px_rgba(204,255,0,0.45)]'

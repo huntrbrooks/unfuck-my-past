@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Target, Bot, TrendingUp, CheckCircle, Lock, ArrowRight, Sparkles, Heart, Brain, Zap, Shield, BookOpen } from 'lucide-react'
+import Image from 'next/image'
 
 export default function HowItWorks() {
   return (
@@ -15,25 +16,15 @@ export default function HowItWorks() {
         <div className="absolute inset-0"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="text-center mb-16">
-            {/* Floating Elements */}
-            <div className="relative mb-8">
-              <div className="absolute -top-8 -left-8 p-4 animate-float">
-                <Target className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+            <div className="relative mb-6 flex items-center justify-center gap-4 sm:gap-6">
+              <div className="animate-float">
+                <Image src="/Icon-01.png" alt="left icon" width={48} height={48} className="w-10 h-auto drop-shadow-[0_0_12px_#ff1aff]" />
               </div>
-              <div className="absolute -top-4 -right-8 p-4 animate-float-delayed">
-                <Bot className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
-              </div>
-              <div className="absolute -bottom-8 left-1/4 p-4 animate-float-slow">
-                <TrendingUp className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ff6600)' }} />
-              </div>
-              <div className="absolute -bottom-4 right-1/4 p-4 animate-float-delayed-slow">
-                <Heart className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
+              <h1 className="responsive-heading neon-heading mb-0">How It Works</h1>
+              <div className="hidden sm:block animate-float-delayed">
+                <Image src="/Icon-01.png" alt="right icon" width={48} height={48} className="w-10 h-auto drop-shadow-[0_0_12px_#ff1aff]" />
               </div>
             </div>
-
-            <h1 className="responsive-heading mb-6 neon-heading">
-              How It Works
-            </h1>
             <p className="responsive-body text-muted-foreground max-w-4xl mx-auto leading-relaxed drop-shadow-[0_0_8px_rgba(99,102,241,0.15)]">
               Your journey to healing is simple, personalized, and proven to work. 
               Here&apos;s how we&apos;ll help you transform your life through AI-powered insights and structured healing.
@@ -47,7 +38,7 @@ export default function HowItWorks() {
                 <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                   <Target className="h-10 w-10 text-primary" />
                 </div>
-                <CardTitle className="text-xl font-semibold mb-4 text-foreground">1. Personalize</CardTitle>
+                <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-pink">1. Personalize</CardTitle>
                 <p className="text-muted-foreground leading-relaxed">
                   Complete our comprehensive onboarding to customize your experience. 
                   We&apos;ll adapt to your communication style, learning preferences, 
@@ -61,7 +52,7 @@ export default function HowItWorks() {
                 <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                   <Bot className="h-10 w-10 text-accent-foreground" />
                 </div>
-                <CardTitle className="text-xl font-semibold mb-4 text-foreground">2. Diagnose</CardTitle>
+                <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-cyan">2. Diagnose</CardTitle>
                 <p className="text-muted-foreground leading-relaxed">
                   Answer 3-10 adaptive questions about your past and patterns. 
                   Our advanced AI analyzes your responses to provide deep, actionable insights 
@@ -75,7 +66,7 @@ export default function HowItWorks() {
                 <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                   <TrendingUp className="h-10 w-10 text-primary" />
                 </div>
-                <CardTitle className="text-xl font-semibold mb-4 text-foreground">3. Transform</CardTitle>
+                <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-purple">3. Transform</CardTitle>
                 <p className="text-muted-foreground leading-relaxed">
                   Follow your personalized 30-day program with daily tasks, 
                   journaling, and mood tracking. See measurable progress over time 
@@ -96,10 +87,7 @@ export default function HowItWorks() {
                   {/* Free Assessment */}
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="p-2 rounded-full">
-                        <CheckCircle className="h-6 w-6 text-success" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-foreground">Free Assessment</h3>
+                      <h3 className="text-xl font-semibold text-foreground neon-glow-orange">Free Assessment</h3>
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 group">
@@ -124,17 +112,14 @@ export default function HowItWorks() {
                   {/* Premium Features */}
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="p-2 rounded-full">
-                        <Lock className="h-6 w-6 text-primary" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-foreground">Premium Features</h3>
+                      <h3 className="text-xl font-semibold text-foreground neon-glow-blue">Premium Features</h3>
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 group">
                         <Lock className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-200" />
                         <span className="text-foreground">Full diagnostic report</span>
                         <span className="ml-2"></span>
-                        <Badge variant="success" className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#0a0a0a' }}>$10</Badge>
+                        <Badge variant="success" className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#0a0a0a' }}>$9.99</Badge>
                       </div>
                       <div className="flex items-center gap-3 group">
                         <Lock className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-200" />
@@ -173,7 +158,7 @@ export default function HowItWorks() {
                   <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <Brain className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-2">AI-Powered Insights</h3>
+                  <h3 className="font-semibold text-foreground mb-2 neon-glow-red">AI-Powered Insights</h3>
                   <p className="text-sm text-muted-foreground">
                     Advanced AI analysis provides deep, personalized insights into your patterns and healing needs.
                   </p>
@@ -185,7 +170,7 @@ export default function HowItWorks() {
                   <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <Shield className="h-8 w-8 text-accent-foreground" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-2">Safe & Secure</h3>
+                  <h3 className="font-semibold text-foreground mb-2 neon-glow-teal">Safe & Secure</h3>
                   <p className="text-sm text-muted-foreground">
                     Your privacy and emotional safety are our top priorities throughout your healing journey.
                   </p>
@@ -197,7 +182,7 @@ export default function HowItWorks() {
                   <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <Zap className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-2">Proven Results</h3>
+                  <h3 className="font-semibold text-foreground mb-2 neon-glow-orange">Proven Results</h3>
                   <p className="text-sm text-muted-foreground">
                     Structured approach based on evidence-based therapeutic techniques and real user success stories.
                   </p>
@@ -209,7 +194,7 @@ export default function HowItWorks() {
                   <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <BookOpen className="h-8 w-8 text-accent-foreground" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-2">Comprehensive Learning</h3>
+                  <h3 className="font-semibold text-foreground mb-2 neon-glow-blue">Comprehensive Learning</h3>
                   <p className="text-sm text-muted-foreground">
                     Learn about trauma, healing, and personal growth through our extensive knowledge base.
                   </p>
@@ -221,7 +206,7 @@ export default function HowItWorks() {
                   <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <Heart className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-2">Compassionate Support</h3>
+                  <h3 className="font-semibold text-foreground mb-2 neon-glow-purple">Compassionate Support</h3>
                   <p className="text-sm text-muted-foreground">
                     Experience genuine care and understanding as you navigate your healing journey.
                   </p>
@@ -233,7 +218,7 @@ export default function HowItWorks() {
                   <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                     <Sparkles className="h-8 w-8 text-accent-foreground" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-2">Personalized Experience</h3>
+                  <h3 className="font-semibold text-foreground mb-2 neon-glow-pink">Personalized Experience</h3>
                   <p className="text-sm text-muted-foreground">
                     Every aspect of your journey is tailored to your unique needs, preferences, and goals.
                   </p>

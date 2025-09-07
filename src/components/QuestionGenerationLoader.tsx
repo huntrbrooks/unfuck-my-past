@@ -1,19 +1,11 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { 
-  Brain, 
-  Sparkles, 
-  Target, 
-  Heart, 
-  Zap, 
-  Star,
-  ArrowRight,
-  CheckCircle
-} from 'lucide-react'
+import { ArrowRight, CheckCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface QuestionGenerationLoaderProps {
@@ -28,34 +20,42 @@ export default function QuestionGenerationLoader({
   isGenerating = true
 }: QuestionGenerationLoaderProps) {
   const progress = (currentStep / totalSteps) * 100
+  const stepsContainerRef = React.useRef<HTMLDivElement | null>(null)
+
+  React.useEffect(() => {
+    const el = document.getElementById(`loader-step-${currentStep}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [currentStep])
 
   const steps = [
     {
-      icon: Brain,
+      img: '/Icon-01.png',
       title: 'Analyzing your responses',
       description: 'Processing your unique patterns and experiences',
       color: 'from-blue-500 to-indigo-500'
     },
     {
-      icon: Target,
+      img: '/Icon-02.png',
       title: 'Identifying key areas',
       description: 'Mapping your healing journey priorities',
       color: 'from-green-500 to-emerald-500'
     },
     {
-      icon: Heart,
+      img: '/Icon-03.png',
       title: 'Personalizing questions',
       description: 'Creating questions tailored to your needs',
       color: 'from-purple-500 to-pink-500'
     },
     {
-      icon: Zap,
+      img: '/Icon-04.png',
       title: 'Optimizing flow',
       description: 'Ensuring smooth question progression',
       color: 'from-yellow-500 to-orange-500'
     },
     {
-      icon: Star,
+      img: '/Icon-05.png',
       title: 'Finalizing your journey',
       description: 'Preparing your personalized experience',
       color: 'from-red-500 to-rose-500'
@@ -68,15 +68,12 @@ export default function QuestionGenerationLoader({
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="relative inline-block">
-            <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-4 animate-float glow-box-cyan">
-              <Sparkles className="h-10 w-10 glow-lime spin-slow" />
+            <div className="mx-auto mb-4 animate-float">
+              <Image src="/Line_art3-02.png" alt="loader art" width={96} height={96} className="w-24 h-auto drop-shadow-[0_0_18px_#00e5ff]" />
             </div>
-            {/* Floating elements */}
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-accent to-secondary rounded-full animate-float" style={{ animationDelay: '0.5s' }} />
-            <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-gradient-to-br from-secondary to-muted rounded-full animate-float" style={{ animationDelay: '1s' }} />
           </div>
           
-          <h1 className="text-3xl font-bold key-info neon-heading">
+          <h1 className="text-3xl font-bold key-info neon-heading [text-shadow:0_0_28px_rgba(204,255,0,0.9),0_0_56px_rgba(204,255,0,0.6),1px_1px_0_rgba(0,0,0,0.55),-1px_-1px_0_rgba(0,0,0,0.55)] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)]">
             Creating Your Personal Journey
           </h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
@@ -85,7 +82,7 @@ export default function QuestionGenerationLoader({
         </div>
 
         {/* Progress */}
-        <Card className="glass-card border-0">
+        <Card className="bg-background border border-border/50 shadow-2xl">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <CardTitle className="text-lg font-semibold text-foreground">
@@ -96,12 +93,7 @@ export default function QuestionGenerationLoader({
               </Badge>
             </div>
             
-            <Progress 
-              value={progress} 
-              variant="gradient" 
-              size="lg" 
-              className="h-3 mb-4" 
-            />
+            <Progress value={progress} variant="default" glow size="lg" className="h-3 mb-4" />
             
             <div className="text-center text-sm text-muted-foreground">
               {Math.round(progress)}% Complete
@@ -110,9 +102,9 @@ export default function QuestionGenerationLoader({
         </Card>
 
         {/* Steps */}
-        <div className="space-y-4">
+        <div ref={stepsContainerRef} className="space-y-4 max-h-[50vh] overflow-auto">
           {steps.map((step, index) => {
-            const Icon = step.icon
+            const imgSrc = step.img
             const isActive = index + 1 === currentStep
             const isCompleted = index + 1 < currentStep
             const isPending = index + 1 > currentStep
@@ -120,9 +112,10 @@ export default function QuestionGenerationLoader({
             return (
               <Card 
                 key={index}
+                id={`loader-step-${index + 1}`}
                 className={cn(
-                  'border-0 transition-all duration-500',
-                  isActive ? 'glass-card shadow-glow' : 'modern-card',
+                  'transition-all duration-500 bg-background border border-border/50',
+                  isActive ? 'shadow-2xl' : 'shadow',
                   isCompleted ? 'opacity-60' : '',
                   isPending ? 'opacity-40' : ''
                 )}
@@ -130,19 +123,15 @@ export default function QuestionGenerationLoader({
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
                     <div className={cn(
-                      'w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300',
-                      isActive ? 'bg-gradient-to-br ' + step.color + ' scale-110' : 'bg-muted',
-                      isCompleted ? 'bg-success/20' : '',
-                      isPending ? 'bg-muted/50' : ''
+                      'w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 bg-background',
+                      isActive ? 'scale-110' : '',
+                      isCompleted ? '' : '',
+                      isPending ? '' : ''
                     )}>
                       {isCompleted ? (
-                        <CheckCircle className="h-6 w-6 text-success" />
+                        <CheckCircle className="h-6 w-6 text-[#ccff00]" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                       ) : (
-                        <Icon className={cn(
-                          'h-6 w-6 transition-all duration-300',
-                          isActive ? 'text-white animate-pulse' : 'text-muted-foreground',
-                          isPending ? 'text-muted-foreground/50' : ''
-                        )} />
+                        <Image src={imgSrc} alt="step icon" width={32} height={32} className={cn('w-8 h-8 transition-all duration-300 drop-shadow-[0_0_12px_rgba(255,26,255,0.7)]', isActive ? 'animate-pulse' : '')} />
                       )}
                     </div>
                     
@@ -189,7 +178,7 @@ export default function QuestionGenerationLoader({
         </div>
 
         {/* Status Message */}
-        <Card className="glass-card border-0 text-center">
+        <Card className="bg-background border border-border/50 shadow-2xl text-center">
           <CardContent className="p-6">
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />

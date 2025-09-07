@@ -193,14 +193,14 @@ Remember: This is your journey. Take it at your own pace and be gentle with your
 
       const mainFocus = mainFocuses[dayNumber - 1] || 'Personal Growth'
 
-      const dailyPrompt = `Generate Day ${dayNumber} content for a 30-day healing program with the MAIN FOCUS: "${mainFocus}". Every activity, challenge, and reflection should relate to this main focus. Keep each section concise but complete.
+      const dailyPrompt = `Generate Day ${dayNumber} content for a 30-day healing program with the MAIN FOCUS: "${mainFocus}". Every activity, challenge, and reflection must relate to this main focus. Keep each section concise but complete.
 
 User Preferences: ${JSON.stringify(userPreferences)}
 
 Diagnostic Responses:
 ${responses.map((r, i) => `${i + 1}. Question: ${r.question}\n   Response: ${r.response}\n   Insight: ${r.insight}`).join('\n\n')}
 
-Create content with this structure (NO markdown, use plain text headers):
+Create content with this structure (NO markdown, use plain text headers exactly as shown, each header must appear once and only once, in this exact order). Do not merge sections. Do not omit headers:
 
 🎯 MAIN FOCUS: ${mainFocus}
 [Brief explanation of today's focus and why it matters for their healing journey]
@@ -208,10 +208,6 @@ Create content with this structure (NO markdown, use plain text headers):
 🌅 GUIDED PRACTICE
 Morning Intention Setting (5 minutes)
 [Personalized intention related to ${mainFocus}]
-
-🌅 GUIDED PRACTICE
-Morning Intention Setting (5 minutes)
-[Personalized intention based on their responses]
 
 Breathing Exercise (3 minutes)
 [Simple breathing instructions]
@@ -259,8 +255,10 @@ Self-Compassion Practice:
 [Brief self-compassion guidance]
 
 🌤️ WEATHER & ENVIRONMENT
-${weatherData ? `Weather: ${weatherData.weatherSummary || 'Check local conditions'}
-Activities: ${weatherData.activityRecommendations || 'Adapt to current weather'}` : 'Check local weather and adapt activities accordingly'}
+${weatherData ? `Weather: ${weatherData.insight.weatherSummary || 'Check local conditions'}
+Activities: ${weatherData.insight.activityRecommendations || 'Adapt to current weather'}` : `Assume location: Melbourne, Australia.
+Weather: Cool, variable. Adapt activities to indoor or mild outdoor conditions.
+Activities: Gentle walk if weather permits; otherwise indoor stretching and breathwork.`}
 
 😴 SLEEP & WELLNESS
 Sleep Duration: 7-9 hours
@@ -354,8 +352,8 @@ Self-Compassion Practice:
 Speak kindly to yourself about today's experience. Offer yourself the same compassion you'd give a friend. Remember that healing is a journey.
 
 🌤️ WEATHER & ENVIRONMENT
-${weatherData ? `Weather: ${weatherData.weatherSummary || 'Check local conditions'}
-Activities: ${weatherData.activityRecommendations || 'Adapt to current weather'}` : 'Check local weather and adapt activities accordingly'}
+${weatherData ? `Weather: ${weatherData.insight.weatherSummary || 'Check local conditions'}
+Activities: ${weatherData.insight.activityRecommendations || 'Adapt to current weather'}` : 'Check local weather and adapt activities accordingly'}
 
 😴 SLEEP & WELLNESS
 Sleep Duration: 7-9 hours

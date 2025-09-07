@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Loader2, Save, Target, BookOpen, Clock, Shield, Settings, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
+import Image from 'next/image'
 
 interface UserPreferences {
   goals: string[]
@@ -122,10 +123,7 @@ export default function PreferencesPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading your preferences...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Loading your preferences..." />
       </div>
     )
   }
@@ -137,25 +135,16 @@ export default function PreferencesPage() {
         <div className="absolute inset-0"></div>
         <div className="relative max-w-6xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            {/* Floating Elements */}
-            <div className="relative mb-8">
-              <div className="absolute -top-4 -left-4 p-3 animate-float">
-                <Settings className="h-6 w-6 text-primary" />
+            {/* Heading with line art on both sides */}
+            <div className="relative mb-8 flex items-center justify-center gap-4 sm:gap-6">
+              <div className="animate-float">
+                <Image src="/Line_art3-02.png" alt="left line art" width={56} height={56} className="w-12 h-auto drop-shadow-[0_0_14px_#ff1aff]" />
               </div>
-              <div className="absolute -top-2 -right-4 p-3 animate-float-delayed">
-                <Sparkles className="h-6 w-6 text-accent-foreground" />
-              </div>
-              <div className="absolute -bottom-4 left-1/4 p-3 animate-float-slow">
-                <Target className="h-6 w-6 text-primary" />
-              </div>
-              <div className="absolute -bottom-2 right-1/4 p-3 animate-float-delayed-slow">
-                <Shield className="h-6 w-6 text-accent-foreground" />
+              <h1 className="responsive-heading neon-heading key-info mb-0">Your Preferences</h1>
+              <div className="hidden sm:block animate-float-delayed">
+                <Image src="/Line_art2-02.png" alt="right line art" width={56} height={56} className="w-12 h-auto drop-shadow-[0_0_14px_#00e5ff]" />
               </div>
             </div>
-
-            <h1 className="responsive-heading neon-heading key-info mb-6">
-              Your Preferences
-            </h1>
             <p className="responsive-body text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Customize your healing journey experience to match your unique needs, 
               comfort level, and goals. These settings help us provide the most 

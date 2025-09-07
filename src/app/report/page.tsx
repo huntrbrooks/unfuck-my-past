@@ -8,6 +8,8 @@ import { Download, AlertTriangle, CheckCircle, Brain, Target, Sparkles, Heart, B
 import { useRouter } from 'next/navigation'
 import PaymentForm from '@/components/PaymentForm'
 import FullReportGenerationLoader from '@/components/FullReportGenerationLoader'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import Image from 'next/image'
 
 
 export default function ReportPage() {
@@ -254,6 +256,20 @@ export default function ReportPage() {
     
     const glowClasses = ['neon-heading', 'neon-glow-cyan', 'neon-glow-pink', 'neon-glow-orange'] as const
     const pickGlow = (title: string, fallbackIndex: number) => {
+      // New deterministic mapping with distinct colors per known section
+      const mapping: Array<{ re: RegExp; cls: string }> = [
+        { re: /Executive Summary/i, cls: 'neon-heading' },                 // lime
+        { re: /Trauma Analysis/i, cls: 'neon-glow-orange' },               // orange
+        { re: /Toxicity Score/i, cls: 'neon-glow-pink' },                  // pink
+        { re: /Strengths/i, cls: 'neon-glow-cyan' },                       // cyan
+        { re: /Most Important/i, cls: 'neon-glow-purple' },                // purple
+        { re: /Behavioral Patterns/i, cls: 'neon-glow-blue' },             // blue
+        { re: /Healing Roadmap/i, cls: 'neon-heading' },                   // lime
+        { re: /Actionable Recommendations/i, cls: 'neon-glow-red' },       // red
+        { re: /Resources/i, cls: 'neon-glow-teal' },                       // teal
+      ]
+      const found = mapping.find(m => m.re.test(title))
+      if (found) return found.cls
       let hash = 0
       for (let i = 0; i < title.length; i++) hash = (hash << 5) - hash + title.charCodeAt(i)
       const idx = Math.abs(hash + fallbackIndex) % glowClasses.length
@@ -268,6 +284,8 @@ export default function ReportPage() {
       if (!content) return null
       const glowClass = pickGlow(title, index)
       
+      const forcePlainWhite = /Executive Summary|Trauma Analysis|Toxicity Score/i.test(title)
+
       return (
         <Card key={index} className="feature-card mb-6 overflow-hidden bg-background border-0">
           <CardHeader className="bg-background">
@@ -286,33 +304,49 @@ export default function ReportPage() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-              {content.split('\n').map((line, lineIndex) => {
-                if (line.trim().startsWith('•')) {
-                  return (
-                    <div key={lineIndex} className="flex items-start gap-3 p-3 rounded-lg bg-background">
-                      <span className="text-primary font-bold mt-0.5">•</span>
-                      <span className="text-foreground">{line.substring(1).trim()}</span>
-                    </div>
-                  )
-                } else if (line.trim().match(/^\d+\./)) {
-                  // Handle numbered roadmap items
-                  return (
-                    <div key={lineIndex} className="flex items-start gap-3 p-3 rounded-lg bg-background">
-                      <Badge variant="outline" className="text-primary border-0 bg-primary/10">
-                        {line.match(/^\d+\./)?.[0]}
-                      </Badge>
-                      <span className="text-foreground font-medium">{line.replace(/^\d+\.\s*/, '')}</span>
-                    </div>
-                  )
-                } else if (line.trim() && !line.trim().startsWith('#')) {
-                  return (
-                    <div key={lineIndex} className="p-3 rounded-lg bg-background">
-                      <span className="text-foreground font-medium">{line.trim()}</span>
-                    </div>
-                  )
+              {(() => {
+                const linesArr = content.split('\n')
+                // find last plain paragraph to glow hot pink (disabled for forced plain white sections)
+                let lastPlainIndex = -1
+                if (!forcePlainWhite) {
+                  for (let i = linesArr.length - 1; i >= 0; i--) {
+                    const t = linesArr[i].trim()
+                    if (!t) continue
+                    if (t.startsWith('•')) continue
+                    if (/^\d+\./.test(t)) continue
+                    if (t.startsWith('#')) continue
+                    lastPlainIndex = i
+                    break
+                  }
                 }
-                return null
-              })}
+                return linesArr.map((line, lineIndex) => {
+                  if (line.trim().startsWith('•')) {
+                    return (
+                      <div key={lineIndex} className="flex items-start gap-3 p-3 rounded-lg bg-background">
+                        <span className="text-primary font-bold mt-0.5">•</span>
+                        <span className="text-foreground">{line.substring(1).trim()}</span>
+                      </div>
+                    )
+                  } else if (line.trim().match(/^\d+\./)) {
+                    return (
+                      <div key={lineIndex} className="flex items-start gap-3 p-3 rounded-lg bg-background">
+                        <Badge variant="outline" className="text-primary border-0 bg-primary/10">
+                          {line.match(/^\d+\./)?.[0]}
+                        </Badge>
+                        <span className="text-foreground font-medium">{line.replace(/^\d+\.\s*/, '')}</span>
+                      </div>
+                    )
+                  } else if (line.trim() && !line.trim().startsWith('#')) {
+                    const isLastPlain = !forcePlainWhite && lineIndex === lastPlainIndex
+                    return (
+                      <div key={lineIndex} className="p-3 rounded-lg bg-background">
+                        <span className={isLastPlain ? 'font-medium text-[#ff1aff]' : 'text-foreground font-medium'} style={isLastPlain ? { textShadow: '0 0 10px #ff1aff, 0 0 20px #ff1aff' } : undefined}>{line.trim()}</span>
+                      </div>
+                    )
+                  }
+                  return null
+                })
+              })()}
             </div>
           </CardContent>
         </Card>
@@ -323,15 +357,7 @@ export default function ReportPage() {
   if (checkingAccess) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="glass-card max-w-md mx-auto text-center p-8">
-          <div className="relative mb-6">
-            <div className="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-10 h-10 bg-primary rounded-full animate-pulse"></div>
-            </div>
-          </div>
-          <p className="text-muted-foreground">Checking your access...</p>
-        </Card>
+        <LoadingSpinner size="lg" text="Checking your access..." />
       </div>
     )
   }
@@ -500,14 +526,13 @@ export default function ReportPage() {
         </div>
       )}
       <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6">
-            <Brain className="w-10 h-10 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+        <div className="text-center mb-8 pt-10 sm:pt-16">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 animate-float">
+            <Image src="/Line_art3-03.png" alt="report art" width={80} height={80} className="w-20 h-auto drop-shadow-[0_0_18px_#22c55e]" />
           </div>
-          <h1 className="responsive-heading neon-heading mb-4">Your Comprehensive Diagnostic Report</h1>
-          <p className="responsive-body text-muted-foreground mb-6">
-            Based on your {questionCount} diagnostic responses
-          </p>
+          <h1 className="responsive-heading neon-heading key-info mb-2 [text-shadow:0_0_28px_rgba(204,255,0,0.9),0_0_56px_rgba(204,255,0,0.6),1px_1px_0_rgba(0,0,0,0.55),-1px_-1px_0_rgba(0,0,0,0.55)] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)]">Here’s Why Your Past Is Fucked</h1>
+          <p className="responsive-body text-foreground mb-2">We dug into your answers... Our thoughts on what’s holding you back.</p>
+          <p className="responsive-body text-muted-foreground mb-6">Based on your {questionCount} diagnostic responses</p>
           
           <div className="flex justify-center gap-4 mb-8">
             <Button

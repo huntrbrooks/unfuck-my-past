@@ -113,8 +113,8 @@ export const ONBOARDING_SCHEMA: ValidationSchema = {
     required: true,
     custom: (value) => {
       if (!value || typeof value !== 'object') return 'Safety preferences are required'
-      const { crisisSupport, contentWarnings, skipTriggers } = value
-      return (crisisSupport || contentWarnings || skipTriggers) ? true : 'At least one safety preference must be selected'
+      const v = value as { crisisSupport?: boolean; contentWarnings?: boolean; skipTriggers?: boolean }
+      return (v.crisisSupport || v.contentWarnings || v.skipTriggers) ? true : 'At least one safety preference must be selected'
     }
   }
 }
@@ -132,7 +132,8 @@ export const DIAGNOSTIC_RESPONSE_SCHEMA: ValidationSchema = {
     required: true, 
     custom: (value) => {
       if (!value || typeof value !== 'object') return 'Question must be an object'
-      if (!value.id || !value.question) return 'Question must have id and question properties'
+      const v = value as { id?: unknown; question?: unknown }
+      if (typeof v.id !== 'number' || typeof v.question !== 'string') return 'Question must have id and question properties'
       return true
     }
   },
@@ -152,7 +153,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
     if (typeof value === 'string') {
       sanitized[key] = sanitizeString(value)
     } else if (typeof value === 'object' && value !== null) {
-      sanitized[key] = sanitizeObject(value)
+      sanitized[key] = sanitizeObject(value as Record<string, unknown>)
     } else {
       sanitized[key] = value
     }

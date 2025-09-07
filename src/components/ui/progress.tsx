@@ -16,6 +16,7 @@ const progressVariants = cva(
         destructive: "bg-destructive",
         gradient: "bg-gradient-to-r from-primary via-accent to-secondary",
         glass: "bg-white/20 backdrop-blur-sm",
+        neonPinkGlow: "bg-[#ff1aff] shadow-[0_0_10px_#ff1aff,0_0_20px_#ff1aff,0_0_30px_#ff1aff]",
       },
       size: {
         default: "h-3",
@@ -34,8 +35,8 @@ const progressVariants = cva(
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> &
-    VariantProps<typeof progressVariants>
->(({ className, value, variant, size, ...props }, ref) => (
+    VariantProps<typeof progressVariants> & { glow?: boolean }
+>(({ className, value, variant, size, glow, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
     className={cn(
@@ -45,7 +46,10 @@ const Progress = React.forwardRef<
     {...props}
   >
     <ProgressPrimitive.Indicator
-      className={cn(progressVariants({ variant, size }))}
+      className={cn(
+        progressVariants({ variant, size }),
+        glow && "shadow-[0_0_10px_#ff1aff,0_0_20px_#ff1aff,0_0_30px_#ff1aff]"
+      )}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
   </ProgressPrimitive.Root>

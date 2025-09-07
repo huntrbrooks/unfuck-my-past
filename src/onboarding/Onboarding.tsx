@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Progress } from "@/components/ui/progress";
 import flowConfig from "./flow.json";
 import type { Flow, Step, Field, ChoiceField, TextField } from "./types";
 
@@ -132,7 +133,9 @@ const StepView: React.FC<{
       {step.subheading && (
         <p className="text-lg text-muted-foreground mb-4 font-medium">{step.subheading}</p>
       )}
-      {helper ? <p className="text-muted-foreground mb-6">{helper}</p> : null}
+      {helper && helper.trim() !== (step.subheading?.trim() || "") ? (
+        <p className="text-muted-foreground mb-6">{helper}</p>
+      ) : null}
       <div className="space-y-8">
         {step.fields.map((field) => {
           if (isChoice(field)) {
@@ -141,7 +144,9 @@ const StepView: React.FC<{
             return (
               <div key={field.id}>
                 <div className="mb-3 font-semibold text-lg text-foreground">{field.label}{isMulti ? " (Choose all that apply)" : " (Select one)"}</div>
-                {field.subheading && (
+                {field.subheading 
+                  && field.subheading.trim() !== (step.subheading?.trim() || "")
+                  && field.subheading.trim() !== (helper?.trim() || "") && (
                   <p className="text-muted-foreground mb-4">{field.subheading}</p>
                 )}
                 <div className="grid grid-cols-1 gap-3">
@@ -174,7 +179,9 @@ const StepView: React.FC<{
             return (
               <div key={field.id}>
                 <div className="mb-3 font-semibold text-lg text-foreground">{field.label}</div>
-                {field.subheading && (
+                {field.subheading 
+                  && field.subheading.trim() !== (step.subheading?.trim() || "")
+                  && field.subheading.trim() !== (helper?.trim() || "") && (
                   <p className="text-muted-foreground mb-4">{field.subheading}</p>
                 )}
                 <TextInput value={val} onChange={(v) => setValues({ ...values, [field.id]: v })} placeholder={field.placeholder} long={long} />
@@ -230,6 +237,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
 
   const total = steps.length;
   const step = steps[stepIndex];
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const computeStepErrors = () => {
     const newErrors: Record<string, string> = {};
@@ -257,13 +265,20 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
     const isLast = stepIndex >= total - 1 || step.final;
     if (onChange) onChange(values);
     if (isLast) {
-      onComplete(values);
+      setIsCompleting(true);
+      // allow progress bar to render at 100% before navigation
+      setTimeout(() => onComplete(values), 0);
     } else {
       setStepIndex(stepIndex + 1);
       try {
-        // Smoothly scroll the onboarding container to top for next step
+        // Smoothly scroll to the top of the questions card instead of page top
         setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          const el = document.getElementById('onboarding-card-top');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         }, 0);
       } catch {}
     }
@@ -273,14 +288,15 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
     if (stepIndex > 0) setStepIndex(stepIndex - 1);
   };
 
+  const progressValue = isCompleting ? 100 : Math.round(((stepIndex) / total) * 100);
+
   return (
     <div className="p-6">
-      <div className="w-full bg-muted h-2 rounded-full mb-6">
-        <div 
-          className="bg-primary h-2 rounded-full transition-all duration-300 ease-out" 
-          style={{ width: `${Math.round(((stepIndex + 1) / total) * 100)}%` }} 
-        />
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-xs text-muted-foreground">Step {Math.min(stepIndex + 1, total)} of {total}</div>
+        <div className="text-xs text-muted-foreground">{isCompleting ? 'Complete' : `${progressValue}%`}</div>
       </div>
+      <Progress value={progressValue} variant="default" glow className="mb-6 h-2" />
       <StepView
         step={step}
         index={stepIndex}
@@ -296,7 +312,7 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
         <div className="max-w-2xl mx-auto mt-6 flex justify-end">
           <button 
             type="button" 
-            onClick={() => onComplete(values)} 
+            onClick={() => { setIsCompleting(true); setTimeout(() => onComplete(values), 0); }} 
             className="rounded-lg bg-primary text-primary-foreground px-6 py-3 hover:bg-primary/90 transition-colors shadow-lg"
           >
             Complete Setup

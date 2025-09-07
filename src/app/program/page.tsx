@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { AlertTriangle, CheckCircle, Sparkles, Target, Loader2, ArrowRight, Heart, Brain, Zap, Sun, Moon, Leaf, TrendingUp, Lock, Calendar, Trophy } from 'lucide-react'
+import Image from 'next/image'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import PaymentForm from '@/components/PaymentForm'
 
@@ -398,30 +399,17 @@ export default function Program() {
       }
     }
 
-    // If sections are empty, try to extract content from the raw text
-    if (!sections.guidedPractice && !sections.challenge && !sections.journalingPrompt) {
+    // If sections missing, try to extract content from the raw text without reusing mainFocus
+    if (!sections.guidedPractice || !sections.challenge || !sections.journalingPrompt || !sections.reflection) {
       // Fallback: try to parse content by looking for common patterns
       const contentLower = content.toLowerCase()
       
-      if (contentLower.includes('guided practice') || contentLower.includes('morning intention')) {
-        sections.guidedPractice = content
-      } else if (contentLower.includes('daily challenge') || contentLower.includes('main activity')) {
-        sections.challenge = content
-      } else if (contentLower.includes('journaling') || contentLower.includes('reflection')) {
-        sections.journalingPrompt = content
-      } else {
-        // If no clear sections found, distribute content evenly
         const parts = content.split('\n\n').filter(part => part.trim())
-        if (parts.length >= 4) {
-          sections.guidedPractice = parts[0] || 'Content not available'
-          sections.challenge = parts[1] || 'Content not available'
-          sections.journalingPrompt = parts[2] || 'Content not available'
-          sections.reflection = parts[3] || 'Content not available'
-        } else {
-          // Last resort: put all content in guided practice
-          sections.guidedPractice = content || 'Content not available'
-        }
-      }
+      const pick = (idx: number) => (parts[idx] || '').includes('MAIN FOCUS') ? '' : (parts[idx] || '')
+      if (!sections.guidedPractice) sections.guidedPractice = pick(0)
+      if (!sections.challenge) sections.challenge = pick(1)
+      if (!sections.journalingPrompt) sections.journalingPrompt = pick(2)
+      if (!sections.reflection) sections.reflection = pick(3)
     }
 
     // Enhance weather section with actual weather data if available
@@ -436,7 +424,7 @@ export default function Program() {
     sections.challenge = sections.challenge || 'Content not available'
     sections.journalingPrompt = sections.journalingPrompt || 'Content not available'
     sections.reflection = sections.reflection || 'Content not available'
-    sections.weather = sections.weather || 'Weather data not available'
+    sections.weather = sections.weather || 'Assume location: Melbourne, Australia. Weather: Variable cool. Activities: Gentle walk if weather permits; otherwise indoor stretching and breathwork.'
     sections.sleep = sections.sleep || 'Sleep recommendations not available'
     sections.holistic = sections.holistic || 'Holistic practices not available'
     sections.tools = sections.tools || 'Tools and resources not available'
@@ -605,10 +593,7 @@ export default function Program() {
   if (checkingAccess) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Checking program access...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Checking program access..." />
       </div>
     )
   }
@@ -664,10 +649,8 @@ export default function Program() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <LoadingSpinner size="lg" text="Loading your healing program..." />
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading your healing program..." />
       </div>
     )
   }
@@ -695,17 +678,8 @@ export default function Program() {
 
   if (!progress || !currentDay) {
     return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="glass-card border-0 shadow-xl">
-            <CardContent className="p-8">
-              <div className="text-center">
-                <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-                <p className="text-muted-foreground">Loading program data...</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading program data..." />
       </div>
     )
   }
@@ -716,12 +690,12 @@ export default function Program() {
       <div className="bg-background border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 py-10">
           <div className="flex flex-col items-center text-center gap-3 mb-6">
-            <div className="w-14 h-14 flex items-center justify-center">
-              <Calendar className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
-            </div>
+            <div className="w-14 h-14 flex items-center justify-center animate-float">
+              <Image src="/Icon-02.png" alt="program emblem" width={40} height={40} className="w-10 h-auto drop-shadow-[0_0_12px_#00e5ff]" />
+              </div>
             <h1 className="text-3xl font-bold neon-heading">30-Day Healing Program</h1>
             <p className="text-muted-foreground">Day {progress.currentDay} of 30</p>
-          </div>
+              </div>
           {/* Centered progress overview */}
           <Card className="feature-card border-0 group max-w-4xl mx-auto">
             <CardContent className="p-6">
@@ -729,15 +703,15 @@ export default function Program() {
                 <div className="flex items-center gap-4 md:flex-1">
                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center">
                     <TrendingUp className="h-6 w-6 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
-                  </div>
+              </div>
                   <div className="w-full">
                     <div className="text-sm text-muted-foreground text-left">Overall Progress</div>
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                       <div className="flex-1"><Progress value={progress.percentage} variant="gradient" className="h-2" /></div>
                       <div className="text-sm font-medium text-foreground whitespace-nowrap">{Math.round(progress.percentage)}%</div>
                     </div>
+                    </div>
                   </div>
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:ml-6">
                   <div className="text-center">
                     <div className="text-base text-muted-foreground">Current</div>
@@ -746,15 +720,15 @@ export default function Program() {
                   <div className="text-center">
                     <div className="text-base text-muted-foreground">Completed</div>
                     <div className="text-xl font-semibold text-foreground">{progress.completed}</div>
-                  </div>
+                </div>
                   <div className="text-center">
                     <div className="text-base text-muted-foreground">Streak</div>
                     <div className="text-xl font-semibold text-foreground">{progress.streak}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
         </div>
       </div>
 
@@ -768,7 +742,7 @@ export default function Program() {
                 <div className="text-center">
                   <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
                     <Target className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
-                  </div>
+                </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">Enable Location for Weather Insights</h3>
                   <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                     Allow location access to get personalized weather-based activity recommendations 
@@ -838,7 +812,7 @@ export default function Program() {
                 <CardHeader className="px-6 py-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold text-foreground">Day {currentDay.day}: {currentDay.poeticTitle || currentDay.title}</h3>
-                    <Badge variant="success" className="text-sm">
+                    <Badge variant="success" className="text-sm" style={{ backgroundColor: '#ccff00', color: '#0a0a0a' }}>
                       {currentDay.metadata.duration} min
                     </Badge>
                   </div>
@@ -849,14 +823,14 @@ export default function Program() {
                     <div className="rounded-xl p-4 bg-background">
                       <div className="flex items-center gap-3 mb-3">
                         <Target className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
-                        <h4 className="font-semibold text-foreground">Today&apos;s Main Focus</h4>
+                        <h4 className="font-semibold neon-heading">Today&apos;s Main Focus</h4>
                       </div>
                       <p className="text-foreground">{currentDay.content.mainFocus || 'Daily Healing Practice'}</p>
                     </div>
 
                     {/* Guided Practice */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                      <h5 className="font-semibold neon-glow-cyan mb-2 flex items-center gap-2 text-lg">
                         <Sun className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                         Guided Practice
                       </h5>
@@ -874,7 +848,7 @@ export default function Program() {
                     
                     {/* Daily Challenge */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                      <h5 className="font-semibold neon-glow-orange mb-2 flex items-center gap-2 text-lg">
                         <Zap className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #22c55e)' }} />
                         Daily Challenge
                       </h5>
@@ -892,7 +866,7 @@ export default function Program() {
                   
                     {/* Journaling Prompt */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                      <h5 className="font-semibold neon-glow-pink mb-2 flex items-center gap-2 text-lg">
                         <Sparkles className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
                         Journaling Prompt
                       </h5>
@@ -910,7 +884,7 @@ export default function Program() {
                   
                     {/* Reflection */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                      <h5 className="font-semibold neon-glow-blue mb-2 flex items-center gap-2 text-lg">
                         <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #60a5fa)' }} />
                         Reflection
                       </h5>
@@ -928,7 +902,7 @@ export default function Program() {
                   
                     {/* Weather & Environment */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                      <h5 className="font-semibold neon-glow-teal mb-2 flex items-center gap-2 text-lg">
                         <Sun className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #f59e0b)' }} />
                         Weather & Environment
                       </h5>
@@ -946,7 +920,7 @@ export default function Program() {
                   
                     {/* Sleep & Wellness */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                      <h5 className="font-semibold neon-glow-rose mb-2 flex items-center gap-2 text-lg">
                         <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #fb7185)' }} />
                         Sleep & Wellness
                       </h5>
@@ -964,7 +938,7 @@ export default function Program() {
                   
                     {/* Holistic Healing Bonus */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-lg">
+                      <h5 className="font-semibold neon-glow-purple mb-2 flex items-center gap-2 text-lg">
                         <Leaf className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #10b981)' }} />
                         Holistic Healing Bonus
                       </h5>
@@ -1088,7 +1062,7 @@ export default function Program() {
               <CardContent className="p-12 text-center">
                 <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
                   <Trophy className="h-12 w-12 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 10px #22c55e)' }} />
-                </div>
+                  </div>
                 <h2 className="text-3xl font-bold text-foreground mb-4">Congratulations!</h2>
                 <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                   You&apos;ve completed all 30 days of your healing journey. 

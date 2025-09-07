@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardTitle, CardContent } from '@/components/ui/card'
@@ -16,64 +17,55 @@ export default function Home() {
         {/* Safety Banner (moved below bottom CTA) */}
 
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-background py-12">
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              {/* Floating Elements */}
-              <div className="relative mb-8">
-                <div className="absolute -top-8 -left-8 p-4 animate-float">
-                  <Target className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
-                </div>
-                <div className="absolute -top-4 -right-8 p-4 animate-float-delayed">
-                  <Bot className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
-                </div>
-                <div className="absolute -bottom-8 left-1/4 p-4 animate-float-slow">
-                  <TrendingUp className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
-                </div>
-                <div className="absolute -bottom-4 right-1/4 p-4 animate-float-delayed-slow">
-                  <Heart className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
-                </div>
+        <section className="relative overflow-hidden bg-background min-h-screen">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center pt-28 sm:pt-28 lg:pt-16 pb-10 space-y-8 sm:space-y-9 lg:space-y-8">
+            {/* Edgy graphic hero */}
+            <div>
+              <div className="rounded-none overflow-visible shadow-none border-0 bg-transparent w-full md:max-w-2xl lg:max-w-3xl mx-auto">
+                {/* Place the image file at public/edgy-hero.png */}
+                <Image
+                  src="/edgy-hero.png?v=3"
+                  alt="Unfuck My Past"
+                  width={1600}
+                  height={900}
+                  priority
+                  className="w-full h-auto object-contain"
+                />
               </div>
-
-              <h1 className="responsive-heading neon-heading mb-6">
-                Unfuck My Past
-              </h1>
-              <p className="responsive-body text-muted-foreground max-w-4xl mx-auto leading-relaxed mb-8">
-                Your journey to healing is simple, personalized, and proven to work. 
-                AI-driven self-healing that actually works. No therapy waitlists, no bullshit.
-              </p>
-              
-              <p className="text-lg text-foreground font-medium mb-6 text-center">
-                Ready to begin your transformation?
-              </p>
-              
-              <div className="flex justify-center">
-                <Button asChild size="lg" className="text-lg px-8 py-4 group neon-cta">
-                  <Link href="/onboarding">
-                    Start Your Journey
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                  </Link>
-                </Button>
-              </div>
-              {/* Safety Banner placed directly under the first CTA */}
-              {showSafetyAlert && (
-                <div className="mt-8 mb-8 flex items-center justify-center">
-                  <div className="inline-flex items-center gap-3 px-5 py-3 rounded-xl border border-red-500/30 shadow-[0_0_24px_rgba(239,68,68,0.55)] bg-background/90">
-                    <AlertTriangle className="h-5 w-5 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                    <p className="text-sm text-foreground text-center">
-                      <strong>Important:</strong> This is not therapy. If you&apos;re in crisis, please call 000 (Australia) or Lifeline 13 11 14.
-                    </p>
-                    <button
-                      onClick={() => setShowSafetyAlert(false)}
-                      className="ml-3 text-muted-foreground hover:text-foreground transition-colors duration-200"
-                      aria-label="Dismiss safety notice"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
+
+            {/* Tagline under hero */}
+            <p className="text-center mx-auto max-w-4xl text-muted-foreground leading-relaxed px-2 text-base sm:text-lg">
+              AI-driven self-healing that actually works. No therapy waitlists, no bullshit.
+            </p>
+
+            {/* Primary CTA directly under hero */}
+            <div className="flex justify-center">
+              <Button asChild size="lg" className="group neon-cta text-base sm:text-lg px-6 py-3 sm:px-8 sm:py-4">
+                <Link href="/onboarding">
+                  Start Your Journey
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                </Link>
+              </Button>
+            </div>
+            {/* Safety Banner placed directly under the first CTA */}
+            {showSafetyAlert && (
+              <div className="flex items-center justify-center">
+                <div className="inline-flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-5 sm:py-3 rounded-xl border border-red-500/30 shadow-[0_0_24px_rgba(239,68,68,0.55)] bg-background/90">
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                  <p className="text-xs sm:text-sm text-foreground text-center">
+                    <strong>Important:</strong> This is not therapy. If you&apos;re in crisis, please call 000 (Australia) or Lifeline 13 11 14.
+                  </p>
+                  <button
+                    onClick={() => setShowSafetyAlert(false)}
+                    className="ml-2 sm:ml-3 text-muted-foreground hover:text-foreground transition-colors duration-200"
+                    aria-label="Dismiss safety notice"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Process Steps */}
             <div className="grid md:grid-cols-3 gap-6 mb-16">
@@ -122,35 +114,40 @@ export default function Home() {
 
             {/* What You'll Get Section */}
             <div className="max-w-5xl mx-auto mb-16">
-              <Card className="glass-card border-0 shadow-2xl overflow-hidden">
-                <div className="bg-secondary border-b border-border/50 px-8 py-6">
+              <Card className="border-0 shadow-2xl overflow-hidden bg-white dark:bg-black">
+                <div className="bg-neutral-100 dark:bg-neutral-900 border-b border-border/50 px-8 py-6">
                   <h2 className="text-3xl font-bold text-center neon-heading">What You&apos;ll Get</h2>
                 </div>
-                <CardContent className="p-8">
+                <CardContent className="p-8 bg-white dark:bg-black">
                   <div className="grid md:grid-cols-2 gap-12">
                     {/* Free Assessment */}
                     <div className="space-y-6">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-full">
-                          <CheckCircle className="h-6 w-6 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #22c55e)' }} />
-                        </div>
+                      <div className="mb-6">
                         <h3 className="text-xl font-semibold text-foreground">Free Assessment</h3>
                       </div>
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 group">
-                          <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          <span className="w-6 flex justify-center">
+                            <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          </span>
                           <span className="text-foreground">10-step personalization</span>
                         </div>
                         <div className="flex items-center gap-3 group">
-                          <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          <span className="w-6 flex justify-center">
+                            <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          </span>
                           <span className="text-foreground">3-10 diagnostic questions</span>
                         </div>
                         <div className="flex items-center gap-3 group">
-                          <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          <span className="w-6 flex justify-center">
+                            <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          </span>
                           <span className="text-foreground">AI-powered insights</span>
                         </div>
                         <div className="flex items-center gap-3 group">
-                          <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          <span className="w-6 flex justify-center">
+                            <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
+                          </span>
                           <span className="text-foreground">Trauma mapping preview</span>
                         </div>
                       </div>
@@ -158,31 +155,36 @@ export default function Home() {
                     
                     {/* Premium Features */}
                     <div className="space-y-6">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-full">
-                          <Lock className="h-6 w-6 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
-                        </div>
+                      <div className="mb-6">
                         <h3 className="text-xl font-semibold text-foreground">Premium Features</h3>
                       </div>
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 group">
-                          <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ff1aff)' }} />
+                          <span className="w-6 flex justify-center">
+                            <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ff1aff)' }} />
+                          </span>
                           <span className="text-foreground">Full diagnostic report</span>
                           <span className="ml-2"></span>
                           <Badge className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#000000' }}>$10</Badge>
                         </div>
                         <div className="flex items-center gap-3 group">
-                          <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #00e5ff)' }} />
+                          <span className="w-6 flex justify-center">
+                            <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #00e5ff)' }} />
+                          </span>
                           <span className="text-foreground">30-day healing program</span>
                           <span className="ml-2"></span>
                           <Badge className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#000000' }}>$29.95</Badge>
                         </div>
                         <div className="flex items-center gap-3 group">
-                          <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #22c55e)' }} />
+                          <span className="w-6 flex justify-center">
+                            <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #22c55e)' }} />
+                          </span>
                           <span className="text-foreground">Daily journaling & mood tracking</span>
                         </div>
                         <div className="flex items-center gap-3 group">
-                          <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #00e5ff)' }} />
+                          <span className="w-6 flex justify-center">
+                            <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #00e5ff)' }} />
+                          </span>
                           <span className="text-foreground">Progress analytics</span>
                         </div>
                       </div>

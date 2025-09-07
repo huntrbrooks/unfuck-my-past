@@ -4,7 +4,8 @@ import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { Onboarding } from '@/onboarding'
-import { Heart, Sparkles, Target, Brain, ArrowRight } from 'lucide-react'
+import Image from 'next/image'
+import { Sparkles, ArrowRight } from 'lucide-react'
 
 export default function OnboardingPage() {
   const { user, isLoaded } = useUser()
@@ -87,17 +88,6 @@ export default function OnboardingPage() {
     // localStorage.setItem('onboarding-progress', JSON.stringify(partial))
   }
 
-  if (!isLoaded || !user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
   // Check if user has existing diagnostics to decide whether to prompt
   React.useEffect(() => {
     (async () => {
@@ -112,6 +102,17 @@ export default function OnboardingPage() {
       } catch {}
     })()
   }, [user])
+
+  if (!isLoaded || !user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -144,30 +145,26 @@ export default function OnboardingPage() {
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-background">
         <div className="absolute inset-0"></div>
-        <div className="relative max-w-6xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
+        <div className="relative max-w-6xl mx-auto pt-28 pb-16 px-4 sm:pt-20 sm:pb-16 sm:px-6 lg:pt-16 lg:px-8">
           <div className="text-center">
-            {/* Floating Icons (glow + slow spin) */}
-            <div className="relative mb-8">
-              <div className="absolute -top-4 -left-4 p-3 animate-float">
-                <Heart className="h-6 w-6 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+            <div className="relative mb-8 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+              <div className="block animate-float">
+                <Image src="/Line_art-02.png" alt="left art" width={135} height={270} className="w-24 sm:w-[135px] h-auto drop-shadow-[0_0_20px_rgba(0,229,255,0.85)]" />
               </div>
-              <div className="absolute -top-2 -right-4 p-3 animate-float-delayed">
-                <Sparkles className="h-6 w-6 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
+              <div className="text-center">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-2 text-[var(--neon-cta,#ccff00)] [text-shadow:0_0_28px_rgba(204,255,0,0.9),0_0_56px_rgba(204,255,0,0.65),1px_1px_0_rgba(0,0,0,0.65),-1px_-1px_0_rgba(0,0,0,0.65)] [-webkit-text-stroke:1px_rgba(0,0,0,0.35)] sm:whitespace-nowrap">
+                  You came here for answers.
+                </h1>
+                <p className="text-lg sm:text-2xl font-semibold text-[var(--neon-cta,#ccff00)] [text-shadow:0_0_18px_rgba(204,255,0,0.7),1px_1px_0_rgba(0,0,0,0.55),-1px_-1px_0_rgba(0,0,0,0.55)] [-webkit-text-stroke:0.5px_rgba(0,0,0,0.25)]">
+                  Let’s start by asking the right questions.
+                </p>
               </div>
-              <div className="absolute -bottom-4 left-1/4 p-3 animate-float-slow">
-                <Target className="h-6 w-6 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ff6600)' }} />
-              </div>
-              <div className="absolute -bottom-2 right-1/4 p-3 animate-float-delayed-slow">
-                <Brain className="h-6 w-6 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
+              <div className="hidden sm:block animate-float-delayed">
+                <Image src="/Line_art2-04.png" alt="right art" width={135} height={270} className="w-[135px] h-auto drop-shadow-[0_0_20px_rgba(255,0,128,0.85)]" />
               </div>
             </div>
-
-            <h1 className="responsive-heading neon-heading key-info mb-6">
-              Welcome to Your Healing Journey
-            </h1>
             <p className="responsive-body text-muted-foreground max-w-3xl mx-auto mb-8 leading-relaxed">
-              Let&apos;s personalize your experience so we can guide you in the most effective way possible. 
-              This will help us create a tailored healing path just for you.
+              First things first: we need to know how you want this to hit. Tough love or gentle push? Raw truth or soft landing? You choose, we adapt.
             </p>
 
             {/* Progress Indicator */}
@@ -186,7 +183,7 @@ export default function OnboardingPage() {
           <div className="absolute inset-0 rounded-3xl opacity-0"></div>
           
           {/* Main Content */}
-          <div className="relative bg-background rounded-3xl border border-border/50 shadow-2xl overflow-hidden">
+          <div id="onboarding-card-top" className="relative bg-background rounded-3xl border border-border/50 shadow-2xl overflow-hidden">
             {/* Header Bar */}
             <div className="bg-background border-b border-border/50 px-8 py-6">
               <div className="flex items-center gap-3">

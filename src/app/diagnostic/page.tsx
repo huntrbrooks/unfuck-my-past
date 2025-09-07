@@ -7,7 +7,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Mic, Pencil, CheckCircle, Bot, Brain, Target, Sparkles } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Mic, Pencil, CheckCircle, Bot, Target, Sparkles } from 'lucide-react'
+import Image from 'next/image'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import VoiceRecorder from '../../components/VoiceRecorder'
 import QuestionGenerationLoader from '../../components/QuestionGenerationLoader'
@@ -335,7 +336,11 @@ export default function Diagnostic() {
   }
 
   const currentQuestion = questions[currentQuestionIndex]
-  const progress = questions.length > 0 ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0
+  const answeredCount = responses.length
+  let progress = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0
+  if (generatingInsight && currentQuestionIndex === questions.length - 1) {
+    progress = 100
+  }
 
   console.log('🔍 Diagnostic page state:', {
     questionsLength: questions.length,
@@ -529,18 +534,25 @@ export default function Diagnostic() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 flex items-center justify-center">
-              <Brain className="h-8 w-8 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+          <div className="relative mb-4 flex items-center justify-center gap-4 sm:gap-6">
+            <div className="block animate-float">
+              <Image src="/Line_art2-01.png" alt="diagnostic emblem left" width={96} height={96} className="w-16 sm:w-24 h-auto drop-shadow-[0_0_18px_#ff1aff]" />
             </div>
-            <div>
-              <h1 className="responsive-heading neon-heading key-info">Personal Diagnostic</h1>
-              <p className="responsive-body text-muted-foreground">Your journey to self-discovery starts here</p>
+            <div className="text-center">
+              <h1 className="text-4xl sm:text-5xl font-bold neon-heading [text-shadow:0_0_28px_rgba(204,255,0,0.9),0_0_56px_rgba(204,255,0,0.6),1px_1px_0_rgba(0,0,0,0.55),-1px_-1px_0_rgba(0,0,0,0.55)] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)]">
+                Digging Into Your Shit
+              </h1>
+              <p className="responsive-body text-muted-foreground">
+                This is where we stop the guesswork and start uncovering what’s really holding you back.
+              </p>
+            </div>
+            <div className="hidden sm:block animate-float-delayed">
+              <Image src="/Line_art3-01.png" alt="diagnostic emblem right" width={96} height={96} className="w-16 sm:w-24 h-auto drop-shadow-[0_0_18px_#ff9900]" />
             </div>
           </div>
         </div>
 
-        <Card className="glass-card border-0 shadow-xl">
+        <Card className="bg-background border border-border/50 shadow-2xl">
           <CardContent className="p-8">
             {/* Progress */}
             <div className="mb-8">
@@ -548,15 +560,15 @@ export default function Diagnostic() {
                 <span className="text-sm text-muted-foreground">Question {currentQuestionIndex + 1} of {questions.length}</span>
                 <span className="text-sm text-muted-foreground">{Math.round(progress)}% complete</span>
               </div>
-              <Progress value={progress} variant="gradient" className="h-3" />
+              <Progress value={progress} variant="default" glow className="h-3" />
             </div>
 
             {/* Question */}
             <div className="mb-8">
               {currentQuestion ? (
-                <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-6 border border-primary/20">
+                <div className="bg-background rounded-xl p-6 border border-border/50">
                   <div className="flex items-start gap-3 mb-4">
-                    <Target className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                    <Target className="h-6 w-6 text-[#ff1aff] mt-1 flex-shrink-0" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
                     <div className="flex-1">
                       <h2 className="text-xl font-semibold mb-3 text-foreground">{currentQuestion.question}</h2>
                       {currentQuestion.followUp && (

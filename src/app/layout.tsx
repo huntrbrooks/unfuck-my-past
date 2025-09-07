@@ -9,6 +9,7 @@ import './globals.css'
 import ErrorBoundary from '../components/ErrorBoundary'
 import ThemeProvider from '../components/ThemeProvider'
 import MenuBar from '../components/MenuBar'
+import MobileMenu from '../components/MobileMenu'
 import AnalyticsProvider from '../components/AnalyticsProvider'
 
 const dmSans = DM_Sans({
@@ -49,8 +50,13 @@ export default function RootLayout({
           <ErrorBoundary>
             <ThemeProvider>
               <AnalyticsProvider>
-                <div className="w-full flex justify-center border-b border-border/20">
-                  <MenuBar />
+                <div className="w-full flex justify-center">
+                  <div className="hidden md:flex w-full justify-center">
+                    <MenuBar />
+                  </div>
+                  <div className="md:hidden fixed top-0 left-0 right-0 z-50">
+                    <MobileMenu />
+                  </div>
                 </div>
                 <Suspense fallback={<div>Loading...</div>}>
                   {children}

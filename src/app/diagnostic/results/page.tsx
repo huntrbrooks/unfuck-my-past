@@ -4,7 +4,9 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, CheckCircle, AlertTriangle, ArrowRight, Download, Brain, Target, Sparkles, Heart, BookOpen, TrendingUp } from 'lucide-react'
+import { Loader2, CheckCircle, AlertTriangle, ArrowRight, Download, Target, Sparkles, Heart, BookOpen, TrendingUp } from 'lucide-react'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import PaymentForm from '@/components/PaymentForm'
 
@@ -388,18 +390,8 @@ export default function DiagnosticResults() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full">
-          <Card className="glass-card border-0 shadow-xl">
-            <CardContent className="p-8">
-            <div className="text-center">
-                <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground">Loading Your Results</h2>
-                <p className="text-muted-foreground">Analyzing your diagnostic responses...</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-            </div>
+        <LoadingSpinner size="lg" text="Analyzing your diagnostic responses..." />
+      </div>
     )
   }
 
@@ -430,12 +422,12 @@ export default function DiagnosticResults() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-4 mb-6">
-            <div>
-              <Brain className="h-10 w-10 text-black dark:text-white spin-slow" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+            <div className="hidden sm:block animate-float">
+              <Image src="/Icon-04.png" alt="results emblem" width={56} height={56} className="w-12 h-auto drop-shadow-[0_0_14px_#a855f7]" />
             </div>
             <div>
-              <h1 className="responsive-heading neon-heading key-info">Your Diagnostic Results</h1>
-              <p className="responsive-body text-muted-foreground">Discover insights about yourself and your healing journey</p>
+              <h1 className="responsive-heading neon-heading key-info [text-shadow:0_0_28px_rgba(204,255,0,0.9),0_0_56px_rgba(204,255,0,0.6),1px_1px_0_rgba(0,0,0,0.55),-1px_-1px_0_rgba(0,0,0,0.55)] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)]">A Glimpse at Your Mess</h1>
+              <p className="responsive-body text-muted-foreground">Here’s what we can tell you for free... the full truth comes in your complete report.</p>
             </div>
           </div>
 
@@ -534,15 +526,15 @@ export default function DiagnosticResults() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Questions Completed</span>
-                    <span className="text-swap font-bold neon-glow-cyan">{questionCount}</span>
+                    <span className="font-bold text-[#ff1aff]" style={{ filter: 'drop-shadow(0 0 10px #ff1aff)' }}>{questionCount}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Insights Generated</span>
-                    <span className="text-swap font-bold neon-glow-pink">{results.length}</span>
+                    <span className="font-bold text-[#ff1aff]" style={{ filter: 'drop-shadow(0 0 10px #ff1aff)' }}>{results.length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Completion Rate</span>
-                    <span className="text-swap font-bold neon-glow-orange">100%</span>
+                    <span className="font-bold text-[#ff1aff]" style={{ filter: 'drop-shadow(0 0 10px #ff1aff)' }}>100%</span>
                   </div>
                 </div>
               </CardContent>

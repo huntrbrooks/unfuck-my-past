@@ -295,7 +295,10 @@ export function getAdaptiveQuestions(userPreferences: {
   return prioritizedQuestions.slice(0, adjustedCount)
 }
 
-export function generateAIPrompt(question: DiagnosticQuestion, userPreferences: { tone: string; voice: string; rawness: string; depth: string }): string {
+export function generateAIPrompt(
+  question: DiagnosticQuestion,
+  userPreferences: { tone: string; voice: string; rawness: string; depth: string; learning?: string; goals?: string[] }
+): string {
   const basePrompt = question.aiPrompt || "Analyze the user's response for patterns and insights."
   
   return `
@@ -305,8 +308,8 @@ CLIENT PREFERENCES:
 - Communication Style: ${userPreferences.tone}
 - Content Intensity: ${userPreferences.rawness}
 - Exploration Depth: ${userPreferences.depth}
-- Learning Style: ${userPreferences.learning}
-- Goals: ${userPreferences.goals.join(', ')}
+- Learning Style: ${userPreferences.learning || 'not specified'}
+- Goals: ${(userPreferences.goals || []).join(', ')}
 
 QUESTION: ${question.question}
 
