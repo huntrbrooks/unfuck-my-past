@@ -109,6 +109,7 @@ export default function Program() {
   const isTaskLine = (line: string) => line.trim().startsWith('•') || /^\d+\./.test(line.trim())
   const taskLabel = (line: string) => line.trim().startsWith('•') ? line.substring(1).trim() : line.replace(/^\d+\.\s*/, '').trim()
   const isSubheadingLine = (line: string) => /:\s*$/.test(line.trim())
+  const isDurationTaskLine = (line: string) => /\(\s*\d+(?:\s*-\s*\d+)?\s*minutes?\s*\)/i.test(line.trim())
   const renderQuotedText = (text: string): React.ReactNode => {
     const parts = text.split(/(".*?")/g)
     return (
@@ -131,7 +132,9 @@ export default function Program() {
     })
   }
   const allTasksCompleted = (sectionKey: string, lines: string[]) => {
-    const indices = lines.map((l, i) => isTaskLine(l) ? i : -1).filter(i => i >= 0)
+    const indices = lines
+      .map((l, i) => (isTaskLine(l) || (sectionKey === 'guidedPractice' && isDurationTaskLine(l))) ? i : -1)
+      .filter(i => i >= 0)
     if (indices.length === 0) return false
     const done = sectionTaskCompleted[sectionKey] || new Set()
     return indices.every(i => done.has(i))
@@ -945,7 +948,7 @@ export default function Program() {
                           {currentDay.content.guidedPractice.split('\n').map((line, index) => {
                             if (isSubheadingLine(line)) {
                               return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
-                            } else if (isTaskLine(line)) {
+                            } else if (isTaskLine(line) || isDurationTaskLine(line)) {
                               const checked = (sectionTaskCompleted.guidedPractice || new Set()).has(index)
                               return (
                                 <label key={index} className="flex items-start gap-2 cursor-pointer">
