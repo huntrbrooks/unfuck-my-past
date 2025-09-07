@@ -204,6 +204,9 @@ export default function VoiceRecorder({
     }
     setIsEditing(false)
     setEditedText('')
+    // Clear internal buffers so parent sees a fresh recorder next question
+    setTranscript('')
+    setInterimTranscript('')
   }
 
   const handleEditCancel = () => {

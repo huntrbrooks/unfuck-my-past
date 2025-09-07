@@ -354,6 +354,18 @@ export default function Diagnostic() {
     loaderStep
   })
 
+  // Mobile-only auto scroll to the top of the question card when questions load or index changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (questions.length === 0) return
+    const isMobile = window.matchMedia('(max-width: 767px)').matches
+    if (!isMobile) return
+    const target = document.getElementById('diagnostic-question-top')
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [questions.length, currentQuestionIndex])
+
   // Show the beautiful loader when generating questions (HIGHEST PRIORITY)
   if (showLoader) {
     console.log('🎯 RENDERING: Beautiful loader with step', loaderStep)
@@ -564,7 +576,7 @@ export default function Diagnostic() {
             </div>
 
             {/* Question */}
-            <div className="mb-8">
+            <div className="mb-8" id="diagnostic-question-top">
               {currentQuestion ? (
                 <div className="bg-background rounded-xl p-6 border border-border/50">
                   <div className="flex items-start gap-3 mb-4">
@@ -640,6 +652,7 @@ export default function Diagnostic() {
                 {inputMode === 'voice' && (
                   <div className="mb-6">
                     <VoiceRecorder
+                      key={`voice-${currentQuestionIndex}`}
                       onTranscription={handleVoiceTranscription}
                       onError={handleVoiceError}
                       disabled={generatingInsight}
