@@ -1197,10 +1197,10 @@ export default function Program() {
                         ) : (
                           <>
                             <Trophy className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" />
-                    Complete Day {currentDay.day}
+                            Complete Day {currentDay.day}
                           </>
                         )}
-                  </Button>
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
