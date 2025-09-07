@@ -3,6 +3,8 @@ import { auth } from '@clerk/nextjs/server'
 import { db, users, diagnosticResponses } from '@/db'
 import { ProgramGenerator } from '@/lib/program-generator'
 import { eq } from 'drizzle-orm'
+import { generateStructuredDayPlan } from '@/lib/structured-ai'
+import { buildStructuredPrompt } from '@/lib/structured-prompt-builder'
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,15 +62,10 @@ export async function POST(request: NextRequest) {
       createdAt: resp.createdAt || new Date()
     }))
 
-    // Generate the specific day's content
-    const programGenerator = new ProgramGenerator()
-    const userPrefsWithDifficulty = { ...userPreferences, difficulty: difficulty || 'easy' }
-    const dailyContent = await programGenerator.generateDailyContent(dayNumber, transformedResponses, userPrefsWithDifficulty, weatherData)
-    // Derive theme and poetic title server-side so it's stable across sessions
+    // Helper functions for both structured and legacy generation
     const parseMainFocus = (content: string): string => {
       const match = content.match(/🎯\s*MAIN\s*FOCUS:\s*(.+)/)
       if (match && match[1]) return match[1].trim()
-      // fallback: pick first strong line
       const line = (content.split('\n').find(l => l.trim().length > 8) || '').trim()
       return line || 'Daily Healing Practice'
     }
@@ -144,42 +141,147 @@ export async function POST(request: NextRequest) {
       const picked = choices[hashString(mainFocus + theme) % choices.length]
       return picked
     }
-    const mainFocus = parseMainFocus(dailyContent)
-    const theme = deriveTheme(mainFocus)
-    const poeticTitle = derivePoeticTitle(mainFocus, theme)
+
+    // Try structured generation first, fall back to current system
+    let dayPlan
+    let isStructured = false
     
-    console.log(`Generated content for day ${dayNumber}:`, dailyContent)
-    console.log(`Content length:`, dailyContent.length)
-    console.log(`Content preview:`, dailyContent.substring(0, 200))
+    try {
+      console.log('🎯 Attempting structured generation for day', dayNumber)
+      
+      // Map difficulty from your app's format to schema format
+      const difficultyMap: Record<string, 'easy' | 'medium' | 'hard'> = {
+        'easy': 'easy',
+        'moderate': 'medium', 
+        'challenging': 'hard'
+      }
+      const schemaDifficulty = difficultyMap[difficulty || 'easy'] || 'medium'
+
+      // Build context for structured generation
+      const context = {
+        preferences: {
+          tone: userPreferences.tone,
+          learningStyle: userPreferences.learning,
+          persona: userPreferences.voice,
+          relationshipStyle: userPreferences.rawness,
+          engagement: userPreferences.engagement,
+          depth: userPreferences.depth
+        },
+        diagnostic: {
+          themes: transformedResponses.map(r => r.insight).slice(0, 5),
+          insights: transformedResponses.map(r => `${r.question}: ${r.response}`).slice(0, 3),
+          responses: transformedResponses.slice(0, 5)
+        },
+        moods: [], // TODO: Add real mood data
+        journals: { insights: [] }, // TODO: Add real journal data
+        fullReport: { keyInsights: [] }, // TODO: Add real report data
+        previousDay: undefined, // TODO: Fetch previous day
+        weatherData: weatherData
+      }
+
+      const prompt = buildStructuredPrompt(context, dayNumber, schemaDifficulty)
+      const structuredPlan = await generateStructuredDayPlan(prompt)
+
+      if (!structuredPlan.dateISO) {
+        structuredPlan.dateISO = new Date().toISOString().slice(0, 10)
+      }
+
+      dayPlan = {
+        structuredPlan,
+        theme: structuredPlan.theme,
+        poeticTitle: structuredPlan.dayHeading,
+        isStructured: true
+      }
+      isStructured = true
+      console.log('🎯 Structured generation successful for day', dayNumber)
+
+    } catch (structuredError) {
+      console.warn('🎯 Structured generation failed, falling back to text-based:', structuredError)
+      
+      // Fall back to current system
+      const programGenerator = new ProgramGenerator()
+      const userPrefsWithDifficulty = { ...userPreferences, difficulty: difficulty || 'easy' }
+      const dailyContent = await programGenerator.generateDailyContent(dayNumber, transformedResponses, userPrefsWithDifficulty, weatherData)
+      
+      // Parse using existing logic
+      const mainFocus = parseMainFocus(dailyContent)
+      const theme = deriveTheme(mainFocus)
+      const poeticTitle = derivePoeticTitle(mainFocus, theme)
+      
+      dayPlan = {
+        content: dailyContent,
+        theme,
+        poeticTitle,
+        isStructured: false
+      }
+      console.log('🎯 Text-based generation successful for day', dayNumber)
+    }
 
     // Save the daily content to the user's safety data
     const currentSafety = user.safety || {}
     const currentDailyContent = (user.safety as { dailyContent?: Record<string, unknown> })?.dailyContent || {}
     
-    const updatedSafety = {
-      ...currentSafety,
-      dailyContent: {
-        ...currentDailyContent,
-        [dayNumber]: {
-          content: dailyContent,
-          theme,
-          poeticTitle,
-          timestamp: new Date().toISOString()
+    if (isStructured) {
+      // Save structured plan
+      const updatedSafety = {
+        ...currentSafety,
+        dailyContent: {
+          ...currentDailyContent,
+          [dayNumber]: {
+            structuredPlan: dayPlan.structuredPlan,
+            theme: dayPlan.theme,
+            poeticTitle: dayPlan.poeticTitle,
+            timestamp: new Date().toISOString(),
+            isStructured: true
+          }
         }
       }
+      
+      await db.update(users)
+        .set({ safety: updatedSafety })
+        .where(eq(users.id, userId))
+
+      return NextResponse.json({
+        dayNumber: dayNumber,
+        structuredPlan: dayPlan.structuredPlan,
+        theme: dayPlan.theme,
+        poeticTitle: dayPlan.poeticTitle,
+        timestamp: new Date().toISOString(),
+        isStructured: true
+      })
+    } else {
+      // Save legacy text format
+      console.log(`Generated content for day ${dayNumber}:`, dayPlan.content)
+      console.log(`Content length:`, dayPlan.content?.length || 0)
+      console.log(`Content preview:`, dayPlan.content?.substring(0, 200) || '')
+      
+      const updatedSafety = {
+        ...currentSafety,
+        dailyContent: {
+          ...currentDailyContent,
+          [dayNumber]: {
+            content: dayPlan.content,
+            theme: dayPlan.theme,
+            poeticTitle: dayPlan.poeticTitle,
+            timestamp: new Date().toISOString(),
+            isStructured: false
+          }
+        }
+      }
+
+      await db.update(users)
+        .set({ safety: updatedSafety })
+        .where(eq(users.id, userId))
+
+      return NextResponse.json({
+        dayNumber: dayNumber,
+        content: dayPlan.content,
+        theme: dayPlan.theme,
+        poeticTitle: dayPlan.poeticTitle,
+        timestamp: new Date().toISOString(),
+        isStructured: false
+      })
     }
-
-    await db.update(users)
-      .set({ safety: updatedSafety })
-      .where(eq(users.id, userId))
-
-    return NextResponse.json({
-      dayNumber: dayNumber,
-      content: dailyContent,
-      theme,
-      poeticTitle,
-      timestamp: new Date().toISOString()
-    })
 
   } catch (error) {
     console.error('Error generating daily content:', error)
@@ -217,19 +319,32 @@ export async function GET(request: NextRequest) {
     }
 
     const user = userData[0]
-    const dailyContentData = (user.safety as { dailyContent?: Record<string, { content: string; theme?: string; poeticTitle?: string; timestamp?: string }> })?.dailyContent?.[dayNumber]
+    const dailyContentData = (user.safety as { dailyContent?: Record<string, { content?: string; structuredPlan?: any; theme?: string; poeticTitle?: string; timestamp?: string; isStructured?: boolean }> })?.dailyContent?.[dayNumber]
 
     if (!dailyContentData) {
       return NextResponse.json({ error: 'Daily content not found' }, { status: 404 })
     }
 
-    return NextResponse.json({
-      dayNumber: dayNumber,
-      content: dailyContentData.content,
-      theme: dailyContentData.theme,
-      poeticTitle: dailyContentData.poeticTitle,
-      timestamp: dailyContentData.timestamp
-    })
+    // Return structured or legacy format based on what's stored
+    if (dailyContentData.isStructured && dailyContentData.structuredPlan) {
+      return NextResponse.json({
+        dayNumber: dayNumber,
+        structuredPlan: dailyContentData.structuredPlan,
+        theme: dailyContentData.theme,
+        poeticTitle: dailyContentData.poeticTitle,
+        timestamp: dailyContentData.timestamp,
+        isStructured: true
+      })
+    } else {
+      return NextResponse.json({
+        dayNumber: dayNumber,
+        content: dailyContentData.content,
+        theme: dailyContentData.theme,
+        poeticTitle: dailyContentData.poeticTitle,
+        timestamp: dailyContentData.timestamp,
+        isStructured: false
+      })
+    }
 
   } catch (error) {
     console.error('Error retrieving daily content:', error)
