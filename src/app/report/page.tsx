@@ -548,20 +548,8 @@ export default function ReportPage() {
           <p className="responsive-body text-muted-foreground mb-6">Based on your {questionCount} diagnostic responses</p>
           
           <div className="flex justify-center gap-4 mb-8">
-            <Button
-              onClick={() => {
-                const link = document.createElement('a')
-                link.href = '/api/export'
-                link.download = 'diagnostic-report.txt'
-                document.body.appendChild(link)
-                link.click()
-                document.body.removeChild(link)
-              }}
-              variant="cta"
-              size="lg"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download Report
+            <Button asChild variant="cta" size="lg">
+              <a href="/program">Start 30‑Day Unfuck Your Life Journey</a>
             </Button>
           </div>
         </div>
@@ -578,9 +566,32 @@ export default function ReportPage() {
         )}
 
         {comprehensiveReport && (
-          <div id="report-content" className="space-y-8">
-            {formatReportContent(comprehensiveReport)}
-          </div>
+          <>
+            <div id="report-content" className="space-y-8">
+              {formatReportContent(comprehensiveReport)}
+            </div>
+            <div className="mt-10 pt-6 border-t border-border/40">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Button asChild variant="cta" size="lg">
+                  <a href="/program">Start 30‑Day Unfuck Your Life Journey</a>
+                </Button>
+                <Button
+                  onClick={() => {
+                    const link = document.createElement('a')
+                    link.href = '/api/export'
+                    link.download = 'diagnostic-report.txt'
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                  }}
+                  size="lg"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Report
+                </Button>
+              </div>
+            </div>
+          </>
         )}
 
         {!comprehensiveReport && !loading && (
