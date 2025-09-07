@@ -5,6 +5,7 @@ import { GeistMono } from 'geist/font/mono'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Analytics } from '@vercel/analytics/next'
 import { Suspense } from 'react'
+import Script from 'next/script'
 import './globals.css'
 import ErrorBoundary from '../components/ErrorBoundary'
 import ThemeProvider from '../components/ThemeProvider'
@@ -47,6 +48,9 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className={`${dmSans.variable} ${GeistMono.variable}`}>
         <body className="font-sans antialiased" suppressHydrationWarning={true}>
+          <Script id="apply-initial-theme" strategy="beforeInteractive">
+            {`(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'};if(t==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')};document.documentElement.style.colorScheme=t}catch(e){}})();`}
+          </Script>
           <ErrorBoundary>
             <ThemeProvider>
               <AnalyticsProvider>

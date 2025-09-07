@@ -510,7 +510,7 @@ export default function ReportPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 mb-4">
                 <CheckCircle className="w-8 h-8 text-success" />
               </div>
-              <h3 className="text-2xl font-semibold neon-heading mb-2">Full Comprehensive Report Complete</h3>
+              <h3 className="text-2xl font-semibold neon-heading mb-2">Report Generation Complete</h3>
               <p className="text-muted-foreground mb-6">
                 Thank you for your support and trust in our service. Your investment helps us continue improving and supporting people on their healing journeys worldwide. You are incredibly important to us.
               </p>
@@ -518,6 +518,10 @@ export default function ReportPage() {
                 console.log('🎯 View Report clicked - closing completion modal')
                 setShowCompletion(false)
                 setLoading(false)
+                try {
+                  const el = document.getElementById('report-content')
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                } catch {}
               }}>
                 View Report
               </Button>
@@ -565,7 +569,7 @@ export default function ReportPage() {
         )}
 
         {comprehensiveReport && (
-          <div className="space-y-8">
+          <div id="report-content" className="space-y-8">
             {formatReportContent(comprehensiveReport)}
           </div>
         )}

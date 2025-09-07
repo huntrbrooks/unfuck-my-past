@@ -26,6 +26,7 @@ import {
   Star,
   Award
 } from 'lucide-react'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser()
@@ -150,10 +151,7 @@ export default function Dashboard() {
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-t-transparent border-[#ff1aff] shadow-[0_0_10px_#ff1aff,0_0_20px_#ff1aff] mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your dashboard...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Loading your dashboard..." />
       </div>
     )
   }
