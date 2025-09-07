@@ -141,7 +141,19 @@ export default function Program() {
     if (lines) return allTasksCompleted(sectionKey, lines)
     return false
   }
-  const toggleSectionCompleted = (key: string) => setSectionCompleted(prev => ({ ...prev, [key]: !prev[key] }))
+  const toggleSectionCompleted = (key: string, lines?: string[]) => {
+    setSectionCompleted(prev => {
+      const next = !prev[key]
+      if (lines) {
+        setSectionTaskCompleted(prevTasks => {
+          const indices = lines.map((l, i) => (isTaskLine(l) ? i : -1)).filter(i => i >= 0)
+          const set = next ? new Set<number>(indices) : new Set<number>()
+          return { ...prevTasks, [key]: set }
+        })
+      }
+      return { ...prev, [key]: next }
+    })
+  }
 
   // Simple helpers for theme/title and glow classes
   const NEON_CLASSES = ['neon-glow-cyan', 'neon-glow-pink', 'neon-glow-orange'] as const
@@ -922,7 +934,7 @@ export default function Program() {
                             Guided Practice
                           </span>
                           <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n'))} onChange={() => toggleSectionCompleted('guidedPractice')} />
+                            <input type="checkbox" checked={isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n'))} onChange={() => toggleSectionCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n'))} />
                             {isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
                             <span className="text-muted-foreground">{sectionCollapsed.guidedPractice ? '▼' : '▲'}</span>
                           </span>
@@ -959,7 +971,7 @@ export default function Program() {
                             Daily Challenge
                           </span>
                           <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('challenge', currentDay.content.challenge.split('\n'))} onChange={() => toggleSectionCompleted('challenge')} />
+                            <input type="checkbox" checked={isSectionDone('challenge', currentDay.content.challenge.split('\n'))} onChange={() => toggleSectionCompleted('challenge', currentDay.content.challenge.split('\n'))} />
                             {isSectionDone('challenge', currentDay.content.challenge.split('\n')) && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
                             <span className="text-muted-foreground">{sectionCollapsed.challenge ? '▼' : '▲'}</span>
                           </span>
@@ -1089,7 +1101,7 @@ export default function Program() {
                             Sleep & Wellness
                           </span>
                           <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('sleep', currentDay.content.sleep.split('\n'))} onChange={() => toggleSectionCompleted('sleep')} />
+                            <input type="checkbox" checked={isSectionDone('sleep', currentDay.content.sleep.split('\n'))} onChange={() => toggleSectionCompleted('sleep', currentDay.content.sleep.split('\n'))} />
                             {isSectionDone('sleep', currentDay.content.sleep.split('\n')) && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
                             <span className="text-muted-foreground">{sectionCollapsed.sleep ? '▼' : '▲'}</span>
                           </span>
