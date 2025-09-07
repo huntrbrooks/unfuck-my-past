@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2, Save, Target, BookOpen, Clock, Shield, Settings, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface UserPreferences {
   goals: string[]
