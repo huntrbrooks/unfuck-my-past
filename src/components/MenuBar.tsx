@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion, type Variants, type Transition } from 'framer-motion'
 import { Home, Heart, Sparkles, TrendingUp, Settings, HelpCircle, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
-import { UserButton } from '@clerk/nextjs'
+import { UserButton, useUser } from '@clerk/nextjs'
 
 interface MenuItem {
   icon: React.ReactNode
@@ -51,6 +51,7 @@ export default function MenuBar() {
   const { theme, setTheme } = useTheme()
   const isDarkTheme = theme === 'dark'
   const toggleTheme = () => setTheme(isDarkTheme ? 'light' : 'dark')
+  const { isSignedIn } = useUser()
 
   return (
     <motion.nav
@@ -65,7 +66,13 @@ export default function MenuBar() {
       <ul className="flex items-center gap-2 relative z-10">
         {/* User profile */}
         <li className="relative mr-2 ml-4 list-none">
-          <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: 'h-8 w-8', userButtonPopoverCard: 'bg-background border border-border', userButtonPopoverActionButtonText: 'text-foreground' } }} />
+          {isSignedIn ? (
+            <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: 'h-8 w-8', userButtonPopoverCard: 'bg-background border border-border', userButtonPopoverActionButtonText: 'text-foreground' } }} />
+          ) : (
+            <Link href="/sign-in" className="block h-8 w-8 rounded-full border border-border/60 bg-background hover:bg-accent/40 transition-colors" aria-label="Sign in">
+              {/* placeholder avatar circle */}
+            </Link>
+          )}
         </li>
 
         {menuItems.map((item) => (

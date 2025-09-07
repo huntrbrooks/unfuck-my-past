@@ -138,11 +138,11 @@ export default function PaymentForm({ amount, onSuccess, onCancel, productName }
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto modern-card border-0">
+    <Card className="w-full max-w-md mx-auto glass-card border-0 shadow-[0_0_18px_rgba(255,26,255,0.25)]">
       <CardHeader className="text-center space-y-2">
         <div className="flex justify-center mb-2">
-          <div className="w-12 h-12 flex items-center justify-center glow-box-lime rounded-xl">
-            <CreditCard className="h-6 w-6 glow-lime spin-slow" />
+          <div className="w-12 h-12 flex items-center justify-center rounded-xl">
+            <CreditCard className="h-6 w-6 text-[#ff1aff]" style={{ filter: 'drop-shadow(0 0 10px #ff1aff)' }} />
           </div>
         </div>
         <CardTitle className="text-xl font-bold key-info neon-heading">Complete Your Purchase</CardTitle>
