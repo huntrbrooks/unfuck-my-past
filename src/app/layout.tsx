@@ -46,7 +46,7 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${dmSans.variable} ${GeistMono.variable}`}>
+      <html lang="en" className={`${dmSans.variable} ${GeistMono.variable}`} suppressHydrationWarning={true}>
         <body className="font-sans antialiased" suppressHydrationWarning={true}>
           <Script id="apply-initial-theme" strategy="beforeInteractive">
             {`(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'};if(t==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')};document.documentElement.style.colorScheme=t}catch(e){}})();`}
