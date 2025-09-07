@@ -358,11 +358,11 @@ export default function Program() {
         currentSection = 'journalingPrompt'
       } else if (line.includes('🌙 REFLECTION') || line.includes('## 🌙 Reflection')) {
         currentSection = 'reflection'
-      } else if (line.includes('🌤️ WEATHER & ENVIRONMENT') || line.includes('## 🌤️ Weather & Environment')) {
+      } else if (line.includes('🌤️ WEATHER & ENVIRONMENT') || line.includes('## 🌤️ Weather & Environment') || /weather\s*&\s*environment/i.test(line)) {
         currentSection = 'weather'
-      } else if (line.includes('😴 SLEEP & WELLNESS') || line.includes('## 😴 Sleep & Wellness')) {
+      } else if (line.includes('😴 SLEEP & WELLNESS') || line.includes('## 😴 Sleep & Wellness') || /sleep\s*&\s*wellness/i.test(line)) {
         currentSection = 'sleep'
-      } else if (line.includes('🌿 HOLISTIC HEALING BONUS') || line.includes('## 🌿 Holistic Healing Bonus')) {
+      } else if (line.includes('🌿 HOLISTIC HEALING BONUS') || line.includes('## 🌿 Holistic Healing Bonus') || /holistic\s*healing\s*bonus/i.test(line)) {
         currentSection = 'holistic'
       } else if (line.includes('🛠️ TOOLS & RESOURCES') || line.includes('## 🛠️ Tools & Resources')) {
         currentSection = 'tools'
