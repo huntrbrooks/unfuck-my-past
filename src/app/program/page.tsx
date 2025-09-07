@@ -954,7 +954,7 @@ export default function Program() {
                     <div className="space-y-4">
                       <div className="flex gap-2">
                         <Badge variant="glass" className="bg-primary/10 text-primary border-primary/20">
-                          {currentDay.content.mainFocus || 'Main Focus'}
+                          {currentDay.theme || deriveTheme(currentDay.content.mainFocus)}
                         </Badge>
                         <Badge className={getDifficultyColor(currentDay.metadata.difficulty)}>
                           {currentDay.metadata.difficulty}
