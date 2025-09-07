@@ -66,6 +66,50 @@ export default function Program() {
   const [completingDay, setCompletingDay] = useState(false)
   const [showNextDayButton, setShowNextDayButton] = useState(false)
   const [nextDayDifficulty, setNextDayDifficulty] = useState<'easy' | 'moderate' | 'challenging'>('easy')
+  const [sectionCollapsed, setSectionCollapsed] = useState<Record<string, boolean>>({
+    guidedPractice: true,
+    challenge: true,
+    journalingPrompt: true,
+    reflection: true,
+    weather: true,
+    sleep: true,
+    holistic: true,
+  })
+  const [sectionTaskCompleted, setSectionTaskCompleted] = useState<Record<string, Set<number>>>(
+    {
+      guidedPractice: new Set(),
+      challenge: new Set(),
+      journalingPrompt: new Set(),
+      reflection: new Set(),
+      weather: new Set(),
+      sleep: new Set(),
+      holistic: new Set(),
+    }
+  )
+
+  useEffect(() => {
+    // Reset per-day UI state when day changes
+    setSectionCollapsed({ guidedPractice: true, challenge: true, journalingPrompt: true, reflection: true, weather: true, sleep: true, holistic: true })
+    setSectionTaskCompleted({ guidedPractice: new Set(), challenge: new Set(), journalingPrompt: new Set(), reflection: new Set(), weather: new Set(), sleep: new Set(), holistic: new Set() })
+  }, [currentDay?.day])
+
+  const toggleSection = (key: string) => setSectionCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
+  const isTaskLine = (line: string) => line.trim().startsWith('•') || /^\d+\./.test(line.trim())
+  const taskLabel = (line: string) => line.trim().startsWith('•') ? line.substring(1).trim() : line.replace(/^\d+\.\s*/, '').trim()
+  const markTask = (sectionKey: string, idx: number, checked: boolean) => {
+    setSectionTaskCompleted(prev => {
+      const copy = new Map(prev[sectionKey] ?? new Set())
+      const set = new Set(copy as unknown as Set<number>)
+      if (checked) set.add(idx); else set.delete(idx)
+      return { ...prev, [sectionKey]: set }
+    })
+  }
+  const allTasksCompleted = (sectionKey: string, lines: string[]) => {
+    const indices = lines.map((l, i) => isTaskLine(l) ? i : -1).filter(i => i >= 0)
+    if (indices.length === 0) return false
+    const done = sectionTaskCompleted[sectionKey] || new Set()
+    return indices.every(i => done.has(i))
+  }
 
   // Simple helpers for theme/title and glow classes
   const NEON_CLASSES = ['neon-glow-cyan', 'neon-glow-pink', 'neon-glow-orange'] as const
@@ -660,6 +704,8 @@ export default function Program() {
     )
   }
 
+  const overallPercent = Number(((progress.completed / progress.total) * 100).toFixed(2))
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header (aligned with Dashboard) */}
@@ -683,8 +729,8 @@ export default function Program() {
                   <div className="w-full">
                     <div className="text-sm text-muted-foreground text-left">Overall Progress</div>
                   <div className="flex items-center gap-3">
-                      <div className="flex-1"><Progress value={progress.percentage} variant="gradient" className="h-2" /></div>
-                      <div className="text-sm font-medium text-foreground whitespace-nowrap">{Math.round(progress.percentage)}%</div>
+                      <div className="flex-1"><Progress value={overallPercent} variant="neonPinkGlow" glow className="h-2" /></div>
+                      <div className="text-sm font-medium text-foreground whitespace-nowrap">{overallPercent.toFixed(2)}%</div>
                     </div>
                     </div>
                   </div>
@@ -826,39 +872,65 @@ export default function Program() {
 
                     {/* Guided Practice */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold neon-glow-cyan mb-2 flex items-center gap-2 text-lg">
-                        <Sun className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
-                        Guided Practice
-                      </h5>
-                      <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-                        {currentDay.content.guidedPractice.split('\n').map((line, index) => {
-                          if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
-                          } else if (line.trim() && !line.trim().startsWith('🌅')) {
-                            return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
-                          }
-                          return null
-                        })}
-                      </div>
+                      <button onClick={() => toggleSection('guidedPractice')} className="w-full text-left">
+                        <h5 className="font-semibold neon-glow-cyan mb-2 flex items-center justify-between gap-2 text-lg">
+                          <span className="flex items-center gap-2">
+                            <Sun className={`h-5 w-5 ${allTasksCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: allTasksCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #00e5ff)' }} />
+                            Guided Practice {allTasksCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n')) && <span className="text-sm text-[#ccff00]">(Completed)</span>}
+                          </span>
+                          <span className="text-muted-foreground">{sectionCollapsed.guidedPractice ? '▼' : '▲'}</span>
+                        </h5>
+                      </button>
+                      {!sectionCollapsed.guidedPractice && (
+                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                          {currentDay.content.guidedPractice.split('\n').map((line, index) => {
+                            if (isTaskLine(line)) {
+                              const checked = (sectionTaskCompleted.guidedPractice || new Set()).has(index)
+                              return (
+                                <label key={index} className="flex items-start gap-2 cursor-pointer">
+                                  <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('guidedPractice', index, e.target.checked)} />
+                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{taskLabel(line)}</span>
+                                </label>
+                              )
+                            } else if (line.trim() && !line.trim().startsWith('🌅')) {
+                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                            }
+                            return null
+                          })}
+                        </div>
+                      )}
                     </div>
                     
                     {/* Daily Challenge */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold neon-glow-orange mb-2 flex items-center gap-2 text-lg">
-                        <Zap className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #22c55e)' }} />
-                        Daily Challenge
-                      </h5>
-                      <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-                        {currentDay.content.challenge.split('\n').map((line, index) => {
-                          if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
-                          } else if (line.trim() && !line.trim().startsWith('⚡')) {
-                            return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
-                          }
-                          return null
-                        })}
-                      </div>
-                  </div>
+                      <button onClick={() => toggleSection('challenge')} className="w-full text-left">
+                        <h5 className="font-semibold neon-glow-orange mb-2 flex items-center justify-between gap-2 text-lg">
+                          <span className="flex items-center gap-2">
+                            <Zap className={`h-5 w-5 ${allTasksCompleted('challenge', currentDay.content.challenge.split('\\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: allTasksCompleted('challenge', currentDay.content.challenge.split('\\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #22c55e)' }} />
+                            Daily Challenge {allTasksCompleted('challenge', currentDay.content.challenge.split('\\n')) && <span className="text-sm text-[#ccff00]">(Completed)</span>}
+                          </span>
+                          <span className="text-muted-foreground">{sectionCollapsed.challenge ? '▼' : '▲'}</span>
+                        </h5>
+                      </button>
+                      {!sectionCollapsed.challenge && (
+                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                          {currentDay.content.challenge.split('\n').map((line, index) => {
+                            if (isTaskLine(line)) {
+                              const checked = (sectionTaskCompleted.challenge || new Set()).has(index)
+                              return (
+                                <label key={index} className="flex items-start gap-2 cursor-pointer">
+                                  <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('challenge', index, e.target.checked)} />
+                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{taskLabel(line)}</span>
+                                </label>
+                              )
+                            } else if (line.trim() && !line.trim().startsWith('⚡')) {
+                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                            }
+                            return null
+                          })}
+                        </div>
+                      )}
+                    </div>
                   
                     {/* Journaling Prompt */}
                     <div className="rounded-xl p-6 bg-background">
