@@ -967,20 +967,27 @@ export default function Program() {
                   
                     {/* Reflection */}
                     <div className="rounded-xl p-6 bg-background">
-                      <h5 className="font-semibold neon-glow-blue mb-2 flex items-center gap-2 text-lg">
-                        <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #60a5fa)' }} />
-                        Reflection
-                      </h5>
-                      <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
-                        {currentDay.content.reflection.split('\n').map((line, index) => {
-                          if (line.trim().startsWith('•')) {
-                            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
-                          } else if (line.trim() && !line.trim().startsWith('🌙')) {
-                            return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
-                          }
-                          return null
-                        })}
-                      </div>
+                      <button onClick={() => toggleSection('reflection')} className="w-full text-left">
+                        <h5 className="font-semibold neon-glow-blue mb-2 flex items-center justify-between gap-2 text-lg">
+                          <span className="flex items-center gap-2">
+                            <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #60a5fa)' }} />
+                            Reflection
+                          </span>
+                          <span className="text-muted-foreground">{sectionCollapsed.reflection ? '▼' : '▲'}</span>
+                        </h5>
+                      </button>
+                      {!sectionCollapsed.reflection && (
+                        <div className="whitespace-pre-line text-foreground leading-relaxed space-y-3">
+                          {currentDay.content.reflection.split('\n').map((line, index) => {
+                            if (line.trim().startsWith('•')) {
+                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{line.substring(1).trim()}</span></div>
+                            } else if (line.trim() && !line.trim().startsWith('🌙')) {
+                              return <div key={index} className="font-medium text-foreground">{line.trim()}</div>
+                            }
+                            return null
+                          })}
+                        </div>
+                      )}
                   </div>
                   
                     {/* Weather & Environment */}
