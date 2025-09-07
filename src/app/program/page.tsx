@@ -192,33 +192,7 @@ export default function Program() {
   const checkProgramAccess = async () => {
     try {
       setCheckingAccess(true)
-      
-      // First check if program data exists (bypass paywall if so)
-      const progressResponse = await fetch('/api/program/progress')
-      if (progressResponse.ok) {
-        const progressData = await progressResponse.json()
-        console.log('Program progress check:', progressData)
-        
-        // If progress exists and program isn't completed (less than 30 days), grant access
-        if (progressData.completed !== undefined && progressData.currentDay <= 30) {
-          console.log('🎯 Found existing program data - bypassing paywall')
-          setHasAccess(true)
-          loadProgramData()
-          return
-        }
-        
-        // If 30 days completed, check if it's been 30 days since completion
-        if (progressData.completed >= 30) {
-          // For now, always allow access to completed programs
-          // TODO: Add 30-day expiry logic based on completion date
-          console.log('🎯 Program completed - allowing access to review')
-          setHasAccess(true)
-          loadProgramData()
-          return
-        }
-      }
-      
-      // If no existing progress, check payment status
+      // Check payment status FIRST (no bypass via existing progress)
       const response = await fetch('/api/payments/user-purchases')
       
       if (response.ok) {

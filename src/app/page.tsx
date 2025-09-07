@@ -39,11 +39,17 @@ export default function Home() {
               AI-driven self-healing that actually works. No therapy waitlists, no bullshit.
             </p>
 
-            {/* Primary CTA directly under hero */}
-            <div className="flex justify-center">
+            {/* Primary CTAs under hero */}
+            <div className="flex flex-col sm:flex-row items-center gap-3">
               <Button asChild size="lg" className="group neon-cta text-base sm:text-lg px-6 py-3 sm:px-8 sm:py-4">
                 <Link href="/onboarding">
                   Start Your Journey
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="cta" className="text-base sm:text-lg px-6 py-3 sm:px-8 sm:py-4">
+                <Link href="/program">
+                  Buy 30‑Day Program ($29.95)
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
                 </Link>
               </Button>
@@ -285,10 +291,16 @@ export default function Home() {
                 Ready to begin your transformation?
               </p>
               
-              <div className="flex justify-center">
+              <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
                 <Button asChild size="lg" className="text-lg px-8 py-4 group neon-cta">
                   <Link href="/onboarding">
                     Start Your Journey
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="cta" className="text-lg px-8 py-4 group">
+                  <Link href="/program">
+                    Buy 30‑Day Program ($29.95)
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
                   </Link>
                 </Button>
