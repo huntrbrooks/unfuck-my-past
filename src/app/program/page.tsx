@@ -913,7 +913,7 @@ export default function Program() {
                       <button onClick={() => toggleSection('mainFocus')} className="w-full text-left">
                         <h5 className="font-semibold mb-2 flex items-center justify-between gap-2 text-lg neon-heading">
                           <span className="flex items-center gap-2">
-                            <Target className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+                            <Target className={`h-5 w-5 ${isSectionDone('mainFocus') ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('mainFocus') ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #ccff00)' }} />
                             Today&apos;s Main Focus
                           </span>
                           <span className="flex items-center gap-2">
@@ -933,7 +933,7 @@ export default function Program() {
                       <button onClick={() => toggleSection('guidedPractice')} className="w-full text-left">
                         <h5 className="font-semibold neon-glow-cyan mb-2 flex items-center justify-between gap-2 text-lg">
                           <span className="flex items-center gap-2">
-                            <Sun className={`h-5 w-5 ${allTasksCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: allTasksCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #00e5ff)' }} />
+                            <Sun className={`h-5 w-5 ${isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #00e5ff)' }} />
                             Guided Practice
                           </span>
                           <span className="flex items-center gap-2">
@@ -970,7 +970,7 @@ export default function Program() {
                       <button onClick={() => toggleSection('challenge')} className="w-full text-left">
                         <h5 className="font-semibold neon-glow-orange mb-2 flex items-center justify-between gap-2 text-lg">
                           <span className="flex items-center gap-2">
-                            <Zap className={`h-5 w-5 ${allTasksCompleted('challenge', currentDay.content.challenge.split('\\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: allTasksCompleted('challenge', currentDay.content.challenge.split('\\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #22c55e)' }} />
+                            <Zap className={`h-5 w-5 ${isSectionDone('challenge', currentDay.content.challenge.split('\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('challenge', currentDay.content.challenge.split('\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #22c55e)' }} />
                             Daily Challenge
                           </span>
                           <span className="flex items-center gap-2">
@@ -1007,7 +1007,7 @@ export default function Program() {
                       <button onClick={() => toggleSection('journalingPrompt')} className="w-full text-left">
                         <h5 className="font-semibold neon-glow-pink mb-2 flex items-center justify-between gap-2 text-lg">
                           <span className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
+                            <Sparkles className={`h-5 w-5 ${isSectionDone('journalingPrompt') ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('journalingPrompt') ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #ff1aff)' }} />
                             Journaling Prompt
                           </span>
                           <span className="flex items-center gap-2">
@@ -1038,7 +1038,7 @@ export default function Program() {
                       <button onClick={() => toggleSection('reflection')} className="w-full text-left">
                         <h5 className="font-semibold neon-glow-blue mb-2 flex items-center justify-between gap-2 text-lg">
                           <span className="flex items-center gap-2">
-                            <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #60a5fa)' }} />
+                            <Moon className={`h-5 w-5 ${isSectionDone('reflection') ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('reflection') ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #60a5fa)' }} />
                             Reflection
                           </span>
                           <span className="flex items-center gap-2">
@@ -1069,7 +1069,7 @@ export default function Program() {
                       <button onClick={() => toggleSection('weather')} className="w-full text-left">
                         <h5 className="font-semibold neon-glow-teal mb-2 flex items-center justify-between gap-2 text-lg">
                           <span className="flex items-center gap-2">
-                            <Sun className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #f59e0b)' }} />
+                            <Sun className={`h-5 w-5 ${isSectionDone('weather') ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('weather') ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #f59e0b)' }} />
                             Weather & Environment
                           </span>
                           <span className="flex items-center gap-2">
@@ -1100,7 +1100,7 @@ export default function Program() {
                       <button onClick={() => toggleSection('sleep')} className="w-full text-left">
                         <h5 className="font-semibold neon-glow-rose mb-2 flex items-center justify-between gap-2 text-lg">
                           <span className="flex items-center gap-2">
-                            <Moon className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #fb7185)' }} />
+                            <Moon className={`h-5 w-5 ${isSectionDone('sleep', currentDay.content.sleep.split('\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('sleep', currentDay.content.sleep.split('\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #fb7185)' }} />
                             Sleep & Wellness
                           </span>
                           <span className="flex items-center gap-2">
@@ -1137,7 +1137,7 @@ export default function Program() {
                       <button onClick={() => toggleSection('holistic')} className="w-full text-left">
                         <h5 className="font-semibold neon-glow-purple mb-2 flex items-center justify-between gap-2 text-lg">
                           <span className="flex items-center gap-2">
-                            <Leaf className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #10b981)' }} />
+                            <Leaf className={`h-5 w-5 ${isSectionDone('holistic') ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('holistic') ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #10b981)' }} />
                             Holistic Healing Bonus
                           </span>
                           <span className="flex items-center gap-2">
