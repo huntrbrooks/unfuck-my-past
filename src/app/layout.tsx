@@ -49,7 +49,23 @@ export default function RootLayout({
       <html lang="en" className={`${dmSans.variable} ${GeistMono.variable}`} suppressHydrationWarning={true}>
         <body className="font-sans antialiased" suppressHydrationWarning={true}>
           <Script id="apply-initial-theme" strategy="beforeInteractive">
-            {`(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'};if(t==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')};document.documentElement.style.colorScheme=t}catch(e){}})();`}
+            {`(function(){
+              try {
+                var theme = localStorage.getItem('theme');
+                if (!theme) {
+                  theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                var root = document.documentElement;
+                if (theme === 'dark') {
+                  root.classList.add('dark');
+                } else {
+                  root.classList.remove('dark');
+                }
+                root.style.colorScheme = theme;
+              } catch (e) {
+                // Theme application failed, but page should still be visible
+              }
+            })();`}
           </Script>
           <ErrorBoundary>
             <ThemeProvider>

@@ -24,7 +24,7 @@ export default function Home() {
               <div className="rounded-none overflow-visible shadow-none border-0 bg-transparent w-full md:max-w-2xl lg:max-w-3xl mx-auto">
                 {/* Place the image file at public/edgy-hero.png */}
                 <Image
-                  src="/edgy-hero.png?v=3"
+                  src="/edgy-hero.png?v=4"
                   alt="Unfuck My Past"
                   width={1600}
                   height={900}
@@ -39,17 +39,11 @@ export default function Home() {
               AI-driven self-healing that actually works. No therapy waitlists, no bullshit.
             </p>
 
-            {/* Primary CTAs under hero */}
-            <div className="flex flex-col sm:flex-row items-center gap-3">
+            {/* Primary CTA under hero (centered) */}
+            <div className="flex items-center justify-center">
               <Button asChild size="lg" className="group neon-cta text-base sm:text-lg px-6 py-3 sm:px-8 sm:py-4">
                 <Link href="/onboarding">
                   Start Your Journey
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="cta" className="text-base sm:text-lg px-6 py-3 sm:px-8 sm:py-4">
-                <Link href="/program">
-                  Buy 30‑Day Program ($29.95)
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
                 </Link>
               </Button>
@@ -80,7 +74,7 @@ export default function Home() {
                   <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                     <Target className="h-9 w-9 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                   </div>
-                  <CardTitle className="text-xl font-semibold mb-4 text-foreground">1. Personalize</CardTitle>
+                  <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-pink">1. Personalize</CardTitle>
                   <p className="text-muted-foreground leading-relaxed">
                     Complete our comprehensive onboarding to customize your experience. 
                     We&apos;ll adapt to your communication style, learning preferences, 
@@ -94,7 +88,7 @@ export default function Home() {
                   <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                     <Bot className="h-9 w-9 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                   </div>
-                  <CardTitle className="text-xl font-semibold mb-4 text-foreground">2. Diagnose</CardTitle>
+                  <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-cyan">2. Diagnose</CardTitle>
                   <p className="text-muted-foreground leading-relaxed">
                     Answer 3-10 adaptive questions about your past and patterns. 
                     Our advanced AI analyzes your responses to provide deep, actionable insights 
@@ -108,7 +102,7 @@ export default function Home() {
                   <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                     <TrendingUp className="h-9 w-9 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                   </div>
-                  <CardTitle className="text-xl font-semibold mb-4 text-foreground">3. Transform</CardTitle>
+                  <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-purple">3. Transform</CardTitle>
                   <p className="text-muted-foreground leading-relaxed">
                     Follow your personalized 30-day program with daily tasks, 
                     journaling, and mood tracking. See measurable progress over time 
@@ -129,7 +123,7 @@ export default function Home() {
                     {/* Free Assessment */}
                     <div className="space-y-6">
                       <div className="mb-6">
-                        <h3 className="text-xl font-semibold text-foreground">Free Assessment</h3>
+                        <h3 className="text-xl font-semibold text-foreground neon-glow-orange">Free Assessment</h3>
                       </div>
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 group">
@@ -162,7 +156,7 @@ export default function Home() {
                     {/* Premium Features */}
                     <div className="space-y-6">
                       <div className="mb-6">
-                        <h3 className="text-xl font-semibold text-foreground">Premium Features</h3>
+                        <h3 className="text-xl font-semibold text-foreground neon-glow-blue">Premium Features</h3>
                       </div>
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 group">
@@ -171,7 +165,7 @@ export default function Home() {
                           </span>
                           <span className="text-foreground">Full diagnostic report</span>
                           <span className="ml-2"></span>
-                          <Badge className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#000000' }}>$10</Badge>
+                          <Badge className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#000000' }}>$9.99</Badge>
                         </div>
                         <div className="flex items-center gap-3 group">
                           <span className="w-6 flex justify-center">
@@ -216,7 +210,7 @@ export default function Home() {
                     <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                       <Brain className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                     </div>
-                    <h3 className="font-semibold text-foreground mb-2">AI-Powered Insights</h3>
+                    <h3 className="font-semibold text-foreground mb-2 neon-glow-red">AI-Powered Insights</h3>
                     <p className="text-sm text-muted-foreground">
                       Advanced AI analysis provides deep, personalized insights into your patterns and healing needs.
                     </p>
@@ -228,7 +222,7 @@ export default function Home() {
                     <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                       <Shield className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                     </div>
-                    <h3 className="font-semibold text-foreground mb-2">Safe & Secure</h3>
+                    <h3 className="font-semibold text-foreground mb-2 neon-glow-teal">Safe & Secure</h3>
                     <p className="text-sm text-muted-foreground">
                       Your privacy and emotional safety are our top priorities throughout your healing journey.
                     </p>
@@ -240,7 +234,7 @@ export default function Home() {
                     <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                       <Zap className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff6600)' }} />
                     </div>
-                    <h3 className="font-semibold text-foreground mb-2">Proven Results</h3>
+                    <h3 className="font-semibold text-foreground mb-2 neon-glow-orange">Proven Results</h3>
                     <p className="text-sm text-muted-foreground">
                       Structured approach based on evidence-based therapeutic techniques and real user success stories.
                     </p>
@@ -252,7 +246,7 @@ export default function Home() {
                     <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                       <BookOpen className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
                     </div>
-                    <h3 className="font-semibold text-foreground mb-2">Comprehensive Learning</h3>
+                    <h3 className="font-semibold text-foreground mb-2 neon-glow-blue">Comprehensive Learning</h3>
                     <p className="text-sm text-muted-foreground">
                       Learn about trauma, healing, and personal growth through our extensive knowledge base.
                     </p>
@@ -264,7 +258,7 @@ export default function Home() {
                     <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                       <Heart className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #22c55e)' }} />
                     </div>
-                    <h3 className="font-semibold text-foreground mb-2">Compassionate Support</h3>
+                    <h3 className="font-semibold text-foreground mb-2 neon-glow-purple">Compassionate Support</h3>
                     <p className="text-sm text-muted-foreground">
                       Experience genuine care and understanding as you navigate your healing journey.
                     </p>
@@ -276,7 +270,7 @@ export default function Home() {
                     <div className="p-3 rounded-full mx-auto mb-4 w-16 h-16 flex items-center justify-center">
                       <Sparkles className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                     </div>
-                    <h3 className="font-semibold text-foreground mb-2">Personalized Experience</h3>
+                    <h3 className="font-semibold text-foreground mb-2 neon-glow-pink">Personalized Experience</h3>
                     <p className="text-sm text-muted-foreground">
                       Every aspect of your journey is tailored to your unique needs, preferences, and goals.
                     </p>
@@ -291,16 +285,10 @@ export default function Home() {
                 Ready to begin your transformation?
               </p>
               
-              <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
+              <div className="flex items-center justify-center">
                 <Button asChild size="lg" className="text-lg px-8 py-4 group neon-cta">
                   <Link href="/onboarding">
                     Start Your Journey
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="cta" className="text-lg px-8 py-4 group">
-                  <Link href="/program">
-                    Buy 30‑Day Program ($29.95)
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
                   </Link>
                 </Button>

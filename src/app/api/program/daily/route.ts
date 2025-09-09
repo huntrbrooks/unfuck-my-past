@@ -6,6 +6,102 @@ import { eq } from 'drizzle-orm'
 import { generateStructuredDayPlan } from '@/lib/structured-ai'
 import { buildStructuredPrompt } from '@/lib/structured-prompt-builder'
 
+// Render a legacy text block from a structured DayPlan so current UI can parse it
+const renderLegacyContentFromStructuredPlan = (plan: any): string => {
+  const lines: string[] = []
+  // Main Focus
+  if (plan?.mainFocus?.text) {
+    lines.push(`🎯 MAIN FOCUS: ${plan.mainFocus.text}`)
+    lines.push('')
+  }
+  // Guided Practice
+  if (Array.isArray(plan?.guidedPractice) && plan.guidedPractice.length) {
+    lines.push('🌅 GUIDED PRACTICE')
+    plan.guidedPractice.forEach((gp: any) => {
+      const title = gp?.title || 'Practice'
+      const dur = gp?.durationMinutes ? ` (${gp.durationMinutes} minutes)` : ''
+      lines.push(`${title}${dur}`)
+      if (Array.isArray(gp?.steps)) {
+        gp.steps.forEach((s: any, idx: number) => {
+          if (s?.text) lines.push(`• ${s.text}`)
+        })
+      }
+    })
+    lines.push('')
+  }
+  // Daily Challenge
+  if (plan?.dailyChallenge?.activity) {
+    lines.push('⚡ DAILY CHALLENGE')
+    const dur = plan.dailyChallenge.durationMinutes ? ` (${plan.dailyChallenge.durationMinutes} minutes)` : ''
+    lines.push(`Main Activity${dur}`)
+    lines.push(plan.dailyChallenge.activity)
+    if (Array.isArray(plan.dailyChallenge.steps) && plan.dailyChallenge.steps.length) {
+      lines.push('Step-by-step instructions:')
+      plan.dailyChallenge.steps.forEach((s: any, idx: number) => {
+        if (s?.text) lines.push(`${idx + 1}. ${s.text}`)
+      })
+    }
+    if (Array.isArray(plan.dailyChallenge.successIndicators) && plan.dailyChallenge.successIndicators.length) {
+      lines.push('Success indicators:')
+      plan.dailyChallenge.successIndicators.forEach((si: string) => lines.push(`• ${si}`))
+    }
+    if (plan.dailyChallenge.energyAdaptations) {
+      lines.push('Energy Level Adaptations:')
+      if (plan.dailyChallenge.energyAdaptations.low) lines.push(`Low: ${plan.dailyChallenge.energyAdaptations.low}`)
+      if (plan.dailyChallenge.energyAdaptations.medium) lines.push(`Medium: ${plan.dailyChallenge.energyAdaptations.medium}`)
+      if (plan.dailyChallenge.energyAdaptations.high) lines.push(`High: ${plan.dailyChallenge.energyAdaptations.high}`)
+    }
+    lines.push('')
+  }
+  // Journaling Prompt
+  if (plan?.journalingPrompt?.prompt) {
+    lines.push('📝 JOURNALING PROMPT')
+    lines.push('Primary Question:')
+    lines.push(`"${plan.journalingPrompt.prompt}"`)
+    lines.push('')
+  }
+  // Reflection
+  if (Array.isArray(plan?.reflection?.bullets) && plan.reflection.bullets.length) {
+    lines.push('🌙 REFLECTION')
+    lines.push('Evening Review Questions:')
+    plan.reflection.bullets.forEach((b: string) => lines.push(`• ${b}`))
+    lines.push('')
+  }
+  // Weather & Environment
+  if (plan?.weatherEnvironment) {
+    lines.push('🌤️ WEATHER & ENVIRONMENT')
+    if (plan.weatherEnvironment.summary) lines.push(`Summary: ${plan.weatherEnvironment.summary}`)
+    if (Array.isArray(plan.weatherEnvironment.cues) && plan.weatherEnvironment.cues.length) {
+      lines.push('Cues:')
+      plan.weatherEnvironment.cues.forEach((c: string) => lines.push(`• ${c}`))
+    }
+    lines.push('')
+  }
+  // Sleep & Wellness
+  if (plan?.sleepWellness && Array.isArray(plan.sleepWellness.steps)) {
+    lines.push('😴 SLEEP & WELLNESS')
+    lines.push('Pre-bedtime Routine:')
+    plan.sleepWellness.steps.forEach((s: any, idx: number) => {
+      if (s?.text) lines.push(`${idx + 1}. ${s.text}`)
+    })
+    lines.push('')
+  }
+  // Holistic Healing Bonus
+  if (plan?.holisticHealingBonus) {
+    lines.push('🌿 HOLISTIC HEALING BONUS')
+    if (plan.holisticHealingBonus.text) {
+      lines.push('Optional Practice:')
+      lines.push(`• ${plan.holisticHealingBonus.text}`)
+    }
+    if (Array.isArray(plan.holisticHealingBonus.steps) && plan.holisticHealingBonus.steps.length) {
+      plan.holisticHealingBonus.steps.forEach((s: any) => {
+        if (s?.text) lines.push(`• ${s.text}`)
+      })
+    }
+  }
+  return lines.join('\n')
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
@@ -142,6 +238,102 @@ export async function POST(request: NextRequest) {
       return picked
     }
 
+    // Render a legacy text block from a structured DayPlan so current UI can parse it
+    const renderLegacyContentFromStructuredPlan = (plan: any): string => {
+      const lines: string[] = []
+      // Main Focus
+      if (plan?.mainFocus?.text) {
+        lines.push(`🎯 MAIN FOCUS: ${plan.mainFocus.text}`)
+        lines.push('')
+      }
+      // Guided Practice
+      if (Array.isArray(plan?.guidedPractice) && plan.guidedPractice.length) {
+        lines.push('🌅 GUIDED PRACTICE')
+        plan.guidedPractice.forEach((gp: any) => {
+          const title = gp?.title || 'Practice'
+          const dur = gp?.durationMinutes ? ` (${gp.durationMinutes} minutes)` : ''
+          lines.push(`${title}${dur}`)
+          if (Array.isArray(gp?.steps)) {
+            gp.steps.forEach((s: any, idx: number) => {
+              if (s?.text) lines.push(`• ${s.text}`)
+            })
+          }
+        })
+        lines.push('')
+      }
+      // Daily Challenge
+      if (plan?.dailyChallenge?.activity) {
+        lines.push('⚡ DAILY CHALLENGE')
+        const dur = plan.dailyChallenge.durationMinutes ? ` (${plan.dailyChallenge.durationMinutes} minutes)` : ''
+        lines.push(`Main Activity${dur}`)
+        lines.push(plan.dailyChallenge.activity)
+        if (Array.isArray(plan.dailyChallenge.steps) && plan.dailyChallenge.steps.length) {
+          lines.push('Step-by-step instructions:')
+          plan.dailyChallenge.steps.forEach((s: any, idx: number) => {
+            if (s?.text) lines.push(`${idx + 1}. ${s.text}`)
+          })
+        }
+        if (Array.isArray(plan.dailyChallenge.successIndicators) && plan.dailyChallenge.successIndicators.length) {
+          lines.push('Success indicators:')
+          plan.dailyChallenge.successIndicators.forEach((si: string) => lines.push(`• ${si}`))
+        }
+        if (plan.dailyChallenge.energyAdaptations) {
+          lines.push('Energy Level Adaptations:')
+          if (plan.dailyChallenge.energyAdaptations.low) lines.push(`Low: ${plan.dailyChallenge.energyAdaptations.low}`)
+          if (plan.dailyChallenge.energyAdaptations.medium) lines.push(`Medium: ${plan.dailyChallenge.energyAdaptations.medium}`)
+          if (plan.dailyChallenge.energyAdaptations.high) lines.push(`High: ${plan.dailyChallenge.energyAdaptations.high}`)
+        }
+        lines.push('')
+      }
+      // Journaling Prompt
+      if (plan?.journalingPrompt?.prompt) {
+        lines.push('📝 JOURNALING PROMPT')
+        lines.push('Primary Question:')
+        lines.push(`"${plan.journalingPrompt.prompt}"`)
+        lines.push('')
+      }
+      // Reflection
+      if (Array.isArray(plan?.reflection?.bullets) && plan.reflection.bullets.length) {
+        lines.push('🌙 REFLECTION')
+        lines.push('Evening Review Questions:')
+        plan.reflection.bullets.forEach((b: string) => lines.push(`• ${b}`))
+        lines.push('')
+      }
+      // Weather & Environment
+      if (plan?.weatherEnvironment) {
+        lines.push('🌤️ WEATHER & ENVIRONMENT')
+        if (plan.weatherEnvironment.summary) lines.push(`Summary: ${plan.weatherEnvironment.summary}`)
+        if (Array.isArray(plan.weatherEnvironment.cues) && plan.weatherEnvironment.cues.length) {
+          lines.push('Cues:')
+          plan.weatherEnvironment.cues.forEach((c: string) => lines.push(`• ${c}`))
+        }
+        lines.push('')
+      }
+      // Sleep & Wellness
+      if (plan?.sleepWellness && Array.isArray(plan.sleepWellness.steps)) {
+        lines.push('😴 SLEEP & WELLNESS')
+        lines.push('Pre-bedtime Routine:')
+        plan.sleepWellness.steps.forEach((s: any, idx: number) => {
+          if (s?.text) lines.push(`${idx + 1}. ${s.text}`)
+        })
+        lines.push('')
+      }
+      // Holistic Healing Bonus
+      if (plan?.holisticHealingBonus) {
+        lines.push('🌿 HOLISTIC HEALING BONUS')
+        if (plan.holisticHealingBonus.text) {
+          lines.push('Optional Practice:')
+          lines.push(`• ${plan.holisticHealingBonus.text}`)
+        }
+        if (Array.isArray(plan.holisticHealingBonus.steps) && plan.holisticHealingBonus.steps.length) {
+          plan.holisticHealingBonus.steps.forEach((s: any) => {
+            if (s?.text) lines.push(`• ${s.text}`)
+          })
+        }
+      }
+      return lines.join('\n')
+    }
+
     // Try structured generation first, fall back to current system
     let dayPlan
     let isStructured = false
@@ -186,10 +378,13 @@ export async function POST(request: NextRequest) {
         structuredPlan.dateISO = new Date().toISOString().slice(0, 10)
       }
 
+      const legacyContent = renderLegacyContentFromStructuredPlan(structuredPlan)
+
       dayPlan = {
         structuredPlan,
         theme: structuredPlan.theme,
         poeticTitle: structuredPlan.dayHeading,
+        content: legacyContent,
         isStructured: true
       }
       isStructured = true
@@ -231,6 +426,7 @@ export async function POST(request: NextRequest) {
             structuredPlan: dayPlan.structuredPlan,
             theme: dayPlan.theme,
             poeticTitle: dayPlan.poeticTitle,
+            content: dayPlan.content,
             timestamp: new Date().toISOString(),
             isStructured: true
           }
@@ -246,6 +442,7 @@ export async function POST(request: NextRequest) {
         structuredPlan: dayPlan.structuredPlan,
         theme: dayPlan.theme,
         poeticTitle: dayPlan.poeticTitle,
+        content: dayPlan.content,
         timestamp: new Date().toISOString(),
         isStructured: true
       })
@@ -327,11 +524,13 @@ export async function GET(request: NextRequest) {
 
     // Return structured or legacy format based on what's stored
     if (dailyContentData.isStructured && dailyContentData.structuredPlan) {
+      const content = dailyContentData.content || renderLegacyContentFromStructuredPlan(dailyContentData.structuredPlan)
       return NextResponse.json({
         dayNumber: dayNumber,
         structuredPlan: dailyContentData.structuredPlan,
         theme: dailyContentData.theme,
         poeticTitle: dailyContentData.poeticTitle,
+        content,
         timestamp: dailyContentData.timestamp,
         isStructured: true
       })

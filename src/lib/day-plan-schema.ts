@@ -5,6 +5,7 @@ export const DayPlanJsonSchema = {
   type: "object",
   additionalProperties: false,
   required: [
+    "dateISO",
     "dayHeading",
     "theme",
     "difficulty",
@@ -48,7 +49,7 @@ export const DayPlanJsonSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "title", "steps"],
+        required: ["id", "title", "steps", "durationMinutes"],
         properties: {
           // kebab-case id
           id: { type: "string", pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
@@ -61,7 +62,7 @@ export const DayPlanJsonSchema = {
             items: {
               type: "object",
               additionalProperties: false,
-              required: ["id", "text"],
+              required: ["id", "text", "defaultChecked"],
               properties: {
                 id: { type: "string", pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
                 text: { type: "string", minLength: 2, maxLength: 120 },
@@ -76,7 +77,7 @@ export const DayPlanJsonSchema = {
     dailyChallenge: {
       type: "object",
       additionalProperties: false,
-      required: ["activity", "durationMinutes", "steps", "successIndicators", "energyAdaptations"],
+      required: ["activity", "durationMinutes", "steps", "successIndicators", "energyAdaptations", "title"],
       properties: {
         title: { type: "string", default: "Daily Challenge" },
         activity: { type: "string", minLength: 4, maxLength: 120 },
@@ -88,7 +89,7 @@ export const DayPlanJsonSchema = {
           items: {
             type: "object",
             additionalProperties: false,
-            required: ["id", "text"],
+            required: ["id", "text", "defaultChecked"],
             properties: {
               id: { type: "string", pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
               text: { type: "string", minLength: 2, maxLength: 140 },
@@ -143,7 +144,7 @@ export const DayPlanJsonSchema = {
     weatherEnvironment: {
       type: "object",
       additionalProperties: false,
-      required: ["cues"],
+      required: ["cues", "summary"],
       properties: {
         summary: { type: "string", minLength: 3, maxLength: 60 },
         cues: {
@@ -158,7 +159,7 @@ export const DayPlanJsonSchema = {
     sleepWellness: {
       type: "object",
       additionalProperties: false,
-      required: ["steps"],
+      required: ["steps", "title", "notes"],
       properties: {
         title: { type: "string", default: "Sleep & Wellness" },
         // exactly 5 steps
@@ -169,7 +170,7 @@ export const DayPlanJsonSchema = {
           items: {
             type: "object",
             additionalProperties: false,
-            required: ["id", "text"],
+            required: ["id", "text", "defaultChecked"],
             properties: {
               id: { type: "string", pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
               text: { type: "string", minLength: 2, maxLength: 120 },
@@ -194,7 +195,7 @@ export const DayPlanJsonSchema = {
           items: {
             type: "object",
             additionalProperties: false,
-            required: ["id", "text"],
+            required: ["id", "text", "defaultChecked"],
             properties: {
               id: { type: "string", pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
               text: { type: "string", minLength: 2, maxLength: 120 },

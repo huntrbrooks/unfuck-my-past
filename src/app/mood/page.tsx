@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -144,31 +145,26 @@ export default function MoodTracker() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="relative overflow-hidden bg-background">
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="text-center mb-16">
-            {/* Floating Elements */}
-            <div className="relative mb-8">
-              <div className="absolute -top-8 -left-8 p-4 rounded-full bg-[#ccff00]/10 animate-float">
-                <Heart className="h-8 w-8 text-[#ccff00]" />
-              </div>
-              <div className="absolute -top-4 -right-8 p-4 rounded-full bg-[#6b6b6b]/10 animate-float-delayed">
-                <BarChart3 className="h-8 w-8 text-[#6b6b6b]" />
-              </div>
-              <div className="absolute -bottom-8 left-1/4 p-4 rounded-full bg-[#ccff00]/10 animate-float-slow">
-                <TrendingUp className="h-8 w-8 text-[#ccff00]" />
-              </div>
-              <div className="absolute -bottom-4 right-1/4 p-4 rounded-full bg-[#3d3d3d]/10 animate-float-delayed-slow">
-                <Brain className="h-8 w-8 text-[#3d3d3d]" />
-              </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="mb-10 flex items-center gap-6 md:gap-10 justify-between">
+            <div className="max-w-3xl">
+              <h1 className="responsive-heading neon-heading mb-4" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)', filter: 'drop-shadow(0 0 10px #ccff00)' }}>Daily Mood Tracker</h1>
+              <p className="responsive-body text-muted-foreground leading-relaxed">
+                Track your emotional journey and gain insights into your patterns. Capture today’s mood by rating, voice, or text and see your progress glow.
+              </p>
             </div>
-
-            <h1 className="responsive-heading neon-heading mb-6">
-              Daily Mood Tracker
-            </h1>
-            <p className="responsive-body text-[#6b6b6b] max-w-4xl mx-auto leading-relaxed">
-              Track your emotional journey and gain insights into your daily mood patterns. 
-              Multiple ways to capture and analyze your feelings.
-            </p>
+            {/* Accent line art on the right with matching neon glow */}
+            <div className="hidden md:block shrink-0">
+              <Image
+                src="/Line_art-01.png"
+                alt="Neon line art"
+                width={140}
+                height={140}
+                priority
+                className="select-none"
+                style={{ filter: 'drop-shadow(0 0 12px #ff7a00)' }}
+              />
+            </div>
           </div>
 
           {/* Stats Overview */}

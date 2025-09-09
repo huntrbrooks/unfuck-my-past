@@ -133,8 +133,10 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
           let title = `Question ${index + 1}`
           try {
             const q = typeof response.question === 'string' ? JSON.parse(response.question) : response.question
-            title = q?.question || q?.text || title
-          } catch {}
+            title = q?.question || q?.text || q?.title || title
+          } catch {
+            // If parsing fails, keep the default title
+          }
           return (
           <Card key={index} className="modern-card border-0 overflow-hidden">
             <CardHeader 
@@ -168,7 +170,7 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
                       {(() => {
                         try {
                           const q = typeof response.question === 'string' ? JSON.parse(response.question) : response.question
-                          return q?.question || 'Question'
+                          return q?.question || q?.text || q?.title || 'Question'
                         } catch {
                           return String(response.question)
                         }

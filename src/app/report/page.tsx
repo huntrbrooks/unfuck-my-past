@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Download, AlertTriangle, CheckCircle, Brain, Target, Sparkles, Heart, BookOpen, TrendingUp, Loader2 } from 'lucide-react'
+import { Download, AlertTriangle, CheckCircle, Brain, Target, Sparkles, Heart, BookOpen, TrendingUp, Loader2, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PaymentForm from '@/components/PaymentForm'
 import FullReportGenerationLoader from '@/components/FullReportGenerationLoader'
@@ -33,6 +33,9 @@ export default function ReportPage() {
   const [loaderDone, setLoaderDone] = useState(false)
   const [generationDone, setGenerationDone] = useState(false)
   const [showCompletion, setShowCompletion] = useState(false)
+  const [responsesLastUpdated, setResponsesLastUpdated] = useState<string | null>(null)
+  const [regeneratingReport, setRegeneratingReport] = useState(false)
+  const [useStructuredGeneration, setUseStructuredGeneration] = useState(true)
 
   // Safety timeout: if finalising takes too long, stop loader and show error
   useEffect(() => {
@@ -87,6 +90,42 @@ export default function ReportPage() {
   }, [showFinalising, loaderDone, generationDone])
   const router = useRouter()
 
+  const handleRegenerateReport = async () => {
+    setRegeneratingReport(true)
+    setError('')
+    
+    try {
+      const endpoint = useStructuredGeneration 
+        ? '/api/diagnostic/regenerate-structured-report'
+        : '/api/diagnostic/regenerate-report'
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to regenerate report')
+      }
+
+      const data = await response.json()
+      setComprehensiveReport(data.report)
+      
+      // Show success message briefly with generation type
+      const generationType = useStructuredGeneration ? 'Structured' : 'Legacy'
+      setError(`${generationType} report regenerated successfully! ✅`)
+      setTimeout(() => setError(''), 3000)
+      
+    } catch (error) {
+      console.error('Error regenerating report:', error)
+      setError('Failed to regenerate report. Please try again.')
+    } finally {
+      setRegeneratingReport(false)
+    }
+  }
+
   useEffect(() => {
     checkAccess()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -95,15 +134,36 @@ export default function ReportPage() {
     try {
       setCheckingAccess(true)
       
-      // First check if report already exists (bypass paywall if so)
+      // Load responses and compute latest timestamp for revalidation logic
+      const responsesRes = await fetch('/api/diagnostic/responses')
+      let latestResponseAt: string | null = null
+      if (responsesRes.ok) {
+        const r = await responsesRes.json()
+        const last = (r.responses || [])
+          .map((x: { timestamp?: string }) => x?.timestamp)
+          .filter(Boolean)
+          .sort()
+          .slice(-1)[0]
+        latestResponseAt = last || null
+        setResponsesLastUpdated(latestResponseAt)
+        setResults(r.responses || [])
+        setQuestionCount((r.responses || []).length)
+      }
+
+      // First check if a report is already saved
       const reportCheck = await fetch('/api/diagnostic/comprehensive-report', { method: 'GET' })
       if (reportCheck.ok) {
         const reportData = await reportCheck.json()
-        if (reportData.report) {
-          console.log('🎯 Found existing report - bypassing paywall')
+        const existingReport = reportData.report as string | undefined
+        const reportCreatedAt = reportData.createdAt as string | undefined
+        const isReportFresh = existingReport && latestResponseAt && reportCreatedAt
+          ? new Date(reportCreatedAt).getTime() >= new Date(latestResponseAt).getTime()
+          : !!existingReport
+        if (isReportFresh) {
           setHasAccess(true)
           setShowPaywall(false)
-          loadReportData()
+          setComprehensiveReport(existingReport || '')
+          await loadReportData()
           return
         }
       }
@@ -117,8 +177,14 @@ export default function ReportPage() {
         )
         
         if (hasDiagnosticAccess) {
+          // Has paid but no saved/fresh report: start generation flow immediately
           setHasAccess(true)
-          loadReportData()
+          setShowPaywall(false)
+          setGeneratingReport(true)
+          setShowFinalising(true)
+          setLoaderStep(1)
+          setLoading(true)
+          generateFullReport()
         } else {
           setHasAccess(false)
           setShowPaywall(true)
@@ -139,6 +205,10 @@ export default function ReportPage() {
   const loadReportData = async () => {
     try {
       setLoading(true)
+      // Ensure we're not in loader states when loading existing data
+      setShowFinalising(false)
+      setGeneratingReport(false)
+      setShowCompletion(false)
       
       // Load diagnostic responses
       const responsesResponse = await fetch('/api/diagnostic/responses')
@@ -158,14 +228,16 @@ export default function ReportPage() {
         }
       } catch {}
 
-      // Load existing comprehensive report only
-      try {
-        const reportResponse = await fetch('/api/diagnostic/comprehensive-report', { method: 'GET' })
-        if (reportResponse.ok) {
-          const reportData = await reportResponse.json()
-          setComprehensiveReport(reportData.report || '')
-        }
-      } catch {}
+      // Load existing comprehensive report only (if not already loaded)
+      if (!comprehensiveReport) {
+        try {
+          const reportResponse = await fetch('/api/diagnostic/comprehensive-report', { method: 'GET' })
+          if (reportResponse.ok) {
+            const reportData = await reportResponse.json()
+            setComprehensiveReport(reportData.report || '')
+          }
+        } catch {}
+      }
     } catch (err) {
       console.error('Error loading report data:', err)
       setError('Failed to load report data')
@@ -185,7 +257,7 @@ export default function ReportPage() {
       setShowThankYou(false)
       setFinalisingStartedAt(Date.now())
       
-      // Check if report already exists first
+      // Check if report already exists first (and is fresh)
       const existingReportResponse = await fetch('/api/diagnostic/comprehensive-report', {
         method: 'GET',
         headers: {
@@ -195,14 +267,22 @@ export default function ReportPage() {
       
       if (existingReportResponse.ok) {
         const reportData = await existingReportResponse.json()
-        if (reportData.report) {
-          console.log('🎯 Found existing report, using it')
+        const isFresh = responsesLastUpdated && reportData.createdAt
+          ? new Date(reportData.createdAt).getTime() >= new Date(responsesLastUpdated).getTime()
+          : !!reportData.report
+        if (reportData.report && isFresh) {
+          console.log('🎯 Found existing report, but still showing loader for smooth UX')
           setComprehensiveReport(reportData.report)
           setPaymentSuccess(true)
           setShowPaywall(false)
           setHasAccess(true)
-          setGenerationDone(true)
+          // Don't set generationDone immediately - let the loader complete naturally
+          // The loader will complete after its normal progression
           setLoading(false)
+          // Mark generation as done after a brief delay to let loader show
+          setTimeout(() => {
+            setGenerationDone(true)
+          }, 2000) // Allow loader to show for at least 2 seconds
           return
         }
       }
@@ -210,7 +290,7 @@ export default function ReportPage() {
       console.log('🎯 No existing report, generating new one...')
       setLoaderStep(3)
       
-      // Generate a new report
+      // Generate and SAVE a new report
       const reportResponse = await fetch('/api/diagnostic/comprehensive-report', {
         method: 'POST',
         headers: {
@@ -376,9 +456,9 @@ export default function ReportPage() {
         <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 mb-6">
-              <Brain className="w-10 h-10 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+              <Image src="/Lineartneon-04.png" alt="report paywall art" width={80} height={80} className="w-20 h-auto drop-shadow-[0_0_8px_#ccff00]" />
             </div>
-            <h1 className="responsive-heading neon-heading mb-4">Your Comprehensive Diagnostic Report</h1>
+            <h1 className="responsive-heading neon-heading mb-4">Your Comprehensive Report</h1>
             <p className="responsive-body text-muted-foreground mb-8">
               Unlock your personalized trauma analysis, healing roadmap, and actionable recommendations
             </p>
@@ -468,19 +548,45 @@ export default function ReportPage() {
     )
   }
 
-  if (loading) {
-    // While loading, still show the new 5-stage loader if we are finalising/generating
-    if (showFinalising || generatingReport) {
-      return (
+  // Show loader when generating report or during finalizing state - this should cover everything
+  if (showFinalising || generatingReport) {
+    return (
+      <>
         <FullReportGenerationLoader
           currentStep={loaderStep}
           totalSteps={5}
           isGenerating={true}
-          // steps prop removed; component defines its own steps copy
         />
-      )
-    }
-    // Otherwise a neutral placeholder
+        
+        {showCompletion && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <Card className="max-w-md w-full border-0 shadow-xl glass-card">
+              <CardContent className="p-8 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 mb-4">
+                  <CheckCircle className="w-8 h-8 text-success" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Report Complete!</h3>
+                <p className="text-muted-foreground mb-6">Your comprehensive diagnostic report is ready to view.</p>
+                <Button
+                  onClick={() => {
+                    setShowCompletion(false)
+                    setShowFinalising(false)
+                    setGeneratingReport(false)
+                  }}
+                  className="w-full neon-cta"
+                >
+                  View My Report
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </>
+    )
+  }
+
+  if (loading) {
+    // Basic loading state
     return (<div className="min-h-screen bg-background" />)
   }
 
@@ -567,6 +673,38 @@ export default function ReportPage() {
 
         {comprehensiveReport && (
           <>
+            {/* Development Notice */}
+            <div className="mb-6 p-4 rounded-lg border border-blue-500/30 bg-blue-500/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-blue-400">
+                  <RefreshCw className="w-4 h-4" />
+                  <span className="text-sm font-medium">Development Mode</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-blue-300">Legacy</span>
+                  <button
+                    onClick={() => setUseStructuredGeneration(!useStructuredGeneration)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      useStructuredGeneration ? 'bg-blue-500' : 'bg-gray-600'
+                    }`}
+                    title={`Switch to ${useStructuredGeneration ? 'Legacy' : 'Structured'} generation mode`}
+                    aria-label={`Switch to ${useStructuredGeneration ? 'Legacy' : 'Structured'} generation mode`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        useStructuredGeneration ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                  <span className="text-xs text-blue-300">Structured</span>
+                </div>
+              </div>
+              <p className="text-sm text-blue-300 mt-2">
+                Testing report generation quality: <strong>{useStructuredGeneration ? 'Structured' : 'Legacy'}</strong> generation mode.
+                {useStructuredGeneration ? ' Using new structured AI with consistent format and improved analysis.' : ' Using original AI generation method.'}
+              </p>
+            </div>
+            
             <div id="report-content" className="space-y-8">
               {formatReportContent(comprehensiveReport)}
             </div>
@@ -575,20 +713,36 @@ export default function ReportPage() {
                 <Button asChild variant="cta" size="lg">
                   <a href="/program">Start 30‑Day Unfuck Your Life Journey</a>
                 </Button>
-                <Button
-                  onClick={() => {
-                    const link = document.createElement('a')
-                    link.href = '/api/export'
-                    link.download = 'diagnostic-report.txt'
-                    document.body.appendChild(link)
-                    link.click()
-                    document.body.removeChild(link)
-                  }}
-                  size="lg"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Report
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button
+                    onClick={handleRegenerateReport}
+                    disabled={regeneratingReport}
+                    size="lg"
+                    variant="outline"
+                    className="border-2 border-[#ff1aff]/30 hover:border-[#ff1aff]/50 bg-[#ff1aff]/5 hover:bg-[#ff1aff]/10"
+                  >
+                    {regeneratingReport ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    {regeneratingReport ? 'Regenerating...' : 'Regenerate Report'}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const link = document.createElement('a')
+                      link.href = '/api/export'
+                      link.download = 'diagnostic-report.txt'
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                    }}
+                    size="lg"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Report
+                  </Button>
+                </div>
               </div>
             </div>
           </>

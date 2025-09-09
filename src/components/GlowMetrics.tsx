@@ -37,24 +37,30 @@ function pickNeonColor(key: string): string {
 export default function GlowMetrics({
   streak,
   sessions,
-  moodAvg
+  moodAvg,
+  weekly,
+  consistency,
+  monthCount
 }: {
   streak: number | string
   sessions: number | string
   moodAvg: number | string
+  weekly?: number | string
+  consistency?: number | string
+  monthCount?: number | string
 }) {
   // Additional derived metrics
-  const weekly = typeof sessions === 'number' ? Math.min(7, Number(sessions)) : sessions
-  const consistency = typeof streak === 'number' ? Math.min(100, Math.round((Number(streak) / 30) * 100)) : streak
-  const monthCount = typeof sessions === 'number' ? Math.min(30, Number(sessions)) : sessions
+  const weeklyValue = weekly ?? (typeof sessions === 'number' ? Math.min(7, Number(sessions)) : sessions)
+  const consistencyValue = consistency ?? (typeof streak === 'number' ? Math.min(100, Math.round((Number(streak) / 30) * 100)) : streak)
+  const monthValue = monthCount ?? (typeof sessions === 'number' ? Math.min(30, Number(sessions)) : sessions)
 
   const metrics: MetricCard[] = [
     { icon: <TrendingUp className="h-4 w-4" />, label: 'Day Streak', value: streak, badge: { text: 'Active', color: 'text-black dark:text-white font-bold' } },
     { icon: <Activity className="h-4 w-4" />, label: 'Sessions', value: sessions, badge: { text: 'Total', color: 'text-black dark:text-white font-bold' } },
     { icon: <Heart className="h-4 w-4" />, label: 'Mood', value: moodAvg, badge: { text: 'Average', color: 'text-black dark:text-white font-bold' } },
-    { icon: <Activity className="h-4 w-4" />, label: 'This Week', value: weekly, badge: { text: '7d', color: 'text-black dark:text-white font-bold' } },
-    { icon: <TrendingUp className="h-4 w-4" />, label: 'Consistency', value: typeof consistency === 'number' ? `${consistency}%` : consistency, badge: { text: '30d', color: 'text-black dark:text-white font-bold' } },
-    { icon: <Star className="h-4 w-4" />, label: 'This Month', value: monthCount, badge: { text: '30d', color: 'text-black dark:text-white font-bold' } }
+    { icon: <Activity className="h-4 w-4" />, label: 'This Week', value: weeklyValue, badge: { text: '7d', color: 'text-black dark:text-white font-bold' } },
+    { icon: <TrendingUp className="h-4 w-4" />, label: 'Consistency', value: typeof consistencyValue === 'number' ? `${consistencyValue}%` : consistencyValue, badge: { text: '30d', color: 'text-black dark:text-white font-bold' } },
+    { icon: <Star className="h-4 w-4" />, label: 'This Month', value: monthValue, badge: { text: '30d', color: 'text-black dark:text-white font-bold' } }
   ]
 
   return (

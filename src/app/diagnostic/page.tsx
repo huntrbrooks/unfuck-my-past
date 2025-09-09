@@ -45,12 +45,36 @@ export default function Diagnostic() {
     // Check if we're coming from onboarding with generating=true
     console.log('🔍 DIAGNOSTIC PAGE: useEffect running')
     console.log('🔍 Search params object:', searchParams)
+    console.log('🔍 Current URL:', typeof window !== 'undefined' ? window.location.href : 'SSR')
     
-    const isGenerating = searchParams.get('generating') === 'true'
-    console.log('🔍 isGenerating:', isGenerating)
+    // Try multiple ways to detect the generating parameter
+    const isGeneratingFromParams = searchParams.get('generating') === 'true'
+    const isGeneratingFromURL = typeof window !== 'undefined' ? window.location.search.includes('generating=true') : false
+    const isGeneratingFromHash = typeof window !== 'undefined' ? window.location.hash.includes('generating=true') : false
+    const isGenerating = isGeneratingFromParams || isGeneratingFromURL || isGeneratingFromHash
+    
+    console.log('🔍 isGeneratingFromParams:', isGeneratingFromParams)
+    console.log('🔍 isGeneratingFromURL:', isGeneratingFromURL) 
+    console.log('🔍 isGeneratingFromHash:', isGeneratingFromHash)
+    console.log('🔍 isGenerating (final):', isGenerating)
     
     if (isGenerating) {
       console.log('🎯 ONBOARDING FLOW: Starting beautiful loader progression')
+      // Mark that we've detected the onboarding completion
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('just-completed-onboarding', 'true')
+      }
+      
+      // Add smooth fade-in transition for the diagnostic page
+      const diagnosticContainer = document.querySelector('.diagnostic-container')
+      if (diagnosticContainer) {
+        diagnosticContainer.classList.add('opacity-0')
+        setTimeout(() => {
+          diagnosticContainer.classList.remove('opacity-0')
+          diagnosticContainer.classList.add('opacity-100', 'transition-opacity', 'duration-500')
+        }, 100) // Brief delay to ensure smooth transition
+      }
+      
       // Clear any existing questions to ensure loader shows
       setQuestions([])
       setError('')
@@ -97,10 +121,80 @@ export default function Diagnostic() {
       }
     } else {
       console.log('🔍 NOT generating - normal page load')
+      
+      // Check if user just completed onboarding (fallback mechanism)
+      const checkRecentOnboarding = async () => {
+        try {
+          // First check localStorage for recent completion
+          const justCompleted = typeof window !== 'undefined' ? localStorage.getItem('just-completed-onboarding') : null
+          if (justCompleted === 'true') {
+            console.log('🎯 Fallback detection: Found localStorage flag, starting loader...')
+            localStorage.removeItem('just-completed-onboarding') // Clear the flag
+            
+            setQuestions([])
+            setError('')
+            setIsGeneratingQuestions(true)
+            setShowLoader(true)
+            setLoaderStep(1)
+            
+            const stepInterval = setInterval(() => {
+              setLoaderStep(prev => prev < 5 ? prev + 1 : prev)
+            }, 4000)
+            
+            const stepIntervalRef = { current: stepInterval }
+            generatePersonalizedQuestions(stepIntervalRef)
+            
+            setTimeout(() => {
+              setShowReadyPrompt(true)
+              clearInterval(stepInterval)
+            }, 20000)
+            
+            return
+          }
+          
+          // Then check API status as secondary fallback
+          const onboardingResponse = await fetch('/api/onboarding')
+          if (onboardingResponse.ok) {
+            const questionsResponse = await fetch('/api/diagnostic/questions')
+            
+            // If user has onboarding data but no questions, they likely just finished onboarding
+            if (!questionsResponse.ok && questionsResponse.status === 429) {
+              console.log('🎯 FALLBACK: User has onboarding but questions are generating - starting loader')
+              setQuestions([])
+              setError('')
+              setIsGeneratingQuestions(true)
+              setShowLoader(true)
+              setLoaderStep(1)
+              
+              const stepInterval = setInterval(() => {
+                setLoaderStep(prev => prev < 5 ? prev + 1 : prev)
+              }, 4000)
+              
+              const stepIntervalRef = { current: stepInterval }
+              generatePersonalizedQuestions(stepIntervalRef)
+              
+              setTimeout(() => {
+                setShowReadyPrompt(true)
+                clearInterval(stepInterval)
+              }, 20000)
+              
+              return
+            }
+          }
+        } catch (error) {
+          console.log('Could not check onboarding status:', error)
+        }
+      }
+      
       // Load questions on component mount
       if (questions.length === 0 && !isLoadingQuestions && !loading) {
         console.log('Loading questions on mount...')
-        loadQuestions()
+        checkRecentOnboarding().then(() => {
+          // Only load questions if we didn't start the loader
+          if (!showLoader) {
+            loadQuestions()
+          }
+        })
       }
     }
   }, []) // run once on mount; we manually clear the URL below
@@ -193,13 +287,19 @@ export default function Diagnostic() {
         setQuestions(data.questions)
         // setUserPreferences(data.userPreferences) // Currently unused
         setError('')
-        console.log('🎯 Questions loaded, but letting loader complete its natural progression')
+        console.log('🎯 Questions loaded successfully:', data.questions.length, 'questions')
         
-        // DON'T jump to step 5 - let the interval naturally progress through all steps
-        // The loader will automatically hide after 20 seconds (when it reaches step 5)
+        // Clear the step interval since questions are ready
+        if (stepIntervalRef?.current) {
+          clearInterval(stepIntervalRef.current)
+          stepIntervalRef.current = null
+        }
         
-        // Questions are ready, but we'll wait for the full 20-second progression
-        // The timeout in useEffect will handle hiding the loader after 20 seconds
+        // Jump to final step and show ready prompt immediately
+        setLoaderStep(5)
+        setTimeout(() => {
+          setShowReadyPrompt(true)
+        }, 1000) // Small delay for visual effect
       } else {
         throw new Error('No questions were generated. Please try again.')
       }
@@ -387,12 +487,18 @@ export default function Diagnostic() {
                   <Button
                     className="flex-1"
                     onClick={() => {
+                      console.log('🎯 User clicked "Yes, let\'s start" - beginning diagnostic')
                       setShowReadyPrompt(false)
                       setShowLoader(false)
                       setIsGeneratingQuestions(false)
+                      // If we don't have questions loaded yet, try to load them
+                      if (questions.length === 0) {
+                        console.log('🔄 No questions loaded, attempting to load...')
+                        loadQuestions()
+                      }
                     }}
                   >
-                    Yes, let’s start
+                    Yes, let's start
                   </Button>
                   <Button
                     variant="outline"
@@ -542,49 +648,49 @@ export default function Diagnostic() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="diagnostic-container min-h-screen bg-background py-8 transition-opacity duration-500">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <div className="relative mb-4 flex items-center justify-center gap-4 sm:gap-6">
-            <div className="block animate-float">
+            <div className="hidden md:block animate-float">
               <Image src="/Line_art2-01.png" alt="diagnostic emblem left" width={96} height={96} className="w-16 sm:w-24 h-auto drop-shadow-[0_0_18px_#ff1aff]" />
             </div>
-            <div className="text-center">
-              <h1 className="text-4xl sm:text-5xl font-bold neon-heading [text-shadow:0_0_28px_rgba(204,255,0,0.9),0_0_56px_rgba(204,255,0,0.6),1px_1px_0_rgba(0,0,0,0.55),-1px_-1px_0_rgba(0,0,0,0.55)] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)]">
+            <div className="text-center flex-1">
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold neon-heading [text-shadow:0_0_28px_rgba(204,255,0,0.9),0_0_56px_rgba(204,255,0,0.6),1px_1px_0_rgba(0,0,0,0.55),-1px_-1px_0_rgba(0,0,0,0.55)] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)] leading-tight">
                 Digging Into Your Shit
               </h1>
-              <p className="responsive-body text-muted-foreground">
-                This is where we stop the guesswork and start uncovering what’s really holding you back.
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground mt-2 px-4 sm:px-0 leading-relaxed">
+                This is where we stop the guesswork and start uncovering what's really holding you back.
               </p>
             </div>
-            <div className="hidden sm:block animate-float-delayed">
+            <div className="hidden md:block animate-float-delayed">
               <Image src="/Line_art3-01.png" alt="diagnostic emblem right" width={96} height={96} className="w-16 sm:w-24 h-auto drop-shadow-[0_0_18px_#ff9900]" />
             </div>
           </div>
         </div>
 
         <Card className="bg-background border border-border/50 shadow-2xl">
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-6 md:p-8">
             {/* Progress */}
-            <div className="mb-8">
+            <div className="mb-6 sm:mb-8">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-sm text-muted-foreground">Question {currentQuestionIndex + 1} of {questions.length}</span>
-                <span className="text-sm text-muted-foreground">{Math.round(progress)}% complete</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">Question {currentQuestionIndex + 1} of {questions.length}</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">{Math.round(progress)}% complete</span>
               </div>
-              <Progress value={progress} variant="default" glow className="h-3" />
+              <Progress value={progress} variant="default" glow className="h-2 sm:h-3" />
             </div>
 
             {/* Question */}
-            <div className="mb-8" id="diagnostic-question-top">
+            <div className="mb-6 sm:mb-8" id="diagnostic-question-top">
               {currentQuestion ? (
-                <div className="bg-background rounded-xl p-6 border border-border/50">
+                <div className="bg-background rounded-xl p-4 sm:p-6 border border-border/50">
                   <div className="flex items-start gap-3 mb-4">
-                    <Target className="h-6 w-6 text-[#ff1aff] mt-1 flex-shrink-0" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
+                    <Target className="hidden sm:block h-5 w-5 sm:h-6 sm:w-6 text-[#ff1aff] mt-1 flex-shrink-0" style={{ filter: 'drop-shadow(0 0 8px #ff1aff)' }} />
                     <div className="flex-1">
-                      <h2 className="text-xl font-semibold mb-3 text-foreground">{currentQuestion.question}</h2>
+                      <h2 className="text-lg sm:text-xl font-semibold mb-3 text-foreground leading-relaxed">{currentQuestion.question}</h2>
                       {currentQuestion.followUp && (
-                        <p className="text-muted-foreground italic">💡 {currentQuestion.followUp}</p>
+                        <p className="text-sm sm:text-base text-muted-foreground italic">💡 {currentQuestion.followUp}</p>
                       )}
                     </div>
                   </div>
@@ -598,13 +704,13 @@ export default function Diagnostic() {
 
             {/* Response Options or Text/Voice Input */}
             {currentQuestion?.options && currentQuestion.options.length > 0 ? (
-              <div className="mb-8">
-                <div className="space-y-3">
+              <div className="mb-6 sm:mb-8">
+                <div className="space-y-2 sm:space-y-3">
                   {currentQuestion.options.map((option, index) => (
                     <Button
                       key={index}
                       variant={currentResponse === option ? "default" : "outline"}
-                      className={`w-full justify-start p-4 h-auto text-left transition-all duration-200 ${
+                      className={`w-full justify-start p-3 sm:p-4 h-auto text-left transition-all duration-200 ${
                         currentResponse === option 
                           ? 'bg-primary hover:bg-primary/90 border-primary shadow-lg scale-[1.02]' 
                           : 'hover:bg-accent hover:border-accent-foreground/20'
@@ -614,24 +720,24 @@ export default function Diagnostic() {
                     >
                       <div className="flex items-center gap-3">
                         {currentResponse === option && (
-                          <CheckCircle className="h-5 w-5 text-primary-foreground" />
+                          <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
                         )}
-                        <span className="text-base">{option}</span>
+                        <span className="text-sm sm:text-base leading-relaxed">{option}</span>
                       </div>
                     </Button>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="mb-8">
+              <div className="mb-6 sm:mb-8">
                 {/* Input Mode Toggle */}
-                <div className="mb-6">
-                  <div className="flex rounded-xl p-1">
+                <div className="mb-4 sm:mb-6">
+                  <div className="flex rounded-xl p-1 bg-muted/50">
                     <Button
                       variant={inputMode === 'text' ? 'cta' : 'ghost'}
                       onClick={() => setInputMode('text')}
                       disabled={generatingInsight}
-                      className="flex-1 flex items-center gap-2"
+                      className="flex-1 flex items-center gap-2 text-sm sm:text-base"
                     >
                       <Pencil className="h-4 w-4" />
                       Type
@@ -640,7 +746,7 @@ export default function Diagnostic() {
                       variant={inputMode === 'voice' ? 'cta' : 'ghost'}
                       onClick={() => setInputMode('voice')}
                       disabled={generatingInsight}
-                      className="flex-1 flex items-center gap-2"
+                      className="flex-1 flex items-center gap-2 text-sm sm:text-base"
                     >
                       <Mic className="h-4 w-4" />
                       Voice
@@ -673,26 +779,26 @@ export default function Diagnostic() {
 
                 {/* Text Input */}
                 {inputMode === 'text' && (
-                  <div className="mb-6">
+                  <div className="mb-4 sm:mb-6">
                     <Textarea
                       placeholder="Share your thoughts here... Be as open and honest as you feel comfortable with."
                       value={currentResponse}
                       onChange={(e) => setCurrentResponse(e.target.value)}
                       disabled={generatingInsight}
-                      className="min-h-[120px] text-base resize-none"
+                      className="min-h-[100px] sm:min-h-[120px] text-sm sm:text-base resize-none"
                     />
                   </div>
                 )}
 
                 {/* Current Response Display */}
                 {currentResponse && (
-                  <div className="mb-6">
-                    <div className="bg-accent/50 border border-accent/20 rounded-xl p-4">
-                      <h4 className="font-semibold text-accent-foreground mb-2 flex items-center gap-2">
+                  <div className="mb-4 sm:mb-6">
+                    <div className="bg-accent/50 border border-accent/20 rounded-xl p-3 sm:p-4">
+                      <h4 className="font-semibold text-accent-foreground mb-2 flex items-center gap-2 text-sm sm:text-base">
                         <Sparkles className="h-4 w-4" />
                         Your Response:
                       </h4>
-                      <p className="text-accent-foreground/80">{currentResponse}</p>
+                      <p className="text-accent-foreground/80 text-sm sm:text-base leading-relaxed">{currentResponse}</p>
                     </div>
                   </div>
                 )}
@@ -701,22 +807,22 @@ export default function Diagnostic() {
 
             {/* Previous Insights - Updated to show only 1 */}
             {responses.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-primary" />
+              <div className="mb-6 sm:mb-8">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4 flex items-center gap-2">
+                  <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                   Latest AI Insight
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {responses.slice(-1).map((response, index) => (
                     <Card key={index} className="feature-card border-l-4 border-l-primary">
-                      <CardContent className="p-4">
+                      <CardContent className="p-3 sm:p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Badge variant="glass" className="text-xs">
-                            <Bot className="h-4 w-4 text-primary" />
+                            <Bot className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                             Powered by AI
                           </Badge>
                         </div>
-                        <p className="text-foreground">{response.insight}</p>
+                        <p className="text-foreground text-sm sm:text-base leading-relaxed">{response.insight}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -725,12 +831,12 @@ export default function Diagnostic() {
             )}
 
             {/* Navigation */}
-            <div className="flex justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">
               <Button
                 variant="outline"
                 onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
                 disabled={currentQuestionIndex === 0 || generatingInsight}
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2 text-sm sm:text-base order-2 sm:order-1"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Previous
@@ -740,16 +846,22 @@ export default function Diagnostic() {
                 onClick={handleSubmitResponse}
                 disabled={!currentResponse.trim() || generatingInsight}
                 variant={!currentResponse.trim() || generatingInsight ? undefined : 'cta'}
-                className={`flex items-center gap-2`}
+                className="flex items-center justify-center gap-2 text-sm sm:text-base order-1 sm:order-2"
               >
                 {generatingInsight ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Analyzing...
+                    <span className="hidden sm:inline">Analyzing...</span>
+                    <span className="sm:hidden">Analyzing</span>
                   </>
                 ) : (
                   <>
-                    {currentQuestionIndex === questions.length - 1 ? 'Complete Assessment' : 'Next Question'}
+                    <span className="hidden sm:inline">
+                      {currentQuestionIndex === questions.length - 1 ? 'Complete Assessment' : 'Next Question'}
+                    </span>
+                    <span className="sm:hidden">
+                      {currentQuestionIndex === questions.length - 1 ? 'Complete' : 'Next'}
+                    </span>
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}

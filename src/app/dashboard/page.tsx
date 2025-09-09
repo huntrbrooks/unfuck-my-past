@@ -65,56 +65,63 @@ export default function Dashboard() {
   }
 
   const loadDashboardData = async () => {
-    let weeklyCount = 0
-    let hasAnyJournal = false
-    // Load mood data from localStorage
-    const savedMoods = localStorage.getItem('mood-entries')
-    if (savedMoods) {
-      const entries = JSON.parse(savedMoods).map((entry: any) => ({
-        ...entry,
-        timestamp: new Date(entry.timestamp)
-      }))
+    // Aggregate activity from multiple sources so metrics actually move
+    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
+    const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30)
 
-      // Get today's mood
-      const today = new Date()
-      const todayEntries = entries.filter((entry: any) => {
-        const entryDate = new Date(entry.timestamp)
-        return entryDate.toDateString() === today.toDateString()
-      })
+    // Mood entries
+    const moodRaw = localStorage.getItem('mood-entries')
+    const moodEntries: Array<{ rating: number; timestamp: string | Date }> = moodRaw ? JSON.parse(moodRaw) : []
+    const moodEntriesNorm = moodEntries.map(e => ({ rating: Number((e as any).rating) || 0, timestamp: new Date((e as any).timestamp) }))
 
-      if (todayEntries.length > 0) {
-        const latestEntry = todayEntries[0]
+    // Journal entries
+    const journalRaw = localStorage.getItem('journal-entries')
+    const journalEntries: Array<{ content: string; date?: string; timestamp?: string }> = journalRaw ? JSON.parse(journalRaw) : []
+    const journalEntriesNorm = journalEntries.map(e => new Date((e.timestamp as any) || (e.date ? new Date(e.date).toISOString() : Date.now())))
+
+    // Program progress (current day and completed days)
+    let programCurrentDay = 0
+    let programCompletedDays = 0
+    try {
+      const res = await fetch('/api/program/progress')
+      if (res.ok) {
+        const data = await res.json()
+        const total = typeof data.total === 'number' && data.total > 0 ? data.total : 30
+        programCurrentDay = Number(data.currentDay) || 0
+        programCompletedDays = Math.max(0, Math.min(total, (programCurrentDay || 1) - 1, Number(data.completed) || 0))
+        const percentage = Math.max(0, Math.min(100, (programCompletedDays / total) * 100))
+        setProgramProgress({ currentDay: programCurrentDay, percentage })
+      }
+    } catch {}
+
+    // Today mood display
+    if (moodEntriesNorm.length > 0) {
+      const today = new Date().toDateString()
+      const todayEntry = moodEntriesNorm.find(e => new Date(e.timestamp).toDateString() === today)
+      if (todayEntry) {
         setTodaysMood({
-          rating: latestEntry.rating,
-          emoji: getMoodEmoji(latestEntry.rating),
-          label: getMoodLabel(latestEntry.rating),
-          lastUpdated: new Date(latestEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          rating: todayEntry.rating,
+          emoji: getMoodEmoji(todayEntry.rating),
+          label: getMoodLabel(todayEntry.rating),
+          lastUpdated: new Date(todayEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         })
       }
-
-      // Calculate weekly average
-      const weekAgo = new Date()
-      weekAgo.setDate(weekAgo.getDate() - 7)
-      const weeklyEntries = entries.filter((entry: any) => new Date(entry.timestamp) >= weekAgo)
-      weeklyCount = weeklyEntries.length
-      if (weeklyEntries.length > 0) {
-        const avg = weeklyEntries.reduce((sum: number, entry: any) => sum + entry.rating, 0) / weeklyEntries.length
-        setMoodAverage(Math.round(avg * 10) / 10)
-      }
-
-      setTotalSessions(entries.length)
-      setCurrentStreak(7) // Keep simulated for now
     }
 
-    // Load journal data from localStorage
-    const savedJournal = localStorage.getItem('journal-entries')
-    if (savedJournal) {
-      const entries: Array<{ content: string; date: string; timestamp: string }>= JSON.parse(savedJournal)
-      hasAnyJournal = entries.length > 0
+    // Mood average (7d)
+    const moodLast7 = moodEntriesNorm.filter(e => e.timestamp >= weekAgo)
+    if (moodLast7.length > 0) {
+      const avg = moodLast7.reduce((s, e) => s + (e.rating || 0), 0) / moodLast7.length
+      setMoodAverage(Math.round(avg * 10) / 10)
+    }
+
+    // Journal today preview
+    if (journalEntriesNorm.length > 0) {
       const todayStr = new Date().toLocaleDateString()
-      const todayEntry = entries.find((e) => e.date === todayStr)
-      if (todayEntry) {
-        const preview = todayEntry.content.length > 60 ? todayEntry.content.slice(0, 60) + '…' : todayEntry.content
+      // Find entry with same local date if available in original data
+      const todayJournal = (journalEntries as any[]).find(e => e.date === todayStr)
+      if (todayJournal) {
+        const preview = todayJournal.content.length > 60 ? todayJournal.content.slice(0,60) + '…' : todayJournal.content
         setTodaysJournal({ exists: true, preview })
       } else {
         setTodaysJournal({ exists: false })
@@ -123,28 +130,46 @@ export default function Dashboard() {
       setTodaysJournal({ exists: false })
     }
 
-    // Compute achievements & points
+    // Sessions = mood entries + journal entries + completed program days
+    const total = moodEntriesNorm.length + journalEntriesNorm.length + programCompletedDays
+    setTotalSessions(total)
+
+    // Weekly / monthly counts across all sources
+    const weekly = moodEntriesNorm.filter(e => e.timestamp >= weekAgo).length
+      + journalEntriesNorm.filter(d => d >= weekAgo).length
+      + Math.min(7, programCompletedDays) // simple approximation
+
+    const monthly = moodEntriesNorm.filter(e => e.timestamp >= monthAgo).length
+      + journalEntriesNorm.filter(d => d >= monthAgo).length
+      + Math.min(30, programCompletedDays)
+
+    // Streak approximation: use program current day if > 0, else consecutive days from mood/journal dates
+    let streak = Math.max(0, programCurrentDay - 1)
+    if (streak === 0) {
+      const dateSet = new Set<string>()
+      moodEntriesNorm.forEach(e => dateSet.add(new Date(e.timestamp).toDateString()))
+      journalEntriesNorm.forEach(d => dateSet.add(new Date(d).toDateString()))
+      // count consecutive days ending today
+      let count = 0
+      const cursor = new Date()
+      while (dateSet.has(cursor.toDateString())) {
+        count += 1
+        cursor.setDate(cursor.getDate() - 1)
+      }
+      streak = count
+    }
+    setCurrentStreak(streak)
+
+    // Achievements & points
     const computedAchievements = [
-      { id: 'streak7', title: 'Completed 7 consecutive days', completed: (7 <= (typeof currentStreak === 'number' ? currentStreak : Number(currentStreak) || 0)) },
-      { id: 'first-journal', title: 'First journal entry completed', completed: hasAnyJournal },
-      { id: 'mood-streak5', title: 'Mood tracking streak: 5 days', completed: weeklyCount >= 5 }
+      { id: 'streak7', title: 'Completed 7 consecutive days', completed: streak >= 7 },
+      { id: 'first-journal', title: 'First journal entry completed', completed: journalEntriesNorm.length > 0 },
+      { id: 'mood-streak5', title: 'Mood tracking streak: 5 days', completed: weekly >= 5 }
     ]
     setAchievements(computedAchievements)
     setPoints(computedAchievements.filter(a => a.completed).length * 5)
 
-    // Load program progress from API for accurate current day
-    try {
-      const res = await fetch('/api/program/progress')
-      if (res.ok) {
-        const data = await res.json()
-        setProgramProgress({ currentDay: data.currentDay || 0, percentage: data.percentage || 0 })
-      } else {
-        setProgramProgress({ currentDay: 0, percentage: 0 })
-      }
-    } catch {
-      setProgramProgress({ currentDay: 0, percentage: 0 })
-    }
-
+    // Expose weekly/month for GlowMetrics via props below (computed inline there)
     setIsLoading(false)
   }
 
@@ -185,7 +210,14 @@ export default function Dashboard() {
           </div>
           
           {/* Quick Stats (Glow style) */}
-          <GlowMetrics streak={isLoading ? '…' : currentStreak} sessions={isLoading ? '…' : totalSessions} moodAvg={isLoading ? '…' : moodAverage} />
+          <GlowMetrics
+            streak={isLoading ? '…' : currentStreak}
+            sessions={isLoading ? '…' : totalSessions}
+            moodAvg={isLoading ? '…' : moodAverage}
+            weekly={isLoading ? '…' : Math.min(7, totalSessions)}
+            consistency={isLoading ? '…' : Math.min(100, Math.round((currentStreak / 30) * 100))}
+            monthCount={isLoading ? '…' : Math.min(30, totalSessions)}
+          />
         </div>
       </div>
 
@@ -219,7 +251,14 @@ export default function Dashboard() {
                     <span className="text-sm text-muted-foreground">Progress</span>
                     <span className="text-sm font-medium text-foreground">{programProgress ? `Day ${programProgress.currentDay} of 30` : 'Day 0 of 30'}</span>
                   </div>
-                  <Progress value={programProgress?.percentage ?? 0} variant="gradient" size="lg" className="h-3" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <Progress value={programProgress?.percentage ?? 0} variant="neonPinkGlow" glow className="h-3" />
+                    </div>
+                    <div className="text-sm font-medium text-foreground whitespace-nowrap">
+                      {Math.round(programProgress?.percentage ?? 0)}%
+                    </div>
+                  </div>
                 </div>
                 
                 <Button asChild className="w-full group neon-cta">

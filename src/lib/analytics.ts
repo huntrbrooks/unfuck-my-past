@@ -99,6 +99,12 @@ class AnalyticsService {
   }
 
   private sendToAnalytics(event: AnalyticsEvent) {
+    // Validate event before sending
+    if (!event || !event.event) {
+      console.warn('Invalid analytics event:', event)
+      return
+    }
+
     // In production, this would send to your analytics service
     // For now, we'll just log to console
     console.log('Analytics Event:', event)
@@ -113,16 +119,22 @@ class AnalyticsService {
       (window as unknown as { gtag: (type: string, event: string, properties?: Record<string, unknown>) => void }).gtag('event', event.event, event.properties)
     }
 
-    // Example: Send to custom API
-    fetch('/api/analytics', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(event),
-    }).catch(error => {
-      console.error('Failed to send analytics event:', error)
-    })
+    // Example: Send to custom API with better error handling
+    if (typeof window !== 'undefined') {
+      const eventData = JSON.stringify(event)
+      if (eventData && eventData !== '{}') {
+        fetch('/api/analytics', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': eventData.length.toString(),
+          },
+          body: eventData,
+        }).catch(error => {
+          console.error('Failed to send analytics event:', error)
+        })
+      }
+    }
   }
 
   // Predefined tracking methods for common events

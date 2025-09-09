@@ -67,3 +67,6 @@ Thumbs.db
 /.clerk/
 .vercel
 .env*.local
+
+# Database credentials and other sensitive files
+env.txt

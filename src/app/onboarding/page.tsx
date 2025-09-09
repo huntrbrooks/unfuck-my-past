@@ -12,6 +12,30 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [hasExisting, setHasExisting] = React.useState(false)
+  type OnboardingSafety = { crisisSupport: boolean; contentWarnings: boolean; skipTriggers: boolean }
+  interface OnboardingPayload {
+    ageBracket: string | string[]
+    tone: string
+    voice: string
+    rawness: string | string[]
+    depth: string | string[]
+    learning: string
+    engagement: string | string[]
+    goals: string[]
+    experience: string
+    timeCommitment: string
+    locationPermission: boolean
+    safety: OnboardingSafety
+    challenges: string[]
+    challengeOther: string | string[]
+    freeNote: string | string[]
+    enhancedTone: string[]
+    enhancedGuideStyle: string[]
+    enhancedLearningStyle: string[]
+    enhancedExperienceLevel: string[]
+    enhancedTimeCommitment: string[]
+  }
+  const [pendingData, setPendingData] = React.useState<OnboardingPayload | null>(null)
 
   // Redirect if not signed in
   React.useEffect(() => {
@@ -20,10 +44,48 @@ export default function OnboardingPage() {
     }
   }, [isLoaded, user, router])
 
+  const submitOnboarding = async (transformedData: OnboardingPayload) => {
+    try {
+      // Send to your existing API
+      const response = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transformedData)
+      })
+      
+      if (response.ok) {
+        console.log('✅ Onboarding API call successful, redirecting to diagnostic with loader...')
+        
+        // Set localStorage flag as fallback detection mechanism
+        localStorage.setItem('just-completed-onboarding', 'true')
+        
+        // Add a smooth fade-out transition before redirecting
+        const onboardingContainer = document.querySelector('.onboarding-container')
+        if (onboardingContainer) {
+          onboardingContainer.classList.add('opacity-0', 'transition-opacity', 'duration-500')
+        }
+        
+        // Redirect after a brief delay to allow smooth transition
+        setTimeout(() => {
+          router.push('/diagnostic?generating=true')
+        }, 300) // Short delay for smooth transition
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to save onboarding data')
+      }
+    } catch (error) {
+      console.error('Onboarding error:', error)
+      alert('There was an error saving your preferences. Please try again.')
+    } finally {
+      setPendingData(null)
+      setConfirmOpen(false)
+    }
+  }
+
   const handleComplete = async (payload: Record<string, string | string[] | undefined>) => {
     try {
       // Transform the new onboarding data to match your existing API structure
-      const transformedData = {
+      const transformedData: OnboardingPayload = {
         ageBracket: payload.ageBracket || '',
         tone: Array.isArray(payload.tone) ? payload.tone[0] || 'gentle' : payload.tone || 'gentle',
         voice: Array.isArray(payload.guideStyle) ? payload.guideStyle[0] || 'friend' : payload.guideStyle || 'friend',
@@ -42,8 +104,8 @@ export default function OnboardingPage() {
         },
         // New fields for better AI personalization
         challenges: Array.isArray(payload.challenges) ? payload.challenges : [payload.challenges || ''],
-        challengeOther: payload.challengeOther || '',
-        freeNote: payload.freeNote || '',
+        challengeOther: Array.isArray(payload.challengeOther) ? payload.challengeOther.join(' ') : (payload.challengeOther || ''),
+        freeNote: Array.isArray(payload.freeNote) ? payload.freeNote.join(' ') : (payload.freeNote || ''),
         // Enhanced preferences for AI
         enhancedTone: Array.isArray(payload.tone) ? payload.tone : [payload.tone || 'gentle'],
         enhancedGuideStyle: Array.isArray(payload.guideStyle) ? payload.guideStyle : [payload.guideStyle || 'friend'],
@@ -54,26 +116,14 @@ export default function OnboardingPage() {
 
       console.log('Enhanced onboarding data for AI:', transformedData)
 
-      // Send to your existing API
-      // If this is a redo and user opted out, do nothing
-      if (hasExisting && !confirm('Redo onboarding will overwrite your master prompt and related questions. Continue?')) {
-        router.push('/dashboard')
+      // If this is a redo, show themed confirmation and queue the payload
+      if (hasExisting) {
+        setPendingData(transformedData)
+        setConfirmOpen(true)
         return
       }
 
-      const response = await fetch('/api/onboarding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(transformedData)
-      })
-      
-      if (response.ok) {
-        // Redirect to diagnostic with generating parameter to show proper loading state
-        router.push('/diagnostic?generating=true')
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || 'Failed to save onboarding data')
-      }
+      await submitOnboarding(transformedData)
     } catch (error) {
       console.error('Onboarding error:', error)
       alert('There was an error saving your preferences. Please try again.')
@@ -97,7 +147,6 @@ export default function OnboardingPage() {
         if (res.ok) {
           const data = await res.json()
           setHasExisting((data.responses?.length || 0) > 0)
-          if ((data.responses?.length || 0) > 0) setConfirmOpen(true)
         }
       } catch {}
     })()
@@ -115,29 +164,65 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="onboarding-container min-h-screen bg-background transition-opacity duration-500">
       {confirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
-          <div className="rounded-xl glass-card shadow-xl w-full max-w-md">
-            <div className="p-6">
-              <h3 className="text-xl font-semibold text-foreground mb-2">You already completed onboarding</h3>
-              <p className="text-muted-foreground mb-6">
-                Redoing onboarding will update your master prompt and overwrite previously generated diagnostic questions.
-              </p>
-              <div className="flex gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="glass-card border border-border/50 shadow-2xl w-full max-w-md mx-4">
+            <div className="p-8 text-center">
+              {/* Icon */}
+              <div className="inline-flex items-center justify-center w-16 h-16 mb-4">
+                <div className="relative">
+                  <Image 
+                    src="/Line_art3-01.png" 
+                    alt="warning art" 
+                    width={64} 
+                    height={64} 
+                    className="w-16 h-auto drop-shadow-[0_0_18px_#ff6600] animate-float" 
+                  />
+                </div>
+              </div>
+
+              {/* Title */}
+              <h3 className="text-xl font-bold key-info neon-heading mb-2 [text-shadow:0_0_28px_rgba(204,255,0,0.9),0_0_56px_rgba(204,255,0,0.6),1px_1px_0_rgba(0,0,0,0.55),-1px_-1px_0_rgba(0,0,0,0.55)] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)]">
+                Already Completed Onboarding
+              </h3>
+
+              {/* Message */}
+              <div className="bg-muted/20 rounded-lg p-4 mb-6 border border-border/30">
+                <p className="text-foreground text-sm leading-relaxed">
+                  <strong>Redo onboarding will overwrite your master prompt and related questions.</strong>
+                </p>
+                <p className="text-muted-foreground text-sm mt-2">
+                  This will update your personalization settings and regenerate your diagnostic questions based on your new preferences.
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
-                  className="inline-flex items-center justify-center rounded-xl px-4 py-2 bg-primary text-primary-foreground font-medium flex-1"
-                  onClick={() => setConfirmOpen(false)}
+                  className="neon-cta flex-1 py-3 px-6 text-base font-semibold"
+                  onClick={() => {
+                    if (pendingData) {
+                      submitOnboarding(pendingData)
+                    } else {
+                      setConfirmOpen(false)
+                    }
+                  }}
                 >
-                  Proceed
+                  Continue & Overwrite
                 </button>
                 <button
-                  className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-border bg-background text-foreground flex-1"
+                  className="flex-1 py-3 px-6 text-base font-medium rounded-xl border border-border bg-background text-foreground hover:bg-muted/50 transition-colors"
                   onClick={() => router.push('/dashboard')}
                 >
-                  Cancel
+                  Keep Current Settings
                 </button>
               </div>
+
+              {/* Info note */}
+              <p className="text-muted-foreground text-xs mt-4">
+                You can always update your preferences later in the dashboard
+              </p>
             </div>
           </div>
         </div>

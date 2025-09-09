@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +11,7 @@ import { AlertTriangle, CheckCircle, Sparkles, Target, Loader2, ArrowRight, Hear
 import Image from 'next/image'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import PaymentForm from '@/components/PaymentForm'
+import { Textarea } from '@/components/ui/textarea'
 
 interface ProgramProgress {
   completed: number
@@ -97,19 +99,45 @@ export default function Program() {
     sleep: false,
     holistic: false,
   })
+  const [isStructuredDay, setIsStructuredDay] = useState(false)
+  const [locationQuery, setLocationQuery] = useState('')
+  const [resolvingLocation, setResolvingLocation] = useState(false)
+  const [countryCode, setCountryCode] = useState('')
+  const [reflectionSelected, setReflectionSelected] = useState<Set<number>>(new Set())
+  const [reflectionAnswerMode, setReflectionAnswerMode] = useState(false)
+  const [reflectionDraftAnswers, setReflectionDraftAnswers] = useState<Record<number, string>>({})
+  const [pendingReflectionQA, setPendingReflectionQA] = useState<Array<{ index: number; question: string; answer: string }>>([])
+  const [miniJournalEntry, setMiniJournalEntry] = useState('')
+  const [miniJournalMood, setMiniJournalMood] = useState<string>('')
+  const [miniJournalSaving, setMiniJournalSaving] = useState(false)
+  const [miniJournalInsights, setMiniJournalInsights] = useState<string[] | null>(null)
+  const [showMiniJournalInsights, setShowMiniJournalInsights] = useState(false)
+  const [pendingJournal, setPendingJournal] = useState<{ content: string; mood?: string; insights?: string[] } | null>(null)
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.language && !countryCode) {
+      const parts = navigator.language.split('-')
+      if (parts[1]) setCountryCode(parts[1].toUpperCase())
+    }
+  }, [])
 
   useEffect(() => {
     // Reset per-day UI state when day changes
     setSectionCollapsed({ mainFocus: true, guidedPractice: true, challenge: true, journalingPrompt: true, reflection: true, weather: true, sleep: true, holistic: true })
     setSectionTaskCompleted({ guidedPractice: new Set(), challenge: new Set(), journalingPrompt: new Set(), reflection: new Set(), weather: new Set(), sleep: new Set(), holistic: new Set() })
     setSectionCompleted({ mainFocus: false, guidedPractice: false, challenge: false, journalingPrompt: false, reflection: false, weather: false, sleep: false, holistic: false })
+    setReflectionSelected(new Set())
+    setReflectionAnswerMode(false)
+    setReflectionDraftAnswers({})
+    setPendingReflectionQA([])
   }, [currentDay?.day])
 
   const toggleSection = (key: string) => setSectionCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
   const isTaskLine = (line: string) => line.trim().startsWith('•') || /^\d+\./.test(line.trim())
   const taskLabel = (line: string) => line.trim().startsWith('•') ? line.substring(1).trim() : line.replace(/^\d+\.\s*/, '').trim()
   const isSubheadingLine = (line: string) => /:\s*$/.test(line.trim())
-  const isDurationTaskLine = (line: string) => /\(\s*\d+(?:\s*-\s*\d+)?\s*minutes?\s*\)/i.test(line.trim())
+  const isDurationHeaderLine = (line: string) => /\(\s*\d+(?:\s*-\s*\d+)?\s*minutes?\s*\)/i.test(line.trim())
+  const isMainActivityLine = (line: string) => /^Main\s*Activity\s*\(.*minutes?\)/i.test(line.trim())
   const renderQuotedText = (text: string): React.ReactNode => {
     const parts = text.split(/(".*?")/g)
     return (
@@ -133,7 +161,7 @@ export default function Program() {
   }
   const allTasksCompleted = (sectionKey: string, lines: string[]) => {
     const indices = lines
-      .map((l, i) => (isTaskLine(l) || (sectionKey === 'guidedPractice' && isDurationTaskLine(l))) ? i : -1)
+      .map((l, i) => (isTaskLine(l)) ? i : -1)
       .filter(i => i >= 0)
     if (indices.length === 0) return false
     const done = sectionTaskCompleted[sectionKey] || new Set()
@@ -236,6 +264,106 @@ export default function Program() {
     return picked
   }
 
+  // Estimate total duration by parsing durations from guided practice and challenge lines
+  const estimatedTotalMinutes = useMemo(() => {
+    if (!currentDay) return 30
+    const parseDur = (text: string): number => {
+      // captures (5 minutes) or (15-20 minutes) -> take upper bound when range
+      const m = text.match(/\((\d+)(?:\s*-\s*(\d+))?\s*minutes?\)/i)
+      if (!m) return 0
+      const a = Number(m[1])
+      const b = m[2] ? Number(m[2]) : undefined
+      return b && b > a ? b : a
+    }
+    let total = 0
+    // Guided Practice: sum all explicit duration lines
+    currentDay.content.guidedPractice.split('\n').forEach(l => { total += parseDur(l) })
+    // Daily Challenge main activity: count first duration occurrence
+    const chLines = currentDay.content.challenge.split('\n')
+    for (const l of chLines) { const d = parseDur(l); if (d) { total += d; break } }
+    // Sleep & Wellness, Holistic: typically checklist (no explicit minutes) -> skip
+    // Journaling/Reflection: add small fixed buffers
+    total += 5 // journaling quick entry buffer
+    total += 5 // reflection buffer
+    return total || 30
+  }, [currentDay])
+
+  const buildMainFocusDetail = (mainFocus: string, themeText: string) => {
+    const focus = (mainFocus || 'Daily Healing Practice').trim()
+    const theme = (themeText || deriveTheme(focus)).trim()
+    return (
+      <div className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
+        <p><strong className="text-foreground">What today focuses on</strong>: {focus}</p>
+        <p><strong className="text-foreground">Why this matters now</strong>: This theme of {theme.toLowerCase()} targets a current friction point so you can reduce emotional load and build momentum in small, sustainable ways.</p>
+        <p><strong className="text-foreground">How it helps you personally</strong>: It translates to one or two clear actions you can finish today—proof that progress is possible without overwhelm.</p>
+      </div>
+    )
+  }
+
+  // Journaling helpers
+  const extractPrimaryPrompt = (lines: string[]): { prompt: string; exclude: Set<number> } => {
+    const exclude = new Set<number>()
+    for (let i = 0; i < lines.length; i++) {
+      const t = lines[i]?.trim() || ''
+      if (!t) continue
+      if (/^📝/.test(t) || /^##\s*📝/i.test(t)) continue
+      if (/^Primary\s*Question:/i.test(t)) {
+        const nxt = (lines[i + 1] || '').trim()
+        if (nxt) {
+          const q = nxt.replace(/^"|"$/g, '')
+          exclude.add(i); exclude.add(i + 1)
+          return { prompt: q, exclude }
+        }
+      }
+      if (/^".*"$/.test(t)) {
+        exclude.add(i)
+        return { prompt: t.replace(/^"|"$/g, ''), exclude }
+      }
+      if (/\?$/.test(t)) {
+        exclude.add(i)
+        return { prompt: t, exclude }
+      }
+    }
+    // fallback: first meaningful non-bullet line
+    for (let i = 0; i < lines.length; i++) {
+      const t = lines[i]?.trim() || ''
+      if (!t) continue
+      if (t.startsWith('•') || /^\d+\./.test(t) || /^📝/.test(t)) continue
+      exclude.add(i)
+      return { prompt: t.replace(/^"|"$/g, ''), exclude }
+    }
+    return { prompt: 'What feels most alive for you right now?', exclude }
+  }
+
+  const getPromptSubject = (prompt: string): string => {
+    const raw = (prompt || '').replace(/^"|"$/g, '').trim()
+    const withoutLead = raw.replace(/^(how|what|why|when|where|which|who)\s+(does|do|did|is|are|was|were|can|could|should|would|will|might|may)\s+/i, '')
+    const core = withoutLead.replace(/[?]+$/g, '')
+    const tokens = core.split(/\s+/)
+    const banned = new Set<string>([
+      'does','do','did','is','are','was','were','can','could','should','would','will','might','may','how','what','why','when','where','which','who','your','you','our','the','and','with','into','from','that','this','about'
+    ])
+    for (const t of tokens) {
+      const clean = t.toLowerCase().replace(/[^a-z]/g, '')
+      if (clean.length >= 4 && !banned.has(clean)) return clean
+    }
+    return 'this topic'
+  }
+
+  const buildJournalingExplanation = (prompt: string): string => {
+    const topic = getPromptSubject(prompt)
+    return `This prompt helps you notice patterns around ${topic}, name what's true without judgment, and choose a 1% kinder response going forward.`
+  }
+
+  const buildFollowUpQuestions = (prompt: string): string[] => {
+    const subject = getPromptSubject(prompt)
+    return [
+      `When does ${subject} feel strongest, and what small trigger shows up first?`,
+      `If you gave yourself a 1% kinder response next time, what would that look like?`,
+      `What boundary or support would make working with ${subject} easier today?`
+    ]
+  }
+
   useEffect(() => {
     checkProgramAccess()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -278,6 +406,40 @@ export default function Program() {
     } catch (error) {
       console.error('Error getting location or weather:', error)
       setLocationPermission('denied')
+    }
+  }
+
+  const resolveManualLocation = async () => {
+    if (!locationQuery.trim()) return
+    try {
+      setResolvingLocation(true)
+      const geo = await fetch('/api/geocode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: locationQuery, country: countryCode || undefined })
+      })
+      if (!geo.ok) {
+        console.error('Geocode failed')
+          return
+        }
+      const { latitude, longitude, name } = await geo.json()
+      const w = await fetch('/api/weather', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude, longitude, label: name })
+      })
+      if (!w.ok) {
+        console.error('Weather fetch failed')
+          return
+      }
+      const data = await w.json()
+      setWeatherData(data)
+      setLocationPermission('granted')
+      loadProgramData()
+    } catch (e) {
+      console.error('Manual location resolve error', e)
+    } finally {
+      setResolvingLocation(false)
     }
   }
 
@@ -359,6 +521,20 @@ export default function Program() {
             const parsedContent = parseDailyContent(dayData.content, weatherData)
             const theme = dayData.theme || deriveTheme(parsedContent.mainFocus)
             const poeticTitle = dayData.poeticTitle || derivePoeticTitle(parsedContent.mainFocus, theme)
+
+            // Map difficulty from structured plan when present
+            const mapStructuredDifficulty = (d: string | undefined): 'easy' | 'moderate' | 'challenging' => {
+              if (!d) return 'moderate'
+              if (d === 'easy') return 'easy'
+              if (d === 'medium') return 'moderate'
+              if (d === 'hard') return 'challenging'
+              return 'moderate'
+            }
+            const effectiveDifficulty: 'easy' | 'moderate' | 'challenging' = dayData.isStructured && dayData.structuredPlan
+              ? mapStructuredDifficulty(dayData.structuredPlan?.difficulty)
+              : 'moderate'
+
+            setIsStructuredDay(Boolean(dayData.isStructured))
             setCurrentDay({
               day: currentDay,
               title: `Day ${currentDay}`,
@@ -378,7 +554,7 @@ export default function Program() {
               metadata: {
                 category: 'awareness',
                 duration: 30,
-                difficulty: 'moderate',
+                difficulty: effectiveDifficulty,
                 traumaFocus: []
               },
               theme,
@@ -593,20 +769,25 @@ export default function Program() {
           weatherData: weatherData,
           previousDays: Array.from(completedDays),
           currentProgress: progress,
-          difficulty: nextDayDifficulty
+          difficulty: nextDayDifficulty,
+          reflectionQA: pendingReflectionQA.map(({ question, answer }) => ({ question, answer })),
+          journal: pendingJournal
         })
       })
 
       if (response.ok) {
         const dayData = await response.json()
         const parsedContent = parseDailyContent(dayData.content, weatherData)
-        const theme = dayData.theme || deriveTheme(parsedContent.mainFocus)
-        const poeticTitle = dayData.poeticTitle || derivePoeticTitle(parsedContent.mainFocus, theme)
-        console.log('Successfully generated day', nextDay, 'content')
-        
+        const theme = deriveTheme(parsedContent.mainFocus)
+        const poeticTitle = derivePoeticTitle(parsedContent.mainFocus, theme)
+
+        const effectiveDifficulty = isStructuredDay
+          ? (dayData?.structuredPlan?.difficulty === 'easy' ? 'easy' : dayData?.structuredPlan?.difficulty === 'medium' ? 'moderate' : 'challenging')
+          : nextDayDifficulty
+
         setCurrentDay({
           day: nextDay,
-          title: `Day ${nextDay}`,
+          title: parsedContent.mainFocus,
           focus: parsedContent.mainFocus,
           content: {
             introduction: '',
@@ -623,13 +804,15 @@ export default function Program() {
           metadata: {
             category: 'awareness',
             duration: 30,
-            difficulty: nextDayDifficulty,
+            difficulty: effectiveDifficulty,
             traumaFocus: []
           },
           theme,
           poeticTitle
         })
 
+        // Clear pending reflection data after generating next day
+        setPendingReflectionQA([])
         // Don't update progress here - it will be updated when the day is completed
       } else {
         const errorText = await response.text().catch(() => 'Unknown error')
@@ -657,6 +840,209 @@ export default function Program() {
     }
   }
 
+  const JournalingBlock: React.FC<{ text: string; done: boolean }> = ({ text, done }) => {
+    const lines = text.split('\n')
+    const { prompt, exclude } = extractPrimaryPrompt(lines)
+    const explanation = buildJournalingExplanation(prompt)
+    const followUps = buildFollowUpQuestions(prompt)
+    return (
+      <div id="section-journalingPrompt" className={`whitespace-pre-line leading-relaxed space-y-3 ${done ? 'text-[#ccff00]' : 'text-foreground'}`}>
+        <div className="space-y-2">
+          <div className="font-semibold text-foreground">{prompt}</div>
+          <div className="italic text-muted-foreground">{explanation}</div>
+          <ul className="list-disc pl-5 space-y-1">
+            {followUps.map((q, i) => (
+              <li key={i}>{q}</li>
+            ))}
+          </ul>
+        </div>
+        {lines.map((line, index) => {
+          if (exclude.has(index)) return null
+          if (isSubheadingLine(line)) {
+            return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
+          } else if (line.trim().startsWith('•')) {
+            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
+          } else if (line.trim() && !line.trim().startsWith('📝')) {
+            return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
+          }
+          return null
+        })}
+      </div>
+    )
+  }
+
+  const renderChallengeLines = (lines: string[]) => {
+    const nodes: React.ReactNode[] = []
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i] ?? ''
+      const trimmed = line.trim()
+      if (!trimmed) continue
+      if (isSubheadingLine(trimmed)) {
+        nodes.push(<div key={`ch-sub-${i}`} className="font-semibold underline text-foreground">{trimmed}</div>)
+        continue
+      }
+      // Energy level adaptations styling
+      if (/^(Low|Medium|High):/i.test(trimmed)) {
+        const level = trimmed.match(/^(Low|Medium|High):/i)?.[1]?.toLowerCase() || ''
+        const colorClass = level === 'medium'
+          ? 'text-[#ffd400]'
+          : level === 'high'
+            ? 'text-[#ccff00]'
+            : 'text-[#ff3366]'
+        const glowStyle = level === 'medium'
+          ? { filter: 'drop-shadow(0 0 8px #ffd400)' }
+          : level === 'high'
+            ? { filter: 'drop-shadow(0 0 8px #ccff00)' }
+            : { filter: 'drop-shadow(0 0 8px #ff3366)' }
+        nodes.push(
+          <div key={`ch-energy-${i}`} className={`font-medium ${colorClass}`} style={glowStyle}>{renderQuotedText(trimmed)}</div>
+        )
+        continue
+      }
+      if (isMainActivityLine(trimmed)) {
+        const duration = (trimmed.match(/\(([^)]+)\)/) || [,''])[1]
+        // Next non-empty line is treated as title
+        const next = (lines[i + 1] || '').trim()
+        const title = next || trimmed.replace(/^Main\s*Activity\s*/i, '').replace(/\(([^)]+)\)/, '').trim()
+        nodes.push(<div key={`ch-main-${i}`} className="font-semibold text-foreground">{`${title}${duration ? ` (${duration})` : ''}`}</div>)
+        if (next) i += 1
+        continue
+      }
+      if (isTaskLine(trimmed)) {
+        const checked = (sectionTaskCompleted.challenge || new Set()).has(i)
+        nodes.push(
+          <label key={`ch-task-${i}`} className="flex items-start gap-2 cursor-pointer">
+            <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('challenge', i, e.target.checked)} aria-label={`Daily Challenge step ${i + 1}`} />
+            <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(trimmed))}</span>
+          </label>
+        )
+        continue
+      }
+      if (!trimmed.startsWith('⚡')) {
+        nodes.push(<div key={`ch-text-${i}`} className="font-medium text-foreground">{renderQuotedText(trimmed)}</div>)
+      }
+    }
+    return nodes
+  }
+
+  const getReflectionQuestionCount = (_difficulty: 'easy' | 'moderate' | 'challenging'): number => {
+    return 5
+  }
+
+  const buildReflectionQuestions = (
+    mainFocus: string,
+    themeText: string,
+    difficulty: 'easy' | 'moderate' | 'challenging'
+  ): string[] => {
+    const focus = (mainFocus || 'today\'s practice').trim()
+    const theme = (themeText || deriveTheme(focus)).trim()
+    const base: string[] = [
+      `What did you notice shifting in you while working with ${theme.toLowerCase()}?`,
+      `Where did resistance show up today, and what did it try to protect?`,
+      `What small proof did you gather that ${focus.toLowerCase()} matters for your healing?`,
+      `If you repeated one tiny part of today tomorrow, which would build the most momentum?`,
+      `What support or boundary would make ${theme.toLowerCase()} easier for you this week?`
+    ]
+    const count = getReflectionQuestionCount(difficulty)
+    return base.slice(0, count)
+  }
+
+  const moodOptions = [
+    { emoji: '😊', label: 'Happy', value: 'happy' },
+    { emoji: '😌', label: 'Calm', value: 'calm' },
+    { emoji: '😔', label: 'Sad', value: 'sad' },
+    { emoji: '😰', label: 'Anxious', value: 'anxious' },
+    { emoji: '😴', label: 'Tired', value: 'tired' },
+    { emoji: '🤔', label: 'Thoughtful', value: 'thoughtful' },
+    { emoji: '💪', label: 'Motivated', value: 'motivated' },
+    { emoji: '🕊️', label: 'Peaceful', value: 'peaceful' },
+    { emoji: '🔥', label: 'Energized', value: 'energized' }
+  ] as const
+
+  const generateLocalInsights = (content: string, mood: string): string[] => {
+    const lower = (content || '').toLowerCase()
+    const insights: string[] = []
+    if (lower.includes('grateful') || lower.includes('thankful')) insights.push("You're practicing gratitude - this is linked to improved wellbeing")
+    if (lower.includes('stress') || lower.includes('worried')) insights.push('Try a 4-2-6 breath when stress spikes')
+    if ((mood || '') === 'happy') insights.push('Positive affect boosts learning and creativity today')
+    if ((mood || '') === 'motivated') insights.push('Motivation paired with small actions creates lasting change')
+    if ((mood || '') === 'peaceful') insights.push('Inner peace is a foundation for healing and growth')
+    if ((mood || '') === 'energized') insights.push('High energy is perfect for tackling challenging tasks today')
+    if (content.length > 200) insights.push('Long-form reflection helps integrate emotions')
+    if (lower.includes('goal') || lower.includes('plan')) insights.push('Setting intentions increases follow‑through')
+    if (insights.length === 0) insights.push('Consistent journaling improves self-awareness over time')
+    return insights
+  }
+
+  const saveMiniJournal = async (content: string, mood: string) => {
+    if (!content.trim()) return
+    setMiniJournalSaving(true)
+    try {
+      const res = await fetch('/api/journal/insight', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, mood })
+      })
+      let insights: string[]
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}))
+        insights = Array.isArray(data.insights) ? data.insights : []
+      } else {
+        insights = generateLocalInsights(content, mood)
+      }
+      setMiniJournalInsights(insights)
+      setShowMiniJournalInsights(true)
+      setPendingJournal({ content, mood, insights })
+      setSectionCompleted(prev => ({ ...prev, journalingPrompt: true }))
+    } catch {
+      const insights = generateLocalInsights(content, mood)
+      setMiniJournalInsights(insights)
+      setShowMiniJournalInsights(true)
+      setPendingJournal({ content, mood, insights })
+      setSectionCompleted(prev => ({ ...prev, journalingPrompt: true }))
+    } finally {
+      setMiniJournalSaving(false)
+      setMiniJournalEntry('')
+      setMiniJournalMood('')
+    }
+  }
+
+  const filterSleepLines = (lines: string[]): string[] => {
+    const result: string[] = []
+    let skippingPreBed = false
+    for (const rawLine of lines) {
+      const line = (rawLine || '').trim()
+      if (!skippingPreBed && /^pre[–-]?bedtime\s*routine:?/i.test(line)) {
+        skippingPreBed = true
+        continue
+      }
+      if (skippingPreBed) {
+        if (line && !isTaskLine(line)) {
+          skippingPreBed = false
+        } else {
+          continue
+        }
+      }
+      result.push(rawLine)
+    }
+    return result
+  }
+
+  // Auto-complete Today's Main Focus when all other sections are done
+  useEffect(() => {
+    if (!currentDay) return
+    const othersDone =
+      isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) &&
+      isSectionDone('challenge', currentDay.content.challenge.split('\n')) &&
+      isSectionDone('journalingPrompt') &&
+      isSectionDone('reflection') &&
+      isSectionDone('weather') &&
+      isSectionDone('sleep', filterSleepLines(currentDay.content.sleep.split('\n'))) &&
+      isSectionDone('holistic')
+    if (othersDone && !sectionCompleted.mainFocus) {
+      setSectionCompleted(prev => ({ ...prev, mainFocus: true }))
+    }
+  }, [currentDay, sectionCompleted, sectionTaskCompleted])
+
   if (checkingAccess) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -671,8 +1057,8 @@ export default function Program() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-4 mb-6">
-              <div className="p-4 rounded-full bg-primary/10">
-                <Heart className="h-10 w-10 text-primary" />
+              <div className="mx-auto mb-4 w-20 h-20 flex items-center justify-center">
+                <Image src="/Lineartneon-10.png" alt="program lock art" width={80} height={80} className="w-20 h-auto drop-shadow-[0_0_12px_#a855f7]" />
               </div>
               <div>
                 <h1 className="responsive-heading neon-heading">30-Day Healing Program</h1>
@@ -684,8 +1070,8 @@ export default function Program() {
           <Card className="glass-card border-0 shadow-2xl overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/20 px-8 py-8">
               <div className="text-center">
-                <div className="p-4 rounded-full bg-primary/20 mx-auto mb-6 w-20 h-20 flex items-center justify-center">
-                  <Lock className="h-10 w-10 text-primary" />
+                <div className="mx-auto mb-6 w-20 h-20 flex items-center justify-center">
+                  <Image src="/Lineartneon-06.png" alt="unlock art" width={80} height={80} className="w-20 h-auto drop-shadow-[0_0_12px_#a855f7]" />
                 </div>
                 <h2 className="text-2xl font-bold text-foreground mb-4">Unlock Your Healing Journey</h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
@@ -717,7 +1103,7 @@ export default function Program() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading your healing program..." />
+          <LoadingSpinner size="lg" text="Loading your healing program..." />
       </div>
     )
   }
@@ -771,7 +1157,7 @@ export default function Program() {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                 <div className="flex items-center gap-4 md:flex-1">
                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+                    <TrendingUp className="h-6 w-6 text-black dark:text-white drop-shadow-[0_0_8px_#ccff00]" />
               </div>
                   <div className="w-full">
                     <div className="text-sm text-muted-foreground text-left">Overall Progress</div>
@@ -803,34 +1189,47 @@ export default function Program() {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        {/* Location Permission Request */}
+        {/* Location Permission / Manual Input */}
         {locationPermission === 'pending' && (
           <div className="mb-8">
             <Card className="modern-card border-0">
               <CardContent className="p-6">
                 <div className="text-center">
                   <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                    <Target className="h-8 w-8 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+                    <Target className="h-8 w-8 text-black dark:text-white drop-shadow-[0_0_8px_#ccff00]" />
                 </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">Enable Location for Weather Insights</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Weather Insights</h3>
                   <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                    Allow location access to get personalized weather-based activity recommendations 
-                    and environmental adaptations for your healing journey.
+                    Use your current location or enter a city/postcode to personalize recommendations.
                   </p>
-                  <div className="flex gap-3 justify-center">
+                  <div className="flex flex-col md:flex-row gap-3 justify-center items-center">
                     <Button 
                       onClick={requestLocationPermission}
                       className="group hover:scale-105 transition-transform duration-200 neon-cta"
                     >
                       <Sun className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform duration-200" />
-                      Enable Location Access
+                      Use My Location
                     </Button>
-                    <Button 
-                      onClick={() => setLocationPermission('denied')}
-                      variant="outline"
-                    >
-                      Skip for Now
+                    <div className="flex w-full md:w-auto gap-2">
+                      <Input
+                        value={locationQuery}
+                        onChange={(e) => setLocationQuery(e.target.value)}
+                        placeholder="City or postcode"
+                        className="w-full md:w-72"
+                        aria-label="City or postcode"
+                      />
+                      <Input
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
+                        placeholder="Country (e.g., AU)"
+                        className="w-24 uppercase"
+                        aria-label="Country code"
+                        maxLength={2}
+                      />
+                      <Button onClick={resolveManualLocation} disabled={resolvingLocation} variant="outline">
+                        {resolvingLocation ? 'Resolving…' : 'Set'}
                     </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -902,7 +1301,7 @@ export default function Program() {
                   <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold text-foreground">Day {currentDay.day}: {currentDay.poeticTitle || currentDay.title}</h3>
                     <Badge variant="success" className="text-sm" style={{ backgroundColor: '#ccff00', color: '#0a0a0a' }}>
-                      {currentDay.metadata.duration} min
+                      {estimatedTotalMinutes} min
                     </Badge>
                   </div>
                 </CardHeader>
@@ -910,260 +1309,511 @@ export default function Program() {
                   <div className="space-y-6">
                     {/* Main Focus */}
                     <div className="rounded-xl p-6 bg-background">
-                      <button onClick={() => toggleSection('mainFocus')} className="w-full text-left">
-                        <h5 className="font-semibold mb-2 flex items-center justify-between gap-2 text-lg neon-heading">
-                          <span className="flex items-center gap-2">
-                            <Target className={`h-5 w-5 ${isSectionDone('mainFocus') ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('mainFocus') ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #ccff00)' }} />
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('mainFocus')}
+                          aria-controls="section-mainFocus"
+                          className="text-left"
+                        >
+                          <h5 className="font-semibold flex items-center gap-2 text-lg neon-heading">
+                            <Target className={`h-5 w-5 ${isSectionDone('mainFocus') ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#ccff00]'}`} />
                             Today&apos;s Main Focus
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('mainFocus')} onChange={() => toggleSectionCompleted('mainFocus')} />
-                            {isSectionDone('mainFocus') && <span className="text-[#ccff00] text-sm" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
-                            <span className="text-muted-foreground">{sectionCollapsed.mainFocus ? '▼' : '▲'}</span>
-                          </span>
-                        </h5>
-                      </button>
+                            <span className="ml-2 text-muted-foreground">{sectionCollapsed.mainFocus ? '▼' : '▲'}</span>
+                          </h5>
+                        </button>
+                        <label htmlFor="chk-mainFocus" className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            id="chk-mainFocus"
+                            type="checkbox"
+                            checked={isSectionDone('mainFocus')}
+                            onChange={() => toggleSectionCompleted('mainFocus')}
+                            aria-label="Mark Today's Main Focus as completed"
+                          />
+                          {isSectionDone('mainFocus') && (
+                            <span className="text-[#ccff00] text-sm drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>
+                          )}
+                        </label>
+                      </div>
                       {!sectionCollapsed.mainFocus && (
-                        <p className="text-foreground">{currentDay.content.mainFocus || 'Daily Healing Practice'}</p>
+                        <div id="section-mainFocus" className="text-foreground">
+                          <p>{currentDay.content.mainFocus || 'Daily Healing Practice'}</p>
+                          {buildMainFocusDetail(currentDay.content.mainFocus, currentDay.theme || deriveTheme(currentDay.content.mainFocus))}
+                        </div>
                       )}
                     </div>
 
                     {/* Guided Practice */}
                     <div className="rounded-xl p-6 bg-background">
-                      <button onClick={() => toggleSection('guidedPractice')} className="w-full text-left">
-                        <h5 className="font-semibold neon-glow-cyan mb-2 flex items-center justify-between gap-2 text-lg">
-                          <span className="flex items-center gap-2">
-                            <Sun className={`h-5 w-5 ${isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #00e5ff)' }} />
-                            Guided Practice
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n'))} onChange={() => toggleSectionCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n'))} />
-                            {isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
-                            <span className="text-muted-foreground">{sectionCollapsed.guidedPractice ? '▼' : '▲'}</span>
-                          </span>
-                        </h5>
-                      </button>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('guidedPractice')}
+                          aria-controls="section-guidedPractice"
+                          className="text-left"
+                        >
+                          <h5 className="font-semibold neon-glow-cyan flex items-center gap-2 text-lg">
+                            <Sun className={`h-5 w-5 ${isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#00e5ff]'}`} />
+                        Guided Practice
+                            <span className="ml-2 text-muted-foreground">{sectionCollapsed.guidedPractice ? '▼' : '▲'}</span>
+                      </h5>
+                        </button>
+                        <label htmlFor="chk-guidedPractice" className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            id="chk-guidedPractice"
+                            type="checkbox"
+                            checked={isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n'))}
+                            onChange={() => toggleSectionCompleted('guidedPractice', currentDay.content.guidedPractice.split('\n'))}
+                            aria-label="Mark Guided Practice as completed"
+                          />
+                          {isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) && (
+                            <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>
+                          )}
+                        </label>
+                      </div>
                       {!sectionCollapsed.guidedPractice && (
-                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00]' : 'text-foreground'}`}>
-                          {currentDay.content.guidedPractice.split('\n').map((line, index) => {
+                        <div id="section-guidedPractice" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                        {currentDay.content.guidedPractice.split('\n').map((line, index) => {
                             if (isSubheadingLine(line)) {
                               return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
-                            } else if (isTaskLine(line) || isDurationTaskLine(line)) {
+                            } else if (isDurationHeaderLine(line)) {
+                              return <div key={index} className="font-semibold text-foreground">{renderQuotedText(line.trim())}</div>
+                            } else if (isTaskLine(line)) {
                               const checked = (sectionTaskCompleted.guidedPractice || new Set()).has(index)
                               return (
                                 <label key={index} className="flex items-start gap-2 cursor-pointer">
-                                  <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('guidedPractice', index, e.target.checked)} />
+                                  <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('guidedPractice', index, e.target.checked)} aria-label={`Guided Practice step ${index + 1}`} />
                                   <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(line))}</span>
                                 </label>
                               )
-                            } else if (line.trim() && !line.trim().startsWith('🌅')) {
+                          } else if (line.trim() && !line.trim().startsWith('🌅')) {
                               return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
-                            }
-                            return null
-                          })}
-                        </div>
+                          }
+                          return null
+                        })}
+                      </div>
                       )}
                     </div>
                     
                     {/* Daily Challenge */}
                     <div className="rounded-xl p-6 bg-background">
-                      <button onClick={() => toggleSection('challenge')} className="w-full text-left">
-                        <h5 className="font-semibold neon-glow-orange mb-2 flex items-center justify-between gap-2 text-lg">
-                          <span className="flex items-center gap-2">
-                            <Zap className={`h-5 w-5 ${isSectionDone('challenge', currentDay.content.challenge.split('\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('challenge', currentDay.content.challenge.split('\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #22c55e)' }} />
-                            Daily Challenge
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('challenge', currentDay.content.challenge.split('\n'))} onChange={() => toggleSectionCompleted('challenge', currentDay.content.challenge.split('\n'))} />
-                            {isSectionDone('challenge', currentDay.content.challenge.split('\n')) && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
-                            <span className="text-muted-foreground">{sectionCollapsed.challenge ? '▼' : '▲'}</span>
-                          </span>
-                        </h5>
-                      </button>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('challenge')}
+                          aria-controls="section-challenge"
+                          className="text-left"
+                        >
+                          <h5 className="font-semibold neon-glow-orange flex items-center gap-2 text-lg">
+                            <Zap className={`h-5 w-5 ${isSectionDone('challenge', currentDay.content.challenge.split('\n')) ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#22c55e]'}`} />
+                        Daily Challenge
+                            <span className="ml-2 text-muted-foreground">{sectionCollapsed.challenge ? '▼' : '▲'}</span>
+                      </h5>
+                        </button>
+                        <label htmlFor="chk-challenge" className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            id="chk-challenge"
+                            type="checkbox"
+                            checked={isSectionDone('challenge', currentDay.content.challenge.split('\n'))}
+                            onChange={() => toggleSectionCompleted('challenge', currentDay.content.challenge.split('\n'))}
+                            aria-label="Mark Daily Challenge as completed"
+                          />
+                          {isSectionDone('challenge', currentDay.content.challenge.split('\n')) && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
+                        </label>
+                      </div>
                       {!sectionCollapsed.challenge && (
-                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('challenge', currentDay.content.challenge.split('\n')) ? 'text-[#ccff00]' : 'text-foreground'}`}>
-                          {currentDay.content.challenge.split('\n').map((line, index) => {
-                            if (isSubheadingLine(line)) {
-                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
-                            } else if (isTaskLine(line)) {
-                              const checked = (sectionTaskCompleted.challenge || new Set()).has(index)
-                              return (
-                                <label key={index} className="flex items-start gap-2 cursor-pointer">
-                                  <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('challenge', index, e.target.checked)} />
-                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(line))}</span>
-                                </label>
-                              )
-                            } else if (line.trim() && !line.trim().startsWith('⚡')) {
-                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
-                            }
-                            return null
-                          })}
+                        <div id="section-challenge" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('challenge', currentDay.content.challenge.split('\n')) ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                          {renderChallengeLines(currentDay.content.challenge.split('\n'))}
                         </div>
                       )}
-                    </div>
+                  </div>
                   
                     {/* Journaling Prompt */}
                     <div className="rounded-xl p-6 bg-background">
-                      <button onClick={() => toggleSection('journalingPrompt')} className="w-full text-left">
-                        <h5 className="font-semibold neon-glow-pink mb-2 flex items-center justify-between gap-2 text-lg">
-                          <span className="flex items-center gap-2">
-                            <Sparkles className={`h-5 w-5 ${isSectionDone('journalingPrompt') ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('journalingPrompt') ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #ff1aff)' }} />
-                            Journaling Prompt
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('journalingPrompt')} onChange={() => toggleSectionCompleted('journalingPrompt')} />
-                            {isSectionDone('journalingPrompt') && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
-                            <span className="text-muted-foreground">{sectionCollapsed.journalingPrompt ? '▼' : '▲'}</span>
-                          </span>
-                        </h5>
-                      </button>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('journalingPrompt')}
+                          aria-controls="section-journalingPrompt"
+                          className="text-left"
+                        >
+                          <h5 className="font-semibold neon-glow-pink flex items-center gap-2 text-lg">
+                            <Sparkles className={`h-5 w-5 ${isSectionDone('journalingPrompt') ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#ff1aff]'}`} />
+                        Journaling Prompt
+                            <span className="ml-2 text-muted-foreground">{sectionCollapsed.journalingPrompt ? '▼' : '▲'}</span>
+                      </h5>
+                        </button>
+                        <label htmlFor="chk-journalingPrompt" className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            id="chk-journalingPrompt"
+                            type="checkbox"
+                            checked={isSectionDone('journalingPrompt')}
+                            onChange={() => toggleSectionCompleted('journalingPrompt')}
+                            aria-label="Mark Journaling Prompt as completed"
+                          />
+                          {isSectionDone('journalingPrompt') && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
+                        </label>
+                      </div>
                       {!sectionCollapsed.journalingPrompt && (
-                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('journalingPrompt') ? 'text-[#ccff00]' : 'text-foreground'}`}>
-                          {currentDay.content.journalingPrompt.split('\n').map((line, index) => {
-                            if (isSubheadingLine(line)) {
-                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
-                            } else if (line.trim().startsWith('•')) {
-                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
-                            } else if (line.trim() && !line.trim().startsWith('📝')) {
-                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
-                            }
-                            return null
-                          })}
+                        <div className="space-y-4" id="section-journalingPrompt">
+                          <JournalingBlock text={currentDay.content.journalingPrompt} done={isSectionDone('journalingPrompt')} />
+                          {/* Compact Journal (placed at bottom of Journaling Prompt) */}
+                          <div className="rounded-lg border border-border p-4 bg-card/30">
+                            <div className="text-sm font-medium text-muted-foreground mb-2">Quick Journal</div>
+                            {!showMiniJournalInsights ? (
+                              <>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                  {moodOptions.map((m) => (
+                                    <button
+                                      key={m.value}
+                                      type="button"
+                                      onClick={() => setMiniJournalMood(m.value)}
+                                      className={`px-3 py-1 rounded-full border text-sm flex items-center gap-2 ${miniJournalMood===m.value ? 'bg-primary text-black shadow-[0_0_12px_rgba(204,255,0,0.5)]' : 'bg-background text-foreground border-border'}`}
+                                    >
+                                      <span>{m.emoji}</span>
+                                      <span>{m.label}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                                <Textarea
+                                  value={miniJournalEntry}
+                                  onChange={(e) => setMiniJournalEntry(e.target.value)}
+                                  placeholder="Write a quick note about how the practice landed..."
+                                  className="min-h-[100px] text-sm"
+                                />
+                                <div className="mt-3">
+                                  <Button size="sm" onClick={() => saveMiniJournal(miniJournalEntry, miniJournalMood)} disabled={!miniJournalEntry.trim() || miniJournalSaving}>
+                                    {miniJournalSaving ? 'Saving...' : 'Save Entry'}
+                                  </Button>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="text-sm font-semibold flex items-center gap-2"><span>AI Insights</span></div>
+                                <ul className="list-disc pl-5 space-y-1 text-sm">
+                                  {(miniJournalInsights || []).map((ins, i) => (<li key={i}>{ins}</li>))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                   </div>
                   
                     {/* Reflection */}
                     <div className="rounded-xl p-6 bg-background">
-                      <button onClick={() => toggleSection('reflection')} className="w-full text-left">
-                        <h5 className="font-semibold neon-glow-blue mb-2 flex items-center justify-between gap-2 text-lg">
-                          <span className="flex items-center gap-2">
-                            <Moon className={`h-5 w-5 ${isSectionDone('reflection') ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('reflection') ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #60a5fa)' }} />
-                            Reflection
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('reflection')} onChange={() => toggleSectionCompleted('reflection')} />
-                            {isSectionDone('reflection') && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
-                            <span className="text-muted-foreground">{sectionCollapsed.reflection ? '▼' : '▲'}</span>
-                          </span>
-                        </h5>
-                      </button>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('reflection')}
+                          aria-controls="section-reflection"
+                          className="text-left"
+                        >
+                          <h5 className="font-semibold neon-glow-blue flex items-center gap-2 text-lg">
+                            <Moon className={`h-5 w-5 ${isSectionDone('reflection') ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#60a5fa]'}`} />
+                        Reflection
+                            <span className="ml-2 text-muted-foreground">{sectionCollapsed.reflection ? '▼' : '▲'}</span>
+                      </h5>
+                        </button>
+                        <label htmlFor="chk-reflection" className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            id="chk-reflection"
+                            type="checkbox"
+                            checked={isSectionDone('reflection')}
+                            onChange={() => toggleSectionCompleted('reflection')}
+                            aria-label="Mark Reflection as completed"
+                          />
+                          {isSectionDone('reflection') && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
+                        </label>
+                      </div>
                       {!sectionCollapsed.reflection && (
-                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('reflection') ? 'text-[#ccff00]' : 'text-foreground'}`}>
-                          {currentDay.content.reflection.split('\n').map((line, index) => {
-                            if (isSubheadingLine(line)) {
-                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
-                            } else if (line.trim().startsWith('•')) {
-                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
-                            } else if (line.trim() && !line.trim().startsWith('🌙')) {
-                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
-                            }
-                            return null
-                          })}
-                        </div>
-                      )}
+                        <div id="section-reflection" className={`leading-relaxed space-y-6 ${isSectionDone('reflection') ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                           {(() => {
+                             const themeText = currentDay.theme || deriveTheme(currentDay.content.mainFocus)
+                             const qs = buildReflectionQuestions(currentDay.content.mainFocus, themeText, currentDay.metadata.difficulty)
+                             if (!reflectionAnswerMode) {
+                               const togglePick = (idx: number, checked: boolean) => {
+                                 setReflectionSelected(prev => {
+                                   const next = new Set(prev)
+                                   if (checked) next.add(idx); else next.delete(idx)
+                                   return next
+                                 })
+                               }
+                               const picks = reflectionSelected.size
+                               return (
+                                 <div className="space-y-3">
+                                   <div className="italic text-muted-foreground">Which questions would you like to answer? (1 pick required, up to 5 picks)</div>
+                                   <div className="space-y-2">
+                                     {qs.map((q, idx) => (
+                                       <label key={idx} className="flex items-start gap-3 cursor-pointer">
+                                         <input
+                                           type="checkbox"
+                                           checked={reflectionSelected.has(idx)}
+                                           onChange={(e) => togglePick(idx, e.target.checked)}
+                                           aria-label={`Select reflection question ${idx + 1}`}
+                                         />
+                                         <span className="font-medium">{q}</span>
+                                       </label>
+                                     ))}
+                                   </div>
+                                   <div>
+                                     <Button
+                                       onClick={() => {
+                                         setReflectionAnswerMode(true)
+                                         const drafts: Record<number, string> = {}
+                                         reflectionSelected.forEach(i => { drafts[i] = '' })
+                                         setReflectionDraftAnswers(drafts)
+                                       }}
+                                       disabled={picks < 1 || picks > 5}
+                                       className="mt-2"
+                                     >
+                                       Answer selected
+                                     </Button>
+                                   </div>
+                                 </div>
+                               )
+                             } else {
+                               // Answer mode: only show selected questions with text boxes
+                               const selectedIndices = Array.from(reflectionSelected)
+                               const handleChange = (idx: number, val: string) => setReflectionDraftAnswers(prev => ({ ...prev, [idx]: val }))
+                               return (
+                                 <div className="space-y-4">
+                                   {selectedIndices.map(idx => (
+                                     <div key={idx} className="space-y-2">
+                                       <div className="font-medium">{qs[idx]}</div>
+                                       <textarea
+                                         className="w-full min-h-[90px] rounded-md bg-background border border-border p-3 text-foreground"
+                                         placeholder="Write your answer..."
+                                         value={reflectionDraftAnswers[idx] || ''}
+                                         onChange={(e) => handleChange(idx, e.target.value)}
+                                       />
+                                     </div>
+                                   ))}
+                                   <div className="flex gap-3">
+                                     <Button
+                                       onClick={async () => {
+                                         const qa = selectedIndices.map(i => ({ index: i, question: qs[i], answer: reflectionDraftAnswers[i] || '' }))
+                                         setPendingReflectionQA(qa)
+                                         // Generate insights from the combined answers and show them in the compact journal area
+                                         const combined = selectedIndices.map(i => reflectionDraftAnswers[i] || '').join('\n\n')
+                                         await saveMiniJournal(combined, miniJournalMood)
+                                         // Mark section as completed
+                                         setSectionCompleted(prev => ({ ...prev, reflection: true }))
+                                       }}
+                                     >
+                                       Save answers
+                                     </Button>
+                                     <Button
+                                       variant="secondary"
+                                       onClick={() => { setReflectionAnswerMode(false) }}
+                                     >
+                                       Back to selection
+                                     </Button>
+                                   </div>
+                                 </div>
+                               )
+                             }
+                           })()}
+                         </div>
+                       )}
                   </div>
                   
                     {/* Weather & Environment */}
                     <div className="rounded-xl p-6 bg-background">
-                      <button onClick={() => toggleSection('weather')} className="w-full text-left">
-                        <h5 className="font-semibold neon-glow-teal mb-2 flex items-center justify-between gap-2 text-lg">
-                          <span className="flex items-center gap-2">
-                            <Sun className={`h-5 w-5 ${isSectionDone('weather') ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('weather') ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #f59e0b)' }} />
-                            Weather & Environment
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('weather')} onChange={() => toggleSectionCompleted('weather')} />
-                            {isSectionDone('weather') && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
-                            <span className="text-muted-foreground">{sectionCollapsed.weather ? '▼' : '▲'}</span>
-                          </span>
-                        </h5>
-                      </button>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('weather')}
+                          aria-controls="section-weather"
+                          className="text-left"
+                        >
+                          <h5 className="font-semibold neon-glow-teal flex items-center gap-2 text-lg">
+                            <Sun className={`h-5 w-5 ${isSectionDone('weather') ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#f59e0b]'}`} />
+                        Weather & Environment
+                            <span className="ml-2 text-muted-foreground">{sectionCollapsed.weather ? '▼' : '▲'}</span>
+                      </h5>
+                        </button>
+                        <label htmlFor="chk-weather" className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            id="chk-weather"
+                            type="checkbox"
+                            checked={isSectionDone('weather')}
+                            onChange={() => toggleSectionCompleted('weather')}
+                            aria-label="Mark Weather & Environment as completed"
+                          />
+                          {isSectionDone('weather') && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
+                        </label>
+                      </div>
                       {!sectionCollapsed.weather && (
-                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('weather') ? 'text-[#ccff00]' : 'text-foreground'}`}>
-                          {currentDay.content.weather.split('\n').map((line, index) => {
+                        <div id="section-weather" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('weather') ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                        {currentDay.content.weather.split('\n').map((line, index) => {
                             if (isSubheadingLine(line)) {
                               return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
                             } else if (line.trim().startsWith('•')) {
                               return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
-                            } else if (line.trim() && !line.trim().startsWith('🌤️')) {
+                          } else if (line.trim() && !line.trim().startsWith('🌤️')) {
                               return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
-                            }
-                            return null
-                          })}
-                        </div>
+                          }
+                          return null
+                        })}
+                      </div>
                       )}
                   </div>
                   
                     {/* Sleep & Wellness */}
                     <div className="rounded-xl p-6 bg-background">
-                      <button onClick={() => toggleSection('sleep')} className="w-full text-left">
-                        <h5 className="font-semibold neon-glow-rose mb-2 flex items-center justify-between gap-2 text-lg">
-                          <span className="flex items-center gap-2">
-                            <Moon className={`h-5 w-5 ${isSectionDone('sleep', currentDay.content.sleep.split('\n')) ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('sleep', currentDay.content.sleep.split('\n')) ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #fb7185)' }} />
-                            Sleep & Wellness
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('sleep', currentDay.content.sleep.split('\n'))} onChange={() => toggleSectionCompleted('sleep', currentDay.content.sleep.split('\n'))} />
-                            {isSectionDone('sleep', currentDay.content.sleep.split('\n')) && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
-                            <span className="text-muted-foreground">{sectionCollapsed.sleep ? '▼' : '▲'}</span>
-                          </span>
-                        </h5>
-                      </button>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('sleep')}
+                          aria-controls="section-sleep"
+                          className="text-left"
+                        >
+                          <h5 className="font-semibold neon-glow-rose flex items-center gap-2 text-lg">
+                            <Moon className={`h-5 w-5 ${isSectionDone('sleep', filterSleepLines(currentDay.content.sleep.split('\n'))) ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#fb7185]'}`} />
+                        Sleep & Wellness
+                            <span className="ml-2 text-muted-foreground">{sectionCollapsed.sleep ? '▼' : '▲'}</span>
+                      </h5>
+                        </button>
+                        <label htmlFor="chk-sleep" className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            id="chk-sleep"
+                            type="checkbox"
+                            checked={isSectionDone('sleep', filterSleepLines(currentDay.content.sleep.split('\n')))}
+                            onChange={() => toggleSectionCompleted('sleep', filterSleepLines(currentDay.content.sleep.split('\n')))}
+                            aria-label="Mark Sleep & Wellness as completed"
+                          />
+                          {isSectionDone('sleep', filterSleepLines(currentDay.content.sleep.split('\n'))) && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
+                        </label>
+                      </div>
                       {!sectionCollapsed.sleep && (
-                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('sleep', currentDay.content.sleep.split('\n')) ? 'text-[#ccff00]' : 'text-foreground'}`}>
-                          {currentDay.content.sleep.split('\n').map((line, index) => {
-                            if (isSubheadingLine(line)) {
-                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
-                            } else if (isTaskLine(line)) {
-                              const checked = (sectionTaskCompleted.sleep || new Set()).has(index)
-                              return (
-                                <label key={index} className="flex items-start gap-2 cursor-pointer">
-                                  <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('sleep', index, e.target.checked)} />
-                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(line))}</span>
-                                </label>
-                              )
-                            } else if (line.trim() && !line.trim().startsWith('😴')) {
-                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
-                            }
-                            return null
-                          })}
+                        <div id="section-sleep" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('sleep', filterSleepLines(currentDay.content.sleep.split('\n'))) ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                        {filterSleepLines(currentDay.content.sleep.split('\n')).map((line, index) => {
+                             if (isSubheadingLine(line)) {
+                               return <div key={index} className="font-semibold text-foreground">{line.trim()}</div>
+                             } else if (isTaskLine(line)) {
+                               const checked = (sectionTaskCompleted.sleep || new Set()).has(index)
+                               return (
+                                 <label key={index} className="flex items-start gap-2 cursor-pointer">
+                                   <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('sleep', index, e.target.checked)} aria-label={`Sleep & Wellness step ${index + 1}`} />
+                                   <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(line))}</span>
+                                 </label>
+                               )
+                           } else if (line.trim() && !line.trim().startsWith('😴')) {
+                               return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
+                           }
+                           return null
+                         })}
+                        {/* Required bedtime additions */}
+                        <div className="space-y-2">
+                          <div className="font-semibold">Intentional positive dream exercise</div>
+                          {(() => {
+                            const idx = 10001
+                            const checked = (sectionTaskCompleted.sleep || new Set()).has(idx)
+                            return (
+                              <label className="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('sleep', idx, e.target.checked)} aria-label="Intentional positive dream exercise" />
+                                <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>Rehearse a short, kind scene you'd love to dream about</span>
+                              </label>
+                            )
+                          })()}
                         </div>
+
+                        <div className="space-y-2">
+                          <div className="font-semibold">One self‑love indulgence</div>
+                          {(() => {
+                            const idx = 10002
+                            const checked = (sectionTaskCompleted.sleep || new Set()).has(idx)
+                            return (
+                              <label className="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('sleep', idx, e.target.checked)} aria-label="Self-love indulgence" />
+                                <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>Choose one gentle indulgence (tea, warm shower, music, lotion)</span>
+                              </label>
+                            )
+                          })()}
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="font-semibold">Pre‑bed routine checks</div>
+                          {(() => {
+                            const base = 10010
+                            const checks = [
+                              'Screens off, lights dim, bedroom cool',
+                              'Note one intention for tomorrow (one line)',
+                              'Two-minute slow breathing to soften body'
+                            ]
+                            return (
+                              <div className="space-y-2">
+                                {checks.map((label, i) => {
+                                  const idx = base + i
+                                  const checked = (sectionTaskCompleted.sleep || new Set()).has(idx)
+                                  return (
+                                    <label key={idx} className="flex items-start gap-2 cursor-pointer">
+                                      <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('sleep', idx, e.target.checked)} aria-label={`Pre-bed check ${i + 1}`} />
+                                      <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{label}</span>
+                                    </label>
+                                  )
+                                })}
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      </div>
                       )}
                   </div>
                   
                     {/* Holistic Healing Bonus */}
                     <div className="rounded-xl p-6 bg-background">
-                      <button onClick={() => toggleSection('holistic')} className="w-full text-left">
-                        <h5 className="font-semibold neon-glow-purple mb-2 flex items-center justify-between gap-2 text-lg">
-                          <span className="flex items-center gap-2">
-                            <Leaf className={`h-5 w-5 ${isSectionDone('holistic') ? 'text-[#ccff00]' : 'text-black dark:text-white'}`} style={{ filter: isSectionDone('holistic') ? 'drop-shadow(0 0 8px #ccff00)' : 'drop-shadow(0 0 8px #10b981)' }} />
-                            Holistic Healing Bonus
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSectionDone('holistic')} onChange={() => toggleSectionCompleted('holistic')} />
-                            {isSectionDone('holistic') && <span className="text-sm text-[#ccff00]" style={{ textShadow: '0 0 10px #ccff00' }}>(Completed)</span>}
-                            <span className="text-muted-foreground">{sectionCollapsed.holistic ? '▼' : '▲'}</span>
-                          </span>
-                        </h5>
-                      </button>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSection('holistic')}
+                          aria-controls="section-holistic"
+                          className="text-left"
+                        >
+                          <h5 className="font-semibold neon-glow-purple flex items-center gap-2 text-lg">
+                            <Leaf className={`h-5 w-5 ${isSectionDone('holistic') ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#10b981]'}`} />
+                        Holistic Healing Bonus
+                            <span className="ml-2 text-muted-foreground">{sectionCollapsed.holistic ? '▼' : '▲'}</span>
+                      </h5>
+                        </button>
+                        <label htmlFor="chk-holistic" className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            id="chk-holistic"
+                            type="checkbox"
+                            checked={isSectionDone('holistic')}
+                            onChange={() => toggleSectionCompleted('holistic')}
+                            aria-label="Mark Holistic Healing Bonus as completed"
+                          />
+                          {isSectionDone('holistic') && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
+                        </label>
+                      </div>
                       {!sectionCollapsed.holistic && (
-                        <div className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('holistic') ? 'text-[#ccff00]' : 'text-foreground'}`}>
-                          {currentDay.content.holistic.split('\n').map((line, index) => {
-                            if (isSubheadingLine(line)) {
-                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
-                            } else if (line.trim().startsWith('•')) {
-                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
-                            } else if (line.trim() && !line.trim().startsWith('🌿')) {
-                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
+                        <div id="section-holistic" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('holistic') ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                         {currentDay.content.holistic.split('\n').map((line, index) => {
+                            const trimmed = line.trim()
+                            if (isSubheadingLine(trimmed)) {
+                              // Remove the "Optional Practice:" heading entirely
+                              if (/^optional\s+practice:?$/i.test(trimmed)) return null
+                              return <div key={index} className="font-semibold underline text-foreground">{trimmed}</div>
+                            } else if (isTaskLine(trimmed)) {
+                              const checked = (sectionTaskCompleted.holistic || new Set()).has(index)
+                              return (
+                                <label key={index} className="flex items-start gap-2 cursor-pointer">
+                                  <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('holistic', index, e.target.checked)} aria-label={`Holistic practice ${index + 1}`} />
+                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(trimmed))}</span>
+                                </label>
+                              )
+                            } else if (trimmed && !trimmed.startsWith('🌿')) {
+                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(trimmed)}</div>
                             }
-                            return null
-                          })}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Complete Day Button */}
+                           return null
+                         })}
+                       </div>
+                       )}
+                     </div>
+ 
+                     {/* Complete Day Button */}
                     <div className="space-y-4">
                       <div className="flex gap-2">
                         <Badge variant="glass" className="bg-primary/10 text-primary border-primary/20">
@@ -1172,6 +1822,11 @@ export default function Program() {
                         <Badge className={getDifficultyColor(currentDay.metadata.difficulty)}>
                           {currentDay.metadata.difficulty}
                         </Badge>
+                        {isStructuredDay && (
+                          <Badge variant="outline" className="border-[#ccff00] text-foreground">
+                            structured
+                          </Badge>
+                        )}
                   </div>
                   
                   <Button 
@@ -1197,10 +1852,10 @@ export default function Program() {
                         ) : (
                           <>
                             <Trophy className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" />
-                            Complete Day {currentDay.day}
+                    Complete Day {currentDay.day}
                           </>
                         )}
-                      </Button>
+                  </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -1213,7 +1868,7 @@ export default function Program() {
               <Card className="modern-card border-0">
                 <CardHeader className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <Target className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
+                    <Target className="h-5 w-5 text-black dark:text-white drop-shadow-[0_0_8px_#00e5ff]" />
                     <h4 className="text-lg font-semibold text-foreground">Today&apos;s Focus</h4>
                   </div>
                 </CardHeader>
@@ -1225,7 +1880,7 @@ export default function Program() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Duration</p>
-                      <p className="font-medium text-foreground">{currentDay.metadata.duration} minutes</p>
+                      <p className="font-medium text-foreground">{estimatedTotalMinutes} minutes</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Difficulty</p>
@@ -1239,7 +1894,7 @@ export default function Program() {
               <Card className="modern-card border-0">
                 <CardHeader className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <TrendingUp className="h-5 w-5 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
+                    <TrendingUp className="h-5 w-5 text-black dark:text-white drop-shadow-[0_0_8px_#ccff00]" />
                     <h4 className="text-lg font-semibold text-foreground">Your Journey</h4>
                   </div>
                 </CardHeader>
@@ -1270,7 +1925,7 @@ export default function Program() {
             <Card className="modern-card border-0">
               <CardContent className="p-12 text-center">
                 <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-                  <Trophy className="h-12 w-12 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 10px #22c55e)' }} />
+                  <Trophy className="h-12 w-12 text-black dark:text-white drop-shadow-[0_0_10px_#22c55e]" />
                   </div>
                 <h2 className="text-3xl font-bold text-foreground mb-4">Congratulations!</h2>
                 <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">

@@ -4,7 +4,7 @@ import { WeatherService } from '@/lib/weather-service'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { latitude, longitude } = body
+    const { latitude, longitude, label } = body
 
     if (!latitude || !longitude) {
       return NextResponse.json({ error: 'Location coordinates required' }, { status: 400 })
@@ -12,6 +12,9 @@ export async function POST(request: NextRequest) {
 
     const weatherService = new WeatherService()
     const weatherData = await weatherService.getWeatherData(latitude, longitude)
+    if (label && typeof label === 'string') {
+      weatherData.location = label
+    }
     const insight = weatherService.generateWeatherInsight(weatherData, { tone: 'neutral', engagement: 'passive' })
 
     return NextResponse.json({

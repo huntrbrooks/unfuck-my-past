@@ -9,7 +9,7 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export const PRODUCTS = {
   DIAGNOSTIC_REPORT: {
     name: 'Full Diagnostic Report',
-    price: 1000, // $10.00 in cents
+    price: 999, // $9.99 in cents
     description: 'Complete trauma mapping, detailed pattern analysis, and personalized recommendations',
     productId: 'prod_diagnostic_report'
   },

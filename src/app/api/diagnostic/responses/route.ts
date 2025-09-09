@@ -24,12 +24,23 @@ export async function GET() {
       .orderBy(diagnosticResponses.createdAt)
 
     // Format the responses
-    const formattedResponses = userResponses.map((resp, index) => ({
-      question: resp.question && typeof resp.question === 'object' && 'text' in resp.question ? (resp.question as { text: string }).text || `Question ${index + 1}` : `Question ${index + 1}`,
-      response: resp.response || '',
-      insight: resp.insight || '',
-      timestamp: resp.timestamp?.toISOString() || new Date().toISOString()
-    }))
+    const formattedResponses = userResponses.map((resp, index) => {
+      let questionText = `Question ${index + 1}`
+      
+      // Extract question text from the stored question object
+      if (resp.question && typeof resp.question === 'object') {
+        const questionObj = resp.question as any
+        // Try different possible properties for the question text
+        questionText = questionObj.question || questionObj.text || questionObj.title || `Question ${index + 1}`
+      }
+      
+      return {
+        question: resp.question, // Keep the full question object for the DiagnosticReport component
+        response: resp.response || '',
+        insight: resp.insight || '',
+        timestamp: resp.timestamp?.toISOString() || new Date().toISOString()
+      }
+    })
 
     return NextResponse.json({
       responses: formattedResponses

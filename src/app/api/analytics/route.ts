@@ -5,8 +5,20 @@ export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
     
+    // Check if request has body content
+    const contentLength = request.headers.get('content-length')
+    if (!contentLength || contentLength === '0') {
+      return NextResponse.json({ error: 'Empty request body' }, { status: 400 })
+    }
+    
     // Parse the analytics event
-    const event = await request.json()
+    let event
+    try {
+      event = await request.json()
+    } catch (jsonError) {
+      console.error('Failed to parse JSON:', jsonError)
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 })
+    }
     
     // Add user ID if available
     if (userId) {

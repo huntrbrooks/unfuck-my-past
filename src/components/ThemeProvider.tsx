@@ -15,7 +15,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 export function useTheme() {
   const context = useContext(ThemeContext)
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider')
+    // Return default values during SSR or when outside provider
+    return {
+      theme: 'light' as Theme,
+      toggleTheme: () => {},
+      setTheme: () => {}
+    }
   }
   return context
 }
@@ -43,8 +48,10 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
       // Apply theme to document for Tailwind dark mode
       if (theme === 'dark') {
         document.documentElement.classList.add('dark')
+        document.documentElement.style.colorScheme = 'dark'
       } else {
         document.documentElement.classList.remove('dark')
+        document.documentElement.style.colorScheme = 'light'
       }
       localStorage.setItem('theme', theme)
     }
@@ -56,6 +63,11 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme)
+  }
+
+  // Prevent flash by not rendering until mounted
+  if (!mounted) {
+    return <div style={{ visibility: 'hidden' }}>{children}</div>
   }
 
   return (

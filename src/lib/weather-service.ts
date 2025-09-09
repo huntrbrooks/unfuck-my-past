@@ -35,8 +35,10 @@ export class WeatherService {
         }
       }
 
+      // One Call API 3.0: current, hourly, daily in a single request
+      // Docs: https://openweathermap.org/
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${this.apiKey}&units=metric`
+        `https://api.openweathermap.org/data/3.0/onecall?lat=${latitude}&lon=${longitude}&appid=${this.apiKey}&units=metric&exclude=minutely,alerts`
       )
 
       if (!response.ok) {
@@ -44,14 +46,16 @@ export class WeatherService {
       }
 
       const data = await response.json()
-      
+
+      const current = data.current
       return {
-        temperature: Math.round(data.main.temp),
-        condition: data.weather[0].main.toLowerCase(),
-        humidity: data.main.humidity,
-        windSpeed: Math.round(data.wind.speed),
-        location: data.name,
-        isDay: data.dt > data.sys.sunrise && data.dt < data.sys.sunset
+        temperature: Math.round(current.temp),
+        condition: (current.weather?.[0]?.main || 'Clear').toLowerCase(),
+        humidity: current.humidity,
+        windSpeed: Math.round(current.wind_speed),
+        // One Call doesn’t include a name; keep a neutral label
+        location: 'Your Location',
+        isDay: current.dt > current.sunrise && current.dt < current.sunset
       }
     } catch (error) {
       console.error('Error fetching weather data:', error)

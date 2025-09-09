@@ -22,7 +22,15 @@ const moodOptions = [
   { emoji: '😔', label: 'Sad', value: 'sad' },
   { emoji: '😰', label: 'Anxious', value: 'anxious' },
   { emoji: '😴', label: 'Tired', value: 'tired' },
-  { emoji: '🤔', label: 'Thoughtful', value: 'thoughtful' }
+  // Additional emotions
+  { emoji: '✨', label: 'Inspired', value: 'inspired' },
+  { emoji: '🙏', label: 'Grateful', value: 'grateful' },
+  { emoji: '😠', label: 'Angry', value: 'angry' },
+  { emoji: '😣', label: 'Frustrated', value: 'frustrated' },
+  { emoji: '😵‍💫', label: 'Overwhelmed', value: 'overwhelmed' },
+  { emoji: '😞', label: 'Lonely', value: 'lonely' },
+  { emoji: '🤩', label: 'Excited', value: 'excited' },
+  { emoji: '🌈', label: 'Hopeful', value: 'hopeful' }
 ]
 
 export default function DailyJournalPage() {

@@ -9,15 +9,15 @@ export const CheckboxStep = z.object({
 export const GuidedPractice = z.object({
   id: z.string(),
   title: z.string(),                   // bold in UI
-  durationMinutes: z.number().int().positive().optional(), // italic in UI
-  steps: z.array(CheckboxStep).default([]),
+  durationMinutes: z.number().int().positive(), // required now to match schema
+  steps: z.array(CheckboxStep).min(1).default([]),
 });
 
 export const DayPlan = z.object({
   // Meta
-  dateISO: z.string().optional(),
+  dateISO: z.string(),
   dayHeading: z.string().max(20),      // poetic <= 20 chars
-  theme: z.string().max(24),           // <= 3 words (we'll enforce in prompt)
+  theme: z.string().max(32),           // <= 3 words (we'll enforce in prompt)
   difficulty: z.enum(["easy","medium","hard"]),
 
   // New sections
@@ -48,14 +48,14 @@ export const DayPlan = z.object({
   }),
 
   weatherEnvironment: z.object({
-    summary: z.string().optional(),    // "Overcast, light wind"
+    summary: z.string(),    // required now
     cues: z.array(z.string()).min(1).max(4),
   }),
 
   sleepWellness: z.object({
     title: z.string().default("Sleep & Wellness"),
     steps: z.array(CheckboxStep).length(5), // exactly 5 tickable steps
-    notes: z.string().optional(),
+    notes: z.string(), // required now
   }),
 
   holisticHealingBonus: z.object({
