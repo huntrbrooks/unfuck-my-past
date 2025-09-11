@@ -591,7 +591,7 @@ export default function Diagnostic() {
   if (loading && questions.length === 0) {
     console.log('🔄 RENDERING: Basic loading spinner (should not happen when coming from onboarding)')
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center p-4">
         <div className="max-w-2xl w-full">
           <Card className="glass-card border-0 shadow-xl">
             <CardContent className="p-8">
@@ -608,7 +608,7 @@ export default function Diagnostic() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center p-4">
         <div className="max-w-2xl w-full">
           <Card className="glass-card border-0 shadow-xl">
             <CardContent className="p-8">
@@ -663,7 +663,7 @@ export default function Diagnostic() {
   // If we have no questions and no error, show a message
   if (!loading && questions.length === 0 && !error && !showLoader && !showReadyPrompt) {
     return (
-      <div className="min-h-screen bg-background py-8">
+      <div className="min-h-screen-dvh bg-background py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="glass-card border-0 shadow-xl">
             <CardContent className="p-8">
@@ -711,7 +711,7 @@ export default function Diagnostic() {
   }
 
   return (
-    <div className="diagnostic-container min-h-screen bg-background py-8 transition-opacity duration-500">
+    <div className="diagnostic-container min-h-screen-dvh bg-background py-8 transition-opacity duration-500">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">

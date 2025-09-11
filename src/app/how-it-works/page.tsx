@@ -10,7 +10,7 @@ import Image from 'next/image'
 
 export default function HowItWorks() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen-dvh bg-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-background">
         <div className="absolute inset-0"></div>

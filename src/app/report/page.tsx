@@ -772,7 +772,7 @@ export default function ReportPage() {
 
   if (checkingAccess) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center">
         <LoadingSpinner size="lg" text="Checking your access..." />
       </div>
     )
@@ -780,7 +780,7 @@ export default function ReportPage() {
 
   if (showPaywall) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen-dvh bg-background">
         <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 mb-6">
@@ -855,7 +855,7 @@ export default function ReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen-dvh bg-background">
       {/* Header - Dashboard Style */}
       <div className="bg-background border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 py-8">

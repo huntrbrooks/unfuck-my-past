@@ -70,7 +70,7 @@ export default function DiagnosticAnalysisLoader({
   ]
 
   return (
-    <div className="fixed inset-0 z-50 min-h-screen bg-background flex items-start justify-center p-6 overflow-y-auto pt-[calc(env(safe-area-inset-top,_0px)_+_72px)] pb-8">
+    <div className="fixed inset-0 z-50 min-h-screen-dvh bg-background flex items-start justify-center p-6 overflow-y-auto pt-[calc(env(safe-area-inset-top,_0px)_+_72px)] pb-8">
       <div className="max-w-2xl w-full space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">

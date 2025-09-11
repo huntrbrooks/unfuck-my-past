@@ -788,7 +788,7 @@ Your investment helps us continue improving and supporting people on their heali
   if (!isLoaded || loading) {
     console.log('⏳ Showing loading spinner')
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 pt-20 sm:pt-4">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center p-4 pt-20 sm:pt-4">
         <LoadingSpinner size="lg" text={!isLoaded ? "Loading..." : "Loading your diagnostic data..."} />
       </div>
     )
@@ -796,7 +796,7 @@ Your investment helps us continue improving and supporting people on their heali
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 pt-20 sm:pt-4">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center p-4 pt-20 sm:pt-4">
         <div className="max-w-2xl w-full">
           <Card className="glass-card border-0 shadow-xl">
             <CardContent className="p-8">
@@ -816,7 +816,7 @@ Your investment helps us continue improving and supporting people on their heali
   }
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-8 sm:py-8">
+    <div className="min-h-screen-dvh bg-background pt-20 pb-8 sm:py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">

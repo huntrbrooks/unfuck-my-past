@@ -78,6 +78,8 @@ export default function RootLayout({
                     <MobileMenu />
                   </div>
                 </div>
+                {/* Mobile header spacer to prevent content underlap */}
+                <div className="md:hidden h-mobile-header" />
                 <Suspense fallback={<div>Loading...</div>}>
                   {children}
                 </Suspense>

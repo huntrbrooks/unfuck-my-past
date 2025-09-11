@@ -13,11 +13,11 @@ export default function Home() {
 
   return (
     <>
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen-dvh bg-background">
         {/* Safety Banner (moved below bottom CTA) */}
 
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-background min-h-screen">
+        <section className="relative overflow-hidden bg-background min-h-screen-dvh">
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center pt-8 sm:pt-10 lg:pt-10 pb-10 space-y-8 sm:space-y-10">
             {/* Edgy graphic hero */}
             <div>

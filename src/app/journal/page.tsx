@@ -138,7 +138,7 @@ export default function DailyJournalPage() {
   )
 
   return (
-    <div className="journal-theme min-h-screen bg-background">
+    <div className="journal-theme min-h-screen-dvh bg-background">
       <header className="border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center gap-3">

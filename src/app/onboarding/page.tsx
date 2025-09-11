@@ -219,7 +219,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="onboarding-container min-h-screen bg-background transition-opacity duration-500">
+    <div className="onboarding-container min-h-screen-dvh bg-background transition-opacity duration-500">
       {confirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="glass-card border border-border/50 shadow-2xl w-full max-w-md mx-4">

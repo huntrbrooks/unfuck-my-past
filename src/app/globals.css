@@ -42,6 +42,11 @@
     padding-right: max(env(safe-area-inset-right), 0px);
   }
 
+  /* Mobile header spacer to match fixed header height incl. safe area */
+  .h-mobile-header {
+    height: calc(56px + env(safe-area-inset-top, 0px));
+  }
+
   /* Small-screen container padding tightening */
   @media (max-width: 640px) {
     .container,
@@ -50,6 +55,20 @@
       padding-left: 1rem;
       padding-right: 1rem;
     }
+  }
+  
+  /* Responsive heading clamp helpers */
+  .heading-clamp-3xl {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    line-height: 1.2;
+  }
+  .heading-clamp-4xl {
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    line-height: 1.15;
+  }
+  .heading-clamp-5xl {
+    font-size: clamp(2.25rem, 6vw, 3rem);
+    line-height: 1.1;
   }
   
   /* Neon heading utility */

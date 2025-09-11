@@ -175,7 +175,7 @@ export default function Dashboard() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center">
         <LoadingSpinner size="lg" text="Loading your dashboard..." />
       </div>
     )
@@ -183,7 +183,7 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center">
           <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Please sign in to view your dashboard</h1>
           <Button asChild>
@@ -195,7 +195,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen-dvh bg-background">
       {/* Header */}
       <div className="bg-background border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 py-8">

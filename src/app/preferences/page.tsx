@@ -226,7 +226,7 @@ export default function PreferencesPage() {
   const disableIntense = crisisLockActive
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen-dvh bg-background">
       {/* Hero Section with Neon Heading */}
       <div className="relative overflow-hidden bg-background">
         <div className="relative max-w-6xl mx-auto py-16 px-4 sm:px-6 lg:px-8">

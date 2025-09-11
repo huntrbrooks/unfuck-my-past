@@ -1045,7 +1045,7 @@ export default function Program() {
 
   if (checkingAccess) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center">
         <LoadingSpinner size="lg" text="Checking program access..." />
       </div>
     )
@@ -1053,7 +1053,7 @@ export default function Program() {
 
   if (!hasAccess) {
     return (
-      <div className="min-h-screen bg-background py-8">
+      <div className="min-h-screen-dvh bg-background py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-4 mb-6">
@@ -1102,7 +1102,7 @@ export default function Program() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center">
           <LoadingSpinner size="lg" text="Loading your healing program..." />
       </div>
     )
@@ -1110,7 +1110,7 @@ export default function Program() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background py-8">
+      <div className="min-h-screen-dvh bg-background py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="glass-card border-0 shadow-xl">
             <CardContent className="p-8">
@@ -1131,7 +1131,7 @@ export default function Program() {
 
   if (!progress || !currentDay) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center">
         <LoadingSpinner size="lg" text="Loading program data..." />
       </div>
     )
@@ -1140,7 +1140,7 @@ export default function Program() {
   const overallPercent = Number(((progress.completed / progress.total) * 100).toFixed(2))
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen-dvh bg-background">
       {/* Header (aligned with Dashboard) */}
       <div className="bg-background border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 py-10">

@@ -132,7 +132,7 @@ export default function MoodTracker() {
 
   if (!isLoaded || !user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen-dvh bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading...</p>
@@ -142,7 +142,7 @@ export default function MoodTracker() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen-dvh bg-background">
       {/* Header */}
       <div className="relative overflow-hidden bg-background">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
