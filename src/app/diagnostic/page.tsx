@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Mic, Pencil, CheckCircle, Bot, Target, Sparkles } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Mic, Pencil, CheckCircle, Bot, Target, Sparkles, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import VoiceRecorder from '../../components/VoiceRecorder'
@@ -47,6 +47,7 @@ export default function Diagnostic() {
   const [hsiSaving, setHsiSaving] = useState(false)
   const [hsiSaved, setHsiSaved] = useState(false)
   const [hsiError, setHsiError] = useState<string | null>(null)
+  const [collapsedOptions, setCollapsedOptions] = useState<Record<number, boolean>>({})
 
   useEffect(() => {
     // Check if we're coming from onboarding with generating=true
@@ -212,6 +213,18 @@ export default function Diagnostic() {
       setShowLoader(true)
     }
   }, [isGeneratingQuestions])
+
+  // Auto-mark multiple-choice blocks as closed for answered questions
+  useEffect(() => {
+    setCollapsedOptions(prev => {
+      if (responses.length === 0) return prev
+      const next = { ...prev }
+      for (let i = 0; i < responses.length; i++) {
+        next[i] = true
+      }
+      return next
+    })
+  }, [responses.length])
 
   const loadQuestions = async (retryCount = 0) => {
     // Prevent multiple simultaneous requests
@@ -445,6 +458,8 @@ export default function Diagnostic() {
       setCurrentResponse('')
       
       if (currentQuestionIndex < questions.length - 1) {
+        // Auto-close options for the completed question (if it was multiple-choice)
+        setCollapsedOptions(prev => ({ ...prev, [currentQuestionIndex]: true }))
         setCurrentQuestionIndex(currentQuestionIndex + 1)
       } else {
         // All questions answered, generate summary
@@ -768,7 +783,31 @@ export default function Diagnostic() {
             {/* Response Options or Text/Voice Input */}
             {currentQuestion?.options && currentQuestion.options.length > 0 ? (
               <div className="mb-6 sm:mb-8">
-                <div className="space-y-2 sm:space-y-3">
+                {(() => {
+                  const isAnswered = currentQuestionIndex < responses.length
+                  const isCollapsed = (collapsedOptions[currentQuestionIndex] ?? isAnswered) === true
+                  const toggle = () => setCollapsedOptions(prev => ({ ...prev, [currentQuestionIndex]: !isCollapsed }))
+                  return (
+                    <div className="mb-2 flex items-center justify-between">
+                      <h3 className="text-sm sm:text-base font-semibold text-foreground">Options</h3>
+                      <button
+                        type="button"
+                        onClick={toggle}
+                        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        aria-controls="mc-options"
+                      >
+                        {isCollapsed ? 'Show' : 'Hide'}
+                        <ChevronDown className={`h-4 w-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} />
+                      </button>
+                    </div>
+                  )
+                })()}
+                {(() => {
+                  const isAnswered = currentQuestionIndex < responses.length
+                  const isCollapsed = (collapsedOptions[currentQuestionIndex] ?? isAnswered) === true
+                  if (isCollapsed) return null
+                  return (
+                    <div id="mc-options" className="space-y-2 sm:space-y-3">
                   {currentQuestion.options.map((option, index) => (
                     <Button
                       key={index}
@@ -789,7 +828,9 @@ export default function Diagnostic() {
                       </div>
                     </Button>
                   ))}
-                </div>
+                    </div>
+                  )
+                })()}
               </div>
             ) : (
               <div className="mb-6 sm:mb-8">
