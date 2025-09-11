@@ -15,16 +15,40 @@ interface UserPreferences {
   experience?: string;
 }
 
+interface EnhancedOnboardingData {
+  tones: string[];
+  guideStyles: string[];
+  guidanceStrength: "mild"|"moderate"|"intense";
+  depth: "surface"|"moderate"|"deep"|"profound";
+  primaryFocus: string;
+  goals: string[];
+  learningStyles: string[];
+  engagement: "passive"|"moderate"|"active";
+  minutesPerDay: 5|15|30|60;
+  attentionSpan: "micro"|"short"|"standard";
+  inputMode: "text"|"voice"|"either";
+  flags: string[];
+  stress0to10: number;
+  sleep0to10: number;
+  ruminationFreq: string;
+  topicsToAvoid: string[];
+  triggerWords?: string;
+  challenges: string[];
+  challengeOther?: string;
+  freeform?: string;
+}
+
 interface DiagnosticContext {
   responses: DiagnosticResponse[];
   preferences: UserPreferences;
+  enhancedOnboarding?: EnhancedOnboardingData;
   responseCount?: number;
   moodHistory?: Array<{ date: string; mood: number; notes?: string }>;
   journalInsights?: string[];
 }
 
 export function buildEnhancedDiagnosticPrompt(ctx: DiagnosticContext): string {
-  const { responses, preferences, responseCount, moodHistory, journalInsights } = ctx;
+  const { responses, preferences, enhancedOnboarding, responseCount, moodHistory, journalInsights } = ctx;
 
   // Enhanced rules with your specific requirements
   const RULES = `
@@ -106,8 +130,44 @@ QUALITY STANDARDS:
 `;
 
   // Enhanced user context with deeper personalization
-  const userContext = `
-USER PROFILE & PREFERENCES:
+  const userContext = enhancedOnboarding ? `
+ENHANCED USER PROFILE:
+- Primary Focus: ${enhancedOnboarding.primaryFocus}
+- Communication Tones: ${enhancedOnboarding.tones.join(', ')}
+- Guide Styles: ${enhancedOnboarding.guideStyles.join(', ')}
+- Guidance Strength: ${enhancedOnboarding.guidanceStrength} (adjust language intensity accordingly)
+- Depth Preference: ${enhancedOnboarding.depth}
+- Learning Styles: ${enhancedOnboarding.learningStyles.join(', ')}
+- Engagement Level: ${enhancedOnboarding.engagement}
+- Time Available: ${enhancedOnboarding.minutesPerDay} minutes/day
+- Attention Span: ${enhancedOnboarding.attentionSpan}
+- Input Preference: ${enhancedOnboarding.inputMode}
+
+BASELINE METRICS:
+- Stress Level: ${enhancedOnboarding.stress0to10}/10
+- Sleep Quality: ${enhancedOnboarding.sleep0to10}/10
+- Rumination Frequency: ${enhancedOnboarding.ruminationFreq}
+
+GOALS & CHALLENGES:
+- Primary Goals: ${enhancedOnboarding.goals.join(', ')}
+- Current Challenges: ${enhancedOnboarding.challenges.join(', ')}
+${enhancedOnboarding.challengeOther ? `- Additional Challenge: ${enhancedOnboarding.challengeOther}` : ''}
+
+SAFETY CONSIDERATIONS:
+- Special Flags: ${enhancedOnboarding.flags.join(', ') || 'None'}
+- Topics to Avoid: ${enhancedOnboarding.topicsToAvoid.join(', ') || 'None'}
+${enhancedOnboarding.triggerWords ? `- Trigger Words: ${enhancedOnboarding.triggerWords}` : ''}
+
+${enhancedOnboarding.freeform ? `ADDITIONAL CONTEXT:
+${enhancedOnboarding.freeform}` : ''}
+
+RESPONSE ANALYSIS CONTEXT:
+- Total responses: ${responseCount || responses.length}
+- Response depth: ${responses.length > 5 ? 'High' : responses.length > 2 ? 'Medium' : 'Low'}
+- Communication patterns observed: ${analyzeResponsePatterns(responses)}
+- Emotional availability: ${assessEmotionalAvailability(responses)}
+` : `
+BASIC USER PROFILE:
 - Communication Style: ${preferences.tone || 'supportive-direct'} tone, ${preferences.voice || 'mentor'} voice
 - Rawness Level: ${preferences.rawness || 'moderate'} (adjust language intensity accordingly)
 - Depth Preference: ${preferences.depth || 'moderate'} 
@@ -154,9 +214,66 @@ Key Themes Detected: ${extractKeyThemes(response.response)}
 ---`;
   }).join('\n');
 
-  // Enhanced analysis guidelines
-  const analysisGuidelines = `
-DEEP ANALYSIS REQUIREMENTS:
+  // Enhanced analysis guidelines using rich onboarding data
+  const analysisGuidelines = enhancedOnboarding ? `
+ENHANCED ANALYSIS REQUIREMENTS:
+
+PRIMARY FOCUS TARGETING:
+- Core focus area: ${enhancedOnboarding.primaryFocus}
+- Tailor ALL analysis to this primary concern
+- Use their specific challenges: ${enhancedOnboarding.challenges.join(', ')}
+- Reference their stated goals: ${enhancedOnboarding.goals.join(', ')}
+
+PERSONALIZATION DEPTH:
+- Guidance strength: ${enhancedOnboarding.guidanceStrength} (adapt language intensity)
+- Depth preference: ${enhancedOnboarding.depth} (adjust analysis depth)
+- Communication tones: ${enhancedOnboarding.tones.join(' + ')}
+- Guide styles: ${enhancedOnboarding.guideStyles.join(' + ')}
+- Use their exact words and phrases when making points
+- Reference their specific examples and situations
+
+BASELINE-CALIBRATED SCORING:
+- Stress baseline: ${enhancedOnboarding.stress0to10}/10 (calibrate anxiety scores)
+- Sleep baseline: ${enhancedOnboarding.sleep0to10}/10 (factor into overall toxicity)
+- Rumination frequency: ${enhancedOnboarding.ruminationFreq} (adjust self-criticism scores)
+- Use these baselines to provide realistic, personalized toxicity scores
+
+ACTIONABILITY CONSTRAINTS:
+- Max action duration: ${enhancedOnboarding.minutesPerDay <= 5 ? '5 minutes' : enhancedOnboarding.minutesPerDay <= 15 ? '10 minutes' : '15 minutes'}
+- Attention span: ${enhancedOnboarding.attentionSpan} (adjust complexity accordingly)
+- Learning preference: ${enhancedOnboarding.learningStyles[0] || 'text'} (match recommendation format)
+- All actions must fit their actual time availability
+
+SAFETY ENFORCEMENT:
+- STRICTLY AVOID these topics: ${enhancedOnboarding.topicsToAvoid.join(', ') || 'None specified'}
+${enhancedOnboarding.triggerWords ? `- NEVER use these trigger words: ${enhancedOnboarding.triggerWords}` : ''}
+- Special considerations for flags: ${enhancedOnboarding.flags.join(', ') || 'None'}
+- Adjust analysis intensity based on safety needs
+
+TRAUMA PATTERN DETECTION (Focus-Specific):
+${enhancedOnboarding.primaryFocus === 'trauma-processing' ? `
+- Look for: dissociation, hypervigilance, emotional numbing, trust issues
+- Detect: avoidance patterns, somatic responses, relationship impacts
+` : enhancedOnboarding.primaryFocus === 'anxiety' ? `
+- Look for: catastrophic thinking, avoidance behaviors, somatic symptoms
+- Detect: worry patterns, safety behaviors, control mechanisms
+` : enhancedOnboarding.primaryFocus === 'confidence' ? `
+- Look for: self-criticism, imposter syndrome, perfectionism
+- Detect: comparison patterns, self-sabotage, achievement anxiety
+` : enhancedOnboarding.primaryFocus === 'relationships' ? `
+- Look for: attachment patterns, boundary issues, communication blocks
+- Detect: people-pleasing, conflict avoidance, intimacy fears
+` : `
+- Look for patterns specific to ${enhancedOnboarding.primaryFocus}
+- Detect related behavioral loops and emotional responses
+`}
+
+CONFIDENCE SCORING CRITERIA:
+- High: Detailed responses + emotional openness + specific examples + consistent with baseline metrics
+- Medium: Some detail + moderate openness + general examples + mostly consistent with baselines
+- Low: Brief responses + emotional guardedness + vague examples + inconsistent with stated baselines
+` : `
+BASIC ANALYSIS REQUIREMENTS:
 
 PATTERN RECOGNITION:
 - Look for recurring themes across ALL responses (not just individual answers)
@@ -194,7 +311,38 @@ CONFIDENCE SCORING CRITERIA:
 - Low: Brief responses, emotional guardedness, vague examples, unclear patterns
 `;
 
-  const taskPrompt = `
+  const taskPrompt = enhancedOnboarding ? `
+TASK: Generate a hyper-personalized diagnostic report using their rich onboarding profile.
+
+PERSON PROFILE:
+- Primary focus: ${enhancedOnboarding.primaryFocus}
+- Time capacity: ${enhancedOnboarding.minutesPerDay} min/day, ${enhancedOnboarding.attentionSpan} attention span
+- Communication preference: ${enhancedOnboarding.tones.join(' + ')} tone, ${enhancedOnboarding.guideStyles.join(' + ')} style
+- Guidance intensity: ${enhancedOnboarding.guidanceStrength}
+- Baseline stress: ${enhancedOnboarding.stress0to10}/10, sleep: ${enhancedOnboarding.sleep0to10}/10
+- Current challenges: ${enhancedOnboarding.challenges.join(', ')}
+${enhancedOnboarding.flags.length > 0 ? `- Special flags: ${enhancedOnboarding.flags.join(', ')}` : ''}
+
+YOUR ENHANCED MISSION:
+1. IDENTIFY the core pattern blocking their ${enhancedOnboarding.primaryFocus} progress (be laser-specific)
+2. NAME their biggest strength from their ${enhancedOnboarding.goals.join('/')} goals they're not leveraging
+3. SPOT the behavioral loop keeping them stuck in ${enhancedOnboarding.primaryFocus} struggles
+4. PROVIDE the exact first step (max ${enhancedOnboarding.minutesPerDay <= 5 ? '5 minutes' : enhancedOnboarding.minutesPerDay <= 15 ? '10 minutes' : '15 minutes'}) to break their biggest blocker
+5. DELIVER 5-7 actions they can do TODAY (all under ${enhancedOnboarding.minutesPerDay <= 5 ? '5 minutes' : '15 minutes'} each)
+6. RECOMMEND resources matching their ${enhancedOnboarding.learningStyles[0] || 'text'} learning style
+
+CRITICAL SUCCESS FACTORS:
+- At least one "holy shit, that's exactly it" insight about their ${enhancedOnboarding.primaryFocus} struggles
+- Core blocker must be THE thing stopping their ${enhancedOnboarding.primaryFocus} progress
+- Quick wins must work with ${enhancedOnboarding.attentionSpan} attention span
+- Use ${enhancedOnboarding.guidanceStrength} language intensity (gentle/moderate/intense)
+- Calibrate toxicity scores against their baselines (stress: ${enhancedOnboarding.stress0to10}, sleep: ${enhancedOnboarding.sleep0to10})
+- Respect their safety boundaries: avoid ${enhancedOnboarding.topicsToAvoid.join(', ') || 'no restrictions'}
+
+${enhancedOnboarding.freeform ? `SPECIAL CONTEXT: "${enhancedOnboarding.freeform}"` : ''}
+
+Generate a DiagnosticReport that feels like it was created by someone who spent hours understanding their ${enhancedOnboarding.primaryFocus} journey and knows exactly what they need to move forward.
+` : `
 TASK: Generate a comprehensive diagnostic report that feels like it was written by someone who truly gets this person.
 
 This individual has completed ${responseCount || responses.length} diagnostic questions with ${responses.length > 3 ? 'thoughtful depth' : 'moderate engagement'}. Their communication style shows ${preferences.tone || 'balanced'} tendencies with a preference for ${preferences.rawness || 'moderate'} directness.

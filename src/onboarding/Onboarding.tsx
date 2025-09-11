@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import flowConfig from "./flow.json";
-import type { Flow, Step, Field, ChoiceField, TextField } from "./types";
+import type { Flow, Step, Field, ChoiceField, TextField, ScaleField } from "./types";
 
 type Props = {
   onComplete: (payload: Record<string, string | string[] | undefined>) => void;
@@ -10,6 +11,7 @@ type Props = {
 
 const isChoice = (f: Field): f is ChoiceField => f.type === "choice";
 const isText = (f: Field): f is TextField => f.type === "text" || f.type === "longtext";
+const isScale = (f: Field): f is ScaleField => f.type === "scale";
 
 const ToggleButton: React.FC<{
   active: boolean;
@@ -89,6 +91,51 @@ const WarningModal: React.FC<{
   );
 };
 
+const CrisisModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+}> = ({ isOpen, onClose, title, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-card border border-border rounded-xl p-6 max-w-lg w-full shadow-2xl">
+        <div className="text-center mb-4">
+          <div className="text-4xl mb-2">🛟</div>
+          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        </div>
+        <div className="text-sm text-muted-foreground mb-6 whitespace-pre-line">
+          {message}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <a
+            href="tel:988"
+            className="w-full text-center bg-primary text-primary-foreground py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Call 988
+          </a>
+          <a
+            href="https://988lifeline.org/"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="w-full text-center border border-border bg-background text-foreground py-2 px-4 rounded-lg hover:bg-muted/50 transition-colors"
+          >
+            Lifeline Site
+          </a>
+          <button
+            onClick={onClose}
+            className="w-full py-2 px-4 rounded-lg border border-border bg-background text-foreground hover:bg-muted/50 transition-colors"
+          >
+            Go Home
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const StepView: React.FC<{
   step: Step;
   values: Record<string, string | string[] | undefined>;
@@ -102,6 +149,7 @@ const StepView: React.FC<{
 }> = ({ step, values, setValues, index, total, next, prev, errors, canProceed }) => {
   const helper = step.helper;
   const [warningModal, setWarningModal] = useState<{ isOpen: boolean; warning: string }>({ isOpen: false, warning: '' });
+  const [crisisModal, setCrisisModal] = useState<{ isOpen: boolean; title: string; message: string }>({ isOpen: false, title: '', message: '' });
 
   const handleChoiceClick = (field: ChoiceField, option: string) => {
     // Check if this option has a warning
@@ -190,6 +238,40 @@ const StepView: React.FC<{
                 )}
               </div>
             );
+          } else if (isScale(field)) {
+            const current = Number(values[field.id] ?? field.min);
+            const valueLabel = (field.valueLabels && field.valueLabels[current])
+              || (current === field.min ? (field.minLabel ?? String(field.min))
+              : current === field.max ? (field.maxLabel ?? String(field.max))
+              : undefined);
+            return (
+              <div key={field.id}>
+                <div className="mb-3 font-semibold text-lg text-foreground flex items-center justify-between">
+                  <span>{field.label}</span>
+                  <span className="text-sm text-muted-foreground">{valueLabel ? `${valueLabel} ` : ''}({current}{field.suffix ? `${field.suffix}` : ''})</span>
+                </div>
+                {field.subheading 
+                  && field.subheading.trim() !== (step.subheading?.trim() || "")
+                  && field.subheading.trim() !== (helper?.trim() || "") && (
+                  <p className="text-muted-foreground mb-4">{field.subheading}</p>
+                )}
+                <div className="px-1">
+                  <Slider
+                    min={field.min}
+                    max={field.max}
+                    value={[current]}
+                    onValueChange={(vals) => setValues({ ...values, [field.id]: String(vals[0]) })}
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                    <span>{field.minLabel ?? field.min}</span>
+                    <span>{field.maxLabel ?? field.max}</span>
+                  </div>
+                </div>
+                {errors[field.id] && (
+                  <p className="text-destructive text-sm mt-2">{errors[field.id]}</p>
+                )}
+              </div>
+            );
           }
           return null;
         })}
@@ -224,6 +306,15 @@ const StepView: React.FC<{
         onClose={() => setWarningModal({ isOpen: false, warning: '' })}
         warning={warningModal.warning}
       />
+      <CrisisModal 
+        isOpen={crisisModal.isOpen}
+        onClose={() => {
+          setCrisisModal({ isOpen: false, title: '', message: '' });
+          try { window.location.href = '/'; } catch {}
+        }}
+        title={crisisModal.title}
+        message={crisisModal.message}
+      />
     </div>
   );
 };
@@ -234,6 +325,15 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
   const [stepIndex, setStepIndex] = useState(0);
   const [values, setValues] = useState<Record<string, string | string[] | undefined>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [crisisModal, setCrisisModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: ''
+  });
 
   const total = steps.length;
   const step = steps[stepIndex];
@@ -264,6 +364,29 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
     if (!isValid) return;
     const isLast = stepIndex >= total - 1 || step.final;
     if (onChange) onChange(values);
+
+    // Special gating for consent & safety step
+    if (step.id === 'consent') {
+      const is18 = (values['is18OrOver'] as string) === 'Yes';
+      const crisis = (values['crisisCheck'] as string) === 'Yes';
+      const consent = (values['consentToProceed'] as string) === 'Agree';
+      const disclaimer = (values['agreeDisclaimer'] as string) === 'Agree';
+      if (!is18 || crisis) {
+        setCrisisModal({
+          isOpen: true,
+          title: !is18 ? 'We care about your safety' : 'If you are in crisis, help is available',
+          message: !is18
+            ? 'This experience is for adults 18+. Please talk with a trusted adult or a licensed professional. If you need immediate help, call 988 (US) or your local emergency number.'
+            : 'If you are in immediate danger or thinking of harming yourself, please reach out for live support right now. Call 988 in the US or your local emergency number. You can also visit the 988 Lifeline website.'
+        });
+        return;
+      }
+      if (!consent || !disclaimer) {
+        // Block progression if the user does not consent or accept disclaimer
+        setErrors({ ...newErrors, consentToProceed: 'You must consent to continue.', agreeDisclaimer: 'You must agree to continue.' });
+        return;
+      }
+    }
     if (isLast) {
       setIsCompleting(true);
       // allow progress bar to render at 100% before navigation
@@ -319,6 +442,12 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
           </button>
         </div>
       ) : null}
+      <CrisisModal
+        isOpen={crisisModal.isOpen}
+        onClose={() => setCrisisModal({ isOpen: false, title: '', message: '' })}
+        title={crisisModal.title}
+        message={crisisModal.message}
+      />
     </div>
   );
 };

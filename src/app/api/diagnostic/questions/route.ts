@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, users } from '../../../../db'
 import { eq } from 'drizzle-orm'
+import { generateDiagnosticQuestions } from '../../../../lib/diagnostic/generate'
+import { mapLegacyToOnboardingPrefs } from '../../../../lib/diagnostic/mapper'
+import { HSI_QUESTIONS } from '@/lib/hsi'
 
 // Global flag to prevent multiple simultaneous generations
 let isGeneratingQuestions = false
@@ -35,6 +38,7 @@ export async function GET() {
       // Use personalized questions
       return NextResponse.json({
         questions: personalizedQuestions,
+        hsi: { questions: HSI_QUESTIONS },
         userPreferences: {
           tone: user.tone || 'gentle',
           voice: user.voice || 'friend',
@@ -62,6 +66,7 @@ export async function GET() {
         if (personalizedQuestions && personalizedQuestions.length > 0) {
           return NextResponse.json({
             questions: personalizedQuestions,
+            hsi: { questions: HSI_QUESTIONS },
             userPreferences: {
               tone: user.tone || 'gentle',
               voice: user.voice || 'friend',
@@ -84,6 +89,7 @@ export async function GET() {
       console.log('Using existing personalized questions:', personalizedQuestions.length)
       return NextResponse.json({
         questions: personalizedQuestions,
+        hsi: { questions: HSI_QUESTIONS },
         userPreferences: {
           tone: user.tone || 'gentle',
           voice: user.voice || 'friend',
@@ -105,6 +111,7 @@ export async function GET() {
       if (personalizedQuestions && personalizedQuestions.length > 0) {
         return NextResponse.json({
           questions: personalizedQuestions,
+          hsi: { questions: HSI_QUESTIONS },
           userPreferences: {
             tone: user.tone || 'gentle',
             voice: user.voice || 'friend',
@@ -129,40 +136,62 @@ export async function GET() {
     console.log('No personalized questions found, generating them now...')
     isGeneratingQuestions = true
     
-    // Generate personalized questions directly here
+    // Generate personalized questions using the new system
     try {
-      const { AIOnboardingAnalyzer } = await import('../../../../lib/ai-onboarding-analyzer')
-      
-      // Extract onboarding data from user preferences
-      const onboardingData = {
+      // Map legacy onboarding data to new format
+      const legacyData = {
         tone: user.tone || 'gentle',
         voice: user.voice || 'friend',
         rawness: user.rawness || 'moderate',
         depth: user.depth || 'moderate',
         learning: user.learning || 'text',
         engagement: user.engagement || 'passive',
-        goals: safetyData.goals || [],
-        experience: safetyData.experience || 'beginner',
-        timeCommitment: safetyData.timeCommitment || '30min',
-        safety: {
-          crisisSupport: safetyData.crisisSupport || false,
-          contentWarnings: safetyData.contentWarnings || false,
-          skipTriggers: safetyData.skipTriggers || false
-        }
+        safety: safetyData
       }
-
-      console.log('Generating personalized questions with data:', onboardingData)
       
-      const analyzer = new AIOnboardingAnalyzer()
-      const { analysis, questions } = await analyzer.analyzeOnboardingAndGenerateQuestions(onboardingData)
+      const onboardingPrefs = mapLegacyToOnboardingPrefs(legacyData)
+      console.log('Mapped onboarding preferences:', JSON.stringify(onboardingPrefs, null, 2))
+      
+      // Generate questions using the new system
+      const result = generateDiagnosticQuestions({ 
+        onboarding: onboardingPrefs,
+        nowISO: new Date().toISOString()
+      })
 
-      console.log('Successfully generated questions:', questions.length)
+      console.log('Successfully generated questions:', result.count)
+      console.log('Generation rationale:', result.rationale)
+
+      // Convert new format to legacy format for backward compatibility
+      const legacyQuestions = result.questions.map((q, index) => ({
+        id: index + 1,
+        category: q.category,
+        question: q.prompt,
+        followUp: q.helper,
+        options: [],
+        adaptive: {
+          tone: onboardingPrefs.tones,
+          rawness: [onboardingPrefs.guidanceStrength],
+          depth: [onboardingPrefs.depth]
+        },
+        aiPrompt: `Analyze this response for patterns related to: ${q.tags.join(', ')}`
+      }))
+
+      // Create analysis object for backward compatibility
+      const analysis = {
+        focusAreas: [onboardingPrefs.primaryFocus],
+        communicationStyle: onboardingPrefs.tones.join(', '),
+        intensityLevel: onboardingPrefs.guidanceStrength,
+        depthLevel: onboardingPrefs.depth,
+        customCategories: result.questions.map(q => q.category),
+        recommendedQuestionCount: result.count,
+        rationale: result.rationale
+      }
 
       // Save the analysis and questions to the database
       const updatedSafety = {
         ...safetyData,
         diagnosticAnalysis: analysis,
-        personalizedQuestions: questions,
+        personalizedQuestions: legacyQuestions,
         questionGenerationTimestamp: new Date().toISOString()
       }
 
@@ -170,24 +199,25 @@ export async function GET() {
         .set({ safety: updatedSafety })
         .where(eq(users.id, userId))
 
-                    console.log('Successfully saved personalized questions to database')
-              isGeneratingQuestions = false
+      console.log('Successfully saved personalized questions to database')
+      isGeneratingQuestions = false
 
-              return NextResponse.json({
-                questions,
-                userPreferences: {
-                  tone: user.tone || 'gentle',
-                  voice: user.voice || 'friend',
-                  rawness: user.rawness || 'moderate',
-                  depth: user.depth || 'moderate',
-                  learning: user.learning || 'text',
-                  engagement: user.engagement || 'passive',
-                  goals: safetyData.goals || [],
-                  experience: safetyData.experience || 'beginner'
-                },
-                analysis,
-                isPersonalized: true
-              })
+      return NextResponse.json({
+        questions: legacyQuestions,
+        hsi: { questions: HSI_QUESTIONS },
+        userPreferences: {
+          tone: user.tone || 'gentle',
+          voice: user.voice || 'friend',
+          rawness: user.rawness || 'moderate',
+          depth: user.depth || 'moderate',
+          learning: user.learning || 'text',
+          engagement: user.engagement || 'passive',
+          goals: safetyData.goals || [],
+          experience: safetyData.experience || 'beginner'
+        },
+        analysis,
+        isPersonalized: true
+      })
           } catch (generateError) {
         console.error('Failed to generate personalized questions:', generateError)
         isGeneratingQuestions = false

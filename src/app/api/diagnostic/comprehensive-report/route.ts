@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, users, diagnosticResponses, diagnosticSummaries } from '@/db'
 import { AIService } from '@/lib/ai-service'
+import { FullReportSchema } from '@/lib/fullReportSchema'
+import { formatReportMarkdown } from '@/lib/formatReport'
+import { formatComprehensiveReport } from '@/lib/report-formatter'
 import { eq, desc, and } from 'drizzle-orm'
+import { buildOfflineReport } from '@/lib/offline-report'
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,21 +69,37 @@ export async function POST(request: NextRequest) {
         return {
           question: questionData?.question || `Question ${index + 1}`,
           response: response.response || '',
-          insight: response.insight || ''
+          insight: response.insight || '',
+          questionId: (questionData?.id || questionData?.questionId || `${index + 1}`) as string
         }
       })
 
-    // Generate comprehensive diagnostic report using GPT-4.1
+    // Try structured path first (no fallbacks)
     const aiService = new AIService()
-    const comprehensiveReport = await aiService.generateComprehensiveReport(allResponses, userPreferences)
+    let normalizedContent: string
+    let model = 'unknown'
+    let timestamp = new Date().toISOString()
+    try {
+      const structured = await aiService.generateStructuredFullReport(allResponses, { ...userPreferences, minutesPerDay: 20 })
+      // already validated & formatted
+      normalizedContent = structured.formatted
+      model = structured.model
+      timestamp = structured.timestamp
+    } catch (e1) {
+      console.error('Structured generation error details:', e1)
+      return NextResponse.json({ 
+        error: 'Structured generation failed', 
+        details: e1 instanceof Error ? e1.message : String(e1) 
+      }, { status: 502 })
+    }
 
     // Save the comprehensive report to database
     const updatedSafety = {
       ...safetyData,
       comprehensiveReport: {
-        content: comprehensiveReport.insight,
-        model: comprehensiveReport.model,
-        timestamp: comprehensiveReport.timestamp
+        content: normalizedContent,
+        model,
+        timestamp
       }
     }
 
@@ -91,20 +111,20 @@ export async function POST(request: NextRequest) {
     await db.insert(diagnosticSummaries).values({
       userId: userId,
       type: 'comprehensive_report',
-      summary: comprehensiveReport.insight,
+      summary: normalizedContent,
       createdAt: new Date()
     }).onConflictDoUpdate({
       target: [diagnosticSummaries.userId, diagnosticSummaries.type],
       set: {
-        summary: comprehensiveReport.insight,
+        summary: normalizedContent,
         updatedAt: new Date()
       }
     })
 
     return NextResponse.json({
-      report: comprehensiveReport.insight,
-      model: comprehensiveReport.model,
-      timestamp: comprehensiveReport.timestamp,
+      report: normalizedContent,
+      model,
+      timestamp,
       responseCount: allResponses.length
     })
 
@@ -142,11 +162,13 @@ export async function GET(request: NextRequest) {
     }
 
     // The report is stored as plain text, not JSON
-    const report = reportResult[0].summary
+    const reportRow = reportResult[0]
+    const report = reportRow.summary
 
     return NextResponse.json({
       success: true,
-      report
+      report,
+      createdAt: reportRow.createdAt
     })
 
   } catch (error) {

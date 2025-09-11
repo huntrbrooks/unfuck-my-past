@@ -4,6 +4,9 @@ import { db } from '@/db'
 import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 
+// Ensure Node.js runtime for database driver compatibility
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
@@ -12,43 +15,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
+    // Parse body defensively to avoid runtime crashes on malformed JSON
+    const body = await request.json().catch(() => ({} as any))
+    
+    // Normalize incoming payload to avoid spreading undefined/null
+    const goals = Array.isArray(body?.goals) ? body.goals : (body?.goals ? [body.goals] : [])
+    const safetyBase = (body && typeof body.safety === 'object' && body.safety !== null) ? body.safety : {}
+    const safety = {
+      ...safetyBase,
+      goals,
+      experience: body?.experience ?? 'beginner',
+      timeCommitment: body?.timeCommitment ?? '15min',
+    }
+    
+    const tone = body?.tone ?? null
+    const voice = body?.voice ?? null
+    const rawness = body?.rawness ?? null
+    const depth = body?.depth ?? null
+    const learning = body?.learning ?? null
+    const engagement = body?.engagement ?? null
     
     // Save onboarding data to database
     await db.insert(users).values({
       id: userId,
-      tone: body.tone,
-      voice: body.voice,
-      rawness: body.rawness,
-      depth: body.depth,
-      learning: body.learning,
-      engagement: body.engagement,
-      safety: {
-        ...body.safety,
-        goals: body.goals,
-        experience: body.experience,
-        timeCommitment: body.timeCommitment
-      }
+      tone,
+      voice,
+      rawness,
+      depth,
+      learning,
+      engagement,
+      safety,
     }).onConflictDoUpdate({
       target: users.id,
       set: {
-        tone: body.tone,
-        voice: body.voice,
-        rawness: body.rawness,
-        depth: body.depth,
-        learning: body.learning,
-        engagement: body.engagement,
-        safety: {
-          ...body.safety,
-          goals: body.goals,
-          experience: body.experience,
-          timeCommitment: body.timeCommitment
-        }
+        tone,
+        voice,
+        rawness,
+        depth,
+        learning,
+        engagement,
+        safety,
       }
     })
 
     // Trigger question generation in the background (non-blocking)
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/diagnostic/generate-questions`, {
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : request.nextUrl.origin || 'http://localhost:3000')
+
+    fetch(`${appUrl}/api/diagnostic/generate-questions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,7 +81,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error saving onboarding data:', error)
     return NextResponse.json(
-      { error: 'Failed to save onboarding data' }, 
+      { error: 'Failed to save onboarding data', details: error instanceof Error ? error.message : 'Unknown error' }, 
       { status: 500 }
     )
   }

@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { db, users, diagnosticResponses } from '../../../../db'
 import { AIService } from '../../../../lib/ai-service'
 import { generateAIPrompt } from '../../../../lib/diagnostic-questions'
+import { generateEnhancedAIPrompt } from '../../../../lib/enhanced-diagnostic-insight'
 import { eq } from 'drizzle-orm'
 import { validateObject, sanitizeObject, DIAGNOSTIC_RESPONSE_SCHEMA, globalRateLimiter } from '../../../../lib/validation'
 
@@ -68,19 +69,60 @@ export async function POST(request: NextRequest) {
       const user = userResult[0]
       const safetyData = typeof user.safety === 'string' ? JSON.parse(user.safety) : user.safety
 
-      const userPreferences = {
-        tone: user.tone || 'gentle',
-        voice: user.voice || 'friend',
-        rawness: user.rawness || 'moderate',
-        depth: user.depth || 'moderate',
-        learning: user.learning || 'text',
-        engagement: user.engagement || 'passive',
-        goals: safetyData.goals || [],
-        experience: safetyData.experience || 'beginner'
-      }
+      // Check if we have enhanced onboarding data
+      const hasEnhancedOnboarding = safetyData && 
+        safetyData.flags && 
+        safetyData.primaryFocus && 
+        safetyData.baselines;
 
-      // Generate AI prompt
-      const prompt = generateAIPrompt(question, userPreferences)
+      let prompt;
+      
+      if (hasEnhancedOnboarding) {
+        // Use enhanced onboarding data for personalized insights
+        const enhancedOnboarding = {
+          tones: safetyData.tones || [user.tone || 'gentle'],
+          guideStyles: safetyData.guideStyles || [user.voice || 'friend'],
+          guidanceStrength: (safetyData.guidanceStrength || user.rawness || 'moderate') as "mild"|"moderate"|"intense",
+          depth: (safetyData.depth || user.depth || 'moderate') as "surface"|"moderate"|"deep"|"profound",
+          primaryFocus: safetyData.primaryFocus,
+          goals: safetyData.goals || [],
+          learningStyles: safetyData.learningStyles || [user.learning || 'text'],
+          engagement: (safetyData.engagement || user.engagement || 'passive') as "passive"|"moderate"|"active",
+          minutesPerDay: (safetyData.timeCommitment === '5min' ? 5 : 
+                        safetyData.timeCommitment === '15min' ? 15 :
+                        safetyData.timeCommitment === '30min' ? 30 : 15) as 5|15|30|60,
+          attentionSpan: safetyData.attentionSpan || 'standard',
+          inputMode: (safetyData.inputMode || 'text') as "text"|"voice"|"either",
+          flags: safetyData.flags || [],
+          stress0to10: parseInt(safetyData.baselines?.stress) || 5,
+          sleep0to10: parseInt(safetyData.baselines?.sleep) || 5,
+          ruminationFreq: safetyData.baselines?.rumination || 'weekly',
+          topicsToAvoid: safetyData.topicsToAvoid || [],
+          triggerWords: safetyData.triggerWords || '',
+          challenges: safetyData.challenges || [],
+          challengeOther: safetyData.challengeOther,
+          freeform: safetyData.freeform
+        };
+        
+        console.log('Using enhanced onboarding data for insight generation');
+        prompt = generateEnhancedAIPrompt(question, enhancedOnboarding);
+        
+      } else {
+        // Fallback to basic preferences
+        const userPreferences = {
+          tone: user.tone || 'gentle',
+          voice: user.voice || 'friend',
+          rawness: user.rawness || 'moderate',
+          depth: user.depth || 'moderate',
+          learning: user.learning || 'text',
+          engagement: user.engagement || 'passive',
+          goals: safetyData?.goals || [],
+          experience: safetyData?.experience || 'beginner'
+        };
+        
+        console.log('Using basic preferences for insight generation');
+        prompt = generateAIPrompt(question, userPreferences);
+      }
 
       // Generate insight using AI
       const aiService = new AIService()
@@ -98,7 +140,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         insight: insight.insight,
         model: insight.model,
-        timestamp: insight.timestamp
+        timestamp: insight.timestamp,
+        // Debug info to verify enhanced onboarding usage
+        debug: {
+          usedEnhancedOnboarding: hasEnhancedOnboarding,
+          primaryFocus: hasEnhancedOnboarding ? safetyData.primaryFocus : 'not available',
+          guidanceStrength: hasEnhancedOnboarding ? (safetyData.guidanceStrength || user.rawness) : user.rawness,
+          flags: hasEnhancedOnboarding ? safetyData.flags : 'not available',
+          timeConstraint: hasEnhancedOnboarding ? safetyData.timeCommitment : 'not available'
+        }
       })
 
     } catch (dbError) {

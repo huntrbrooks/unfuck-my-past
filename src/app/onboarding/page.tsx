@@ -12,9 +12,9 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [hasExisting, setHasExisting] = React.useState(false)
-  type OnboardingSafety = { crisisSupport: boolean; contentWarnings: boolean; skipTriggers: boolean }
+  type OnboardingSafety = Record<string, any>
   interface OnboardingPayload {
-    ageBracket: string | string[]
+    ageBracket?: string | string[]
     tone: string
     voice: string
     rawness: string | string[]
@@ -26,9 +26,25 @@ export default function OnboardingPage() {
     timeCommitment: string
     locationPermission: boolean
     safety: OnboardingSafety
+    // Extended personalization fields
+    primaryFocus?: string
+    timePerDay?: string
+    attentionSpan?: string
+    inputMode?: string
+    flags?: string[]
+    scheduleNote?: string | string[]
+    stressLevel?: string
+    sleepQuality?: string
+    rumination?: string
+    topicsToAvoid?: string[]
+    triggerWords?: string | string[]
     challenges: string[]
     challengeOther: string | string[]
     freeNote: string | string[]
+    finalNote?: string | string[]
+    anonymizedDataOK?: boolean
+    exportPromiseShown?: boolean
+    // Enhanced preferences for AI
     enhancedTone: string[]
     enhancedGuideStyle: string[]
     enhancedLearningStyle: string[]
@@ -84,34 +100,73 @@ export default function OnboardingPage() {
 
   const handleComplete = async (payload: Record<string, string | string[] | undefined>) => {
     try {
-      // Transform the new onboarding data to match your existing API structure
+      // Helpers
+      const toLower = (v: string | undefined) => (v || '').toString().toLowerCase();
+      const firstOf = (v: string | string[] | undefined, fallback: string) => Array.isArray(v) ? (v[0] || fallback) : (v || fallback);
+      const mapGuideStyle = (v: string) => v.replace(/-style/i, '').toLowerCase();
+      const mapTime = (v: string) => {
+        const s = v.toLowerCase();
+        if (s.includes('5')) return '5min';
+        if (s.includes('15')) return '15min';
+        if (s.includes('30')) return '30min';
+        if (s.includes('60') || s.includes('1 hour') || s.includes('1hour')) return '1hour';
+        return '15min';
+      };
+
+      // Transform to match existing API structure while preserving richer data
       const transformedData: OnboardingPayload = {
-        ageBracket: payload.ageBracket || '',
-        tone: Array.isArray(payload.tone) ? payload.tone[0] || 'gentle' : payload.tone || 'gentle',
-        voice: Array.isArray(payload.guideStyle) ? payload.guideStyle[0] || 'friend' : payload.guideStyle || 'friend',
-        rawness: payload.strength || 'moderate',
-        depth: payload.depth || 'moderate',
-        learning: Array.isArray(payload.learningStyle) ? payload.learningStyle[0] || 'text' : payload.learningStyle || 'text',
-        engagement: payload.engagement || 'passive',
-        goals: Array.isArray(payload.primaryGoals) ? payload.primaryGoals : [payload.primaryGoals || 'growth'],
-        experience: Array.isArray(payload.experienceLevel) ? payload.experienceLevel[0] || 'beginner' : payload.experienceLevel || 'beginner',
-        timeCommitment: Array.isArray(payload.timeCommitment) ? payload.timeCommitment[0] || '15min' : payload.timeCommitment || '15min',
-        locationPermission: false, // Default to false, can be updated later
+        ageBracket: '',
+        tone: firstOf(payload.tone, 'gentle'),
+        voice: mapGuideStyle(firstOf(payload.guideStyle, 'friend')),
+        rawness: firstOf(payload.strength, 'moderate'),
+        depth: firstOf(payload.depth, 'moderate'),
+        learning: toLower(firstOf(payload.learningStyle, 'text')),
+        engagement: firstOf(payload.engagement, 'passive'),
+        goals: Array.isArray(payload.primaryGoals) ? payload.primaryGoals as string[] : [firstOf(payload.primaryGoals, 'growth')],
+        experience: 'beginner',
+        timeCommitment: mapTime(firstOf(payload.timePerDay, '15 minutes')),
+        locationPermission: false,
         safety: {
-          crisisSupport: false,
-          contentWarnings: true,
-          skipTriggers: true
+          consentToProceed: firstOf(payload.consentToProceed, 'Agree') === 'Agree',
+          agreeDisclaimer: firstOf(payload.agreeDisclaimer, 'Agree') === 'Agree',
+          topicsToAvoid: Array.isArray(payload.topicsToAvoid) ? payload.topicsToAvoid : (payload.topicsToAvoid ? [payload.topicsToAvoid as string] : []),
+          triggerWords: firstOf(payload.triggerWords, ''),
+          flags: Array.isArray(payload.flags) ? payload.flags : (payload.flags ? [payload.flags as string] : []),
+          primaryFocus: firstOf(payload.primaryFocus, ''),
+          attentionSpan: firstOf(payload.attentionSpan, ''),
+          inputMode: firstOf(payload.inputMode, ''),
+          baselines: {
+            stress: firstOf(payload.stressLevel, ''),
+            sleep: firstOf(payload.sleepQuality, ''),
+            rumination: firstOf(payload.rumination, '')
+          },
+          anonymizedDataOK: firstOf(payload.anonymizedDataOK as any, 'No') === 'Yes',
+          exportPromiseShown: firstOf(payload.exportPromiseShown as any, 'Yes') === 'Yes'
         },
-        // New fields for better AI personalization
-        challenges: Array.isArray(payload.challenges) ? payload.challenges : [payload.challenges || ''],
-        challengeOther: Array.isArray(payload.challengeOther) ? payload.challengeOther.join(' ') : (payload.challengeOther || ''),
-        freeNote: Array.isArray(payload.freeNote) ? payload.freeNote.join(' ') : (payload.freeNote || ''),
+        // Additional fields for analytics/AI
+        primaryFocus: firstOf(payload.primaryFocus, ''),
+        timePerDay: firstOf(payload.timePerDay, ''),
+        attentionSpan: firstOf(payload.attentionSpan, ''),
+        inputMode: firstOf(payload.inputMode, ''),
+        flags: Array.isArray(payload.flags) ? payload.flags as string[] : (payload.flags ? [payload.flags as string] : []),
+        scheduleNote: firstOf(payload.scheduleNote, ''),
+        stressLevel: firstOf(payload.stressLevel, ''),
+        sleepQuality: firstOf(payload.sleepQuality, ''),
+        rumination: firstOf(payload.rumination, ''),
+        topicsToAvoid: Array.isArray(payload.topicsToAvoid) ? payload.topicsToAvoid as string[] : (payload.topicsToAvoid ? [payload.topicsToAvoid as string] : []),
+        triggerWords: firstOf(payload.triggerWords, ''),
+        challenges: Array.isArray(payload.challenges) ? payload.challenges as string[] : [firstOf(payload.challenges, '')],
+        challengeOther: firstOf(payload.challengeOther, ''),
+        freeNote: firstOf(payload.finalNote ?? payload.freeNote, ''),
+        finalNote: firstOf(payload.finalNote, ''),
+        anonymizedDataOK: firstOf(payload.anonymizedDataOK as any, 'No') === 'Yes',
+        exportPromiseShown: firstOf(payload.exportPromiseShown as any, 'Yes') === 'Yes',
         // Enhanced preferences for AI
-        enhancedTone: Array.isArray(payload.tone) ? payload.tone : [payload.tone || 'gentle'],
-        enhancedGuideStyle: Array.isArray(payload.guideStyle) ? payload.guideStyle : [payload.guideStyle || 'friend'],
-        enhancedLearningStyle: Array.isArray(payload.learningStyle) ? payload.learningStyle : [payload.learningStyle || 'text'],
-        enhancedExperienceLevel: Array.isArray(payload.experienceLevel) ? payload.experienceLevel : [payload.experienceLevel || 'beginner'],
-        enhancedTimeCommitment: Array.isArray(payload.timeCommitment) ? payload.timeCommitment : [payload.timeCommitment || '15min']
+        enhancedTone: Array.isArray(payload.tone) ? (payload.tone as string[]) : [firstOf(payload.tone, 'gentle')],
+        enhancedGuideStyle: Array.isArray(payload.guideStyle) ? (payload.guideStyle as string[]) : [firstOf(payload.guideStyle, 'friend')],
+        enhancedLearningStyle: Array.isArray(payload.learningStyle) ? (payload.learningStyle as string[]) : [firstOf(payload.learningStyle, 'text')],
+        enhancedExperienceLevel: ['beginner'],
+        enhancedTimeCommitment: [mapTime(firstOf(payload.timePerDay, '15 minutes'))]
       }
 
       console.log('Enhanced onboarding data for AI:', transformedData)

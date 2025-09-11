@@ -130,13 +130,6 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
 
       <div className="space-y-4">
         {responses.map((response, index) => {
-          let title = `Question ${index + 1}`
-          try {
-            const q = typeof response.question === 'string' ? JSON.parse(response.question) : response.question
-            title = q?.question || q?.text || q?.title || title
-          } catch {
-            // If parsing fails, keep the default title
-          }
           return (
           <Card key={index} className="modern-card border-0 overflow-hidden">
             <CardHeader 
@@ -144,7 +137,7 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
               onClick={() => toggleExpanded(index)}
             >
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg text-foreground">{title}</CardTitle>
+                <CardTitle className="text-lg text-foreground font-bold">Question {index + 1}</CardTitle>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">
                     {new Date(response.timestamp).toLocaleDateString()}

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -8,11 +8,13 @@ import { Loader2, CheckCircle, AlertTriangle, ArrowRight, Download, Target, Spar
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import PaymentForm from '@/components/PaymentForm'
 import FullReportGenerationLoader from '@/components/FullReportGenerationLoader'
 import DiagnosticAnalysisLoader from '@/components/DiagnosticAnalysisLoader'
 import DiagnosticCompletionPrompt from '@/components/DiagnosticCompletionPrompt'
 import DiagnosticFreeCompletionPrompt from '@/components/DiagnosticFreeCompletionPrompt'
+import DiagnosticPreview from '@/components/DiagnosticPreview'
 
 interface DiagnosticResult {
   question: string
@@ -22,13 +24,15 @@ interface DiagnosticResult {
 }
 
 export default function DiagnosticResults() {
+  console.log('🔄 DiagnosticResults component rendering...')
+  const { user, isLoaded } = useUser()
+  console.log('👤 Auth state:', { isLoaded, hasUser: !!user })
   const [results, setResults] = useState<DiagnosticResult[]>([])
   const [questionCount, setQuestionCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [summary, setSummary] = useState('')
   const [keyInsights, setKeyInsights] = useState('')
-  const [showPaywall, setShowPaywall] = useState(false)
   const [showProgramPaywall, setShowProgramPaywall] = useState(false)
   const [comprehensiveReport, setComprehensiveReport] = useState('')
   const [showAnalysisLoader, setShowAnalysisLoader] = useState(false)
@@ -37,41 +41,110 @@ export default function DiagnosticResults() {
   const [showFreeCompletionPrompt, setShowFreeCompletionPrompt] = useState(false)
   const [poeticMessage, setPoeticMessage] = useState('')
   const [isPaidFlow, setIsPaidFlow] = useState(false)
+  const [useStructuredPreview, setUseStructuredPreview] = useState(true)
+  const [questions, setQuestions] = useState<{ id: string; prompt: string }[]>([])
+  const [answers, setAnswers] = useState<{ id: string; text: string }[]>([])
+  // removed test regeneration controls
+  const [previewReady, setPreviewReady] = useState(false)
+  const [backgroundPreviewStarted, setBackgroundPreviewStarted] = useState(false)
+  const loaderFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router = useRouter()
 
   const COMPLETION_SEEN_AT_KEY = 'uyp_completion_prompt_seen_at'
 
   useEffect(() => {
-    loadResults()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    console.log('🔄 useEffect triggered:', { isLoaded, hasUser: !!user })
+    if (isLoaded) {
+      if (user) {
+        console.log('✅ User authenticated, loading results...')
+        loadResults()
+      } else {
+        // User not authenticated, show error message
+        console.log('❌ User not authenticated')
+        setError('Please sign in to view your diagnostic results')
+        setLoading(false)
+      }
+    } else {
+      console.log('⏳ Clerk still loading...')
+    }
+  }, [isLoaded, user]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Handle the 5-stage analysis progression
+  // Start/advance loader at 4s per step and keep at step 5 until preview is ready
   useEffect(() => {
     if (showAnalysisLoader) {
-      const stepInterval = setInterval(() => {
-        setAnalysisStep(prev => {
-          if (prev < 5) {
-            return prev + 1
-          } else {
-            // Analysis complete, generate poetic message and show appropriate completion prompt
-            clearInterval(stepInterval)
-            generatePoeticMessage()
-            setTimeout(() => {
-              setShowAnalysisLoader(false)
-              if (isPaidFlow) {
-                setShowCompletionPrompt(true)
-              } else {
-                setShowFreeCompletionPrompt(true)
-              }
-            }, 500)
-            return prev
-          }
-        })
-      }, 3000) // 3 seconds per step
+      // begin background generation as early as possible
+      maybeStartBackgroundPreview()
 
-      return () => clearInterval(stepInterval)
+      const stepInterval = setInterval(() => {
+        setAnalysisStep(prev => (prev < 5 ? prev + 1 : prev))
+      }, 4000) // 4 seconds per step
+
+      // poll for preview readiness once per 2s
+      const pollInterval = setInterval(async () => {
+        if (previewReady) return
+        try {
+          const r = await fetch('/api/diagnostic/preview', { method: 'GET' })
+          if (r.ok) {
+            const data = await r.json()
+            if (data && data.diagnosticSummary) {
+              setPreviewReady(true)
+            }
+          }
+        } catch {}
+      }, 2000)
+
+      // fallback: force completion after 45s even if cache polling misses readiness
+      loaderFallbackTimerRef.current = setTimeout(() => {
+        if (!previewReady) {
+          setPreviewReady(true)
+        }
+      }, 45000)
+
+      return () => {
+        clearInterval(stepInterval)
+        clearInterval(pollInterval)
+        if (loaderFallbackTimerRef.current) {
+          clearTimeout(loaderFallbackTimerRef.current)
+          loaderFallbackTimerRef.current = null
+        }
+      }
     }
   }, [showAnalysisLoader])
+
+  // Ensure background preview starts when data arrives while loader is visible
+  useEffect(() => {
+    if (showAnalysisLoader) {
+      maybeStartBackgroundPreview()
+    }
+  }, [showAnalysisLoader, questions.length, answers.length])
+
+  // When preview is ready and loader has reached the final stage, show the completion prompt
+  useEffect(() => {
+    if (showAnalysisLoader && previewReady && analysisStep >= 5) {
+            generatePoeticMessage()
+              setShowAnalysisLoader(false)
+      if (isPaidFlow) setShowCompletionPrompt(true)
+      else setShowFreeCompletionPrompt(true)
+      if (loaderFallbackTimerRef.current) {
+        clearTimeout(loaderFallbackTimerRef.current)
+        loaderFallbackTimerRef.current = null
+      }
+    }
+  }, [showAnalysisLoader, previewReady, analysisStep, isPaidFlow])
+
+  const maybeStartBackgroundPreview = async () => {
+    if (backgroundPreviewStarted) return
+    if (!(questions.length > 0 && answers.length >= 3)) return
+    setBackgroundPreviewStarted(true)
+    try {
+      const resp = await fetch('/api/diagnostic/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questions, answers, miniSummaries: [], crisisNow: false })
+      })
+      if (resp.ok) setPreviewReady(true)
+    } catch {}
+  }
 
   const generatePoeticMessage = async () => {
     try {
@@ -118,16 +191,35 @@ A path ahead that's bright and full of lighting.`)
 
   const loadResults = async () => {
     try {
+      console.log('🔄 Starting loadResults...')
       setLoading(true)
+      setError('') // Clear any previous errors
       
       // Load diagnostic responses
-      const responsesResponse = await fetch('/api/diagnostic/responses')
+      console.log('🔄 Fetching diagnostic responses...')
+      const responsesController = new AbortController()
+      const responsesTimeout = setTimeout(() => responsesController.abort(), 12000)
+      const responsesResponse = await fetch('/api/diagnostic/responses', {
+        signal: responsesController.signal
+      })
+      clearTimeout(responsesTimeout)
+      console.log('📡 Responses API status:', responsesResponse.status)
       if (responsesResponse.ok) {
         const data = await responsesResponse.json()
         console.log('Diagnostic responses loaded:', data)
+        console.log('📊 Response data:', JSON.stringify(data, null, 2))
         setResults(data.responses || [])
         setQuestionCount(data.responses?.length || 0)
-        // Decide whether to show analysis loader and completion prompt
+        
+        // Format responses for structured preview
+        const formattedAnswers = (data.responses || []).map((resp: any, index: number) => ({
+          id: `q${index + 1}`,
+          text: resp.response || ''
+        }))
+        setAnswers(formattedAnswers)
+        console.log('📊 Formatted answers:', formattedAnswers.length)
+        
+        // Decide whether to show analysis loader and begin preview generation
         try {
           const latest = (data.responses || [])
             .map((r: { timestamp?: string }) => r?.timestamp)
@@ -145,28 +237,71 @@ A path ahead that's bright and full of lighting.`)
           if (shouldShow) {
             setIsPaidFlow(false) // This is the free diagnostic flow
             setShowAnalysisLoader(true)
+            // Kick off background preview generation as soon as we have data
+            setTimeout(() => { maybeStartBackgroundPreview() }, 0)
           }
         } catch {}
       } else {
         console.error('Failed to load responses:', responsesResponse.status)
+        if (responsesResponse.status === 401) {
+          // User not authenticated, show error message
+          console.log('🚫 User not authenticated, setting error')
+          setError('Please sign in to view your diagnostic results')
+          return
+        } else {
+          // Other error
+          console.log('❌ Other error:', responsesResponse.status)
+          setError(`Failed to load responses: ${responsesResponse.status}`)
+          return
+        }
       }
 
       // Also try to get question count from diagnostic questions API
       try {
-        const questionsResponse = await fetch('/api/diagnostic/questions')
+        const qController = new AbortController()
+        const qTimeout = setTimeout(() => qController.abort(), 10000)
+        const questionsResponse = await fetch('/api/diagnostic/questions', { signal: qController.signal })
+        clearTimeout(qTimeout)
         if (questionsResponse.ok) {
           const questionsData = await questionsResponse.json()
           if (questionsData.questions && questionsData.questions.length > 0) {
             setQuestionCount(questionsData.questions.length)
+            
+            // Format questions for structured preview
+            const formattedQuestions = questionsData.questions.map((q: any, index: number) => ({
+              id: `q${index + 1}`,
+              prompt: q.question || q.prompt || q.text || `Question ${index + 1}`
+            }))
+            setQuestions(formattedQuestions)
+            console.log('📊 Formatted questions:', formattedQuestions.length)
+            
+            // Validate data consistency - use answers state since formattedAnswers might not be in scope
+            const currentAnswerCount = answers.length
+            if (formattedQuestions.length > 0 && currentAnswerCount >= 3) {
+              console.log('✅ Sufficient data for structured preview')
+              // If loader already showing, ensure background generation starts
+              if (showAnalysisLoader) maybeStartBackgroundPreview()
+            } else {
+              console.log('⚠️ Insufficient data for structured preview:', {
+                questions: formattedQuestions.length,
+                answers: currentAnswerCount
+              })
+            }
           }
         }
-      } catch {
+      } catch (error) {
         console.log('Could not fetch questions count, using responses count')
+        console.error('Questions API error:', error)
       }
 
       // Load existing summary only (do not regenerate)
       try {
-        const summaryResponse = await fetch('/api/diagnostic/summary', { method: 'GET' })
+        console.log('🔄 Fetching diagnostic summary...')
+        const sController = new AbortController()
+        const sTimeout = setTimeout(() => sController.abort(), 10000)
+        const summaryResponse = await fetch('/api/diagnostic/summary', { method: 'GET', signal: sController.signal })
+        clearTimeout(sTimeout)
+        console.log('📡 Summary API status:', summaryResponse.status)
         if (summaryResponse.ok) {
           const summaryData = await summaryResponse.json()
           if ((summaryData.summary && summaryData.summary.length > 0) || (summaryData.keyInsights && summaryData.keyInsights.length > 0)) {
@@ -174,19 +309,36 @@ A path ahead that's bright and full of lighting.`)
             setKeyInsights(summaryData.keyInsights || '')
           } else {
             // If missing, generate once then rely on stored data afterwards
-            const regen = await fetch('/api/diagnostic/summary', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            console.log('🔄 No existing summary found, generating new one...')
+            const rController = new AbortController()
+            const rTimeout = setTimeout(() => rController.abort(), 15000)
+            const regen = await fetch('/api/diagnostic/summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: rController.signal })
+            clearTimeout(rTimeout)
+            console.log('📡 Summary generation status:', regen.status)
             if (regen.ok) {
               const regenData = await regen.json()
+              console.log('✅ Summary generated:', { summary: !!regenData.summary, insights: !!regenData.keyInsights })
               setSummary(regenData.summary || '')
               setKeyInsights(regenData.keyInsights || '')
+            } else {
+              console.error('❌ Failed to generate summary:', regen.status)
             }
           }
         }
-      } catch {}
+      } catch (error) {
+        console.error('❌ Error loading/generating summary:', error)
+      }
     } catch (err) {
       console.error('Error loading results:', err)
       setError('Failed to load diagnostic results')
     } finally {
+      console.log('✅ loadResults completed, setting loading to false')
+      console.log('📊 Final state summary:', {
+        questionsLoaded: questions.length,
+        answersLoaded: answers.length,
+        useStructuredPreview,
+        shouldShowStructured: useStructuredPreview && questions.length > 0 && answers.length > 0 && answers.length >= 3
+      })
       setLoading(false)
     }
   }
@@ -199,12 +351,15 @@ A path ahead that's bright and full of lighting.`)
     router.push('/report')
   }
 
+  const handleRegeneratePreview = async () => {
+    // removed in production
+  }
+
   const handlePurchaseReport = async () => {
     try {
       console.log('🎯 PAYMENT SUCCESS: Starting comprehensive report generation')
       
-      // Close paywall and start the analysis loader for paid flow
-      setShowPaywall(false)
+      // Start the analysis loader for paid flow
       setIsPaidFlow(true)
       setShowAnalysisLoader(true)
       setAnalysisStep(1)
@@ -237,10 +392,6 @@ A path ahead that's bright and full of lighting.`)
     }
   }
 
-  const handlePaymentSuccess = async (paymentIntent?: { id: string; amount: number; status: string }) => {
-    console.log('🎯 PAYMENT SUCCESS TRIGGERED:', paymentIntent)
-    await handlePurchaseReport()
-  }
 
   const handleProgramPaymentSuccess = async (paymentIntent?: { id: string; amount: number; status: string }) => {
     console.log('🎯 PROGRAM PAYMENT SUCCESS:', paymentIntent)
@@ -265,7 +416,27 @@ A path ahead that's bright and full of lighting.`)
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const formatReportContent = (report: string) => {
-    // Parse the report content and format it for display
+    // Strip markdown bold/italics and normalize bullets
+    const stripMd = (s: string) => s
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/^\s*[-*]\s+/g, '• ')
+
+    const mapHeaderToSection = (rawHeader: string): keyof typeof sections | '' => {
+      const h = rawHeader.trim().toLowerCase()
+      if (h.includes('executive summary')) return 'executiveSummary'
+      if (h.includes('trauma analysis')) return 'traumaAnalysis'
+      if (h.includes('toxicity score')) return 'toxicityScore'
+      if (h.includes('confidence rating')) return 'toxicityScore'
+      if (h.includes('how to lean into your strengths') || h === 'strengths' || h.includes('lean into your strengths')) return 'strengths'
+      if (h.includes('most important to address') || h.includes('primary issue') || h.includes('key leverage point')) return 'mostImportant'
+      if (h.includes('behavioral patterns') || h.includes('recurring loops')) return 'behavioralPatterns'
+      if (h.includes('healing roadmap') || h === 'roadmap') return 'healingRoadmap'
+      if (h.includes('actionable recommendations') || h.includes('quick action plan')) return 'actionableRecommendations'
+      if (h.includes('resources and next steps') || h === 'resources' || h.includes('professional help')) return 'resources'
+      return ''
+    }
+
     const sections = {
       executiveSummary: '',
       traumaAnalysis: '',
@@ -278,23 +449,65 @@ A path ahead that's bright and full of lighting.`)
       resources: ''
     }
 
-    // Simple parsing - in a real app, you'd want more robust parsing
-    const lines = report.split('\n')
-    let currentSection = ''
-    
-    lines.forEach(line => {
-      if (line.includes('Executive Summary')) currentSection = 'executiveSummary'
-      else if (line.includes('Trauma Analysis')) currentSection = 'traumaAnalysis'
-      else if (line.includes('Toxicity Score')) currentSection = 'toxicityScore'
-      else if (line.includes('Strengths')) currentSection = 'strengths'
-      else if (line.includes('Most Important')) currentSection = 'mostImportant'
-      else if (line.includes('Behavioral Patterns')) currentSection = 'behavioralPatterns'
-      else if (line.includes('Healing Roadmap')) currentSection = 'healingRoadmap'
-      else if (line.includes('Actionable Recommendations')) currentSection = 'actionableRecommendations'
-      else if (line.includes('Resources')) currentSection = 'resources'
-      else if (currentSection && line.trim()) {
-        sections[currentSection as keyof typeof sections] += line + '\n'
+    const cleanReport = stripMd(report)
+    const rawLines = cleanReport.split('\n')
+    let currentSection: keyof typeof sections | '' = ''
+    let previousLine = ''
+
+    rawLines.forEach((rawLine) => {
+      let line = stripMd(rawLine).replace(/\s+$/g, '')
+      const lower = line.toLowerCase()
+
+      // Detect underlined headers ("HEADER" then "=====")
+      if (/^=+$/.test(lower.trim())) {
+        const candidate = previousLine.trim()
+        const mapped = mapHeaderToSection(candidate)
+        if (mapped) {
+          currentSection = mapped
+          previousLine = ''
+          return
+        }
       }
+
+      // Case-insensitive header detection (with or without emojis)
+      const noEmoji = line.replace(/^[^\w\(\[]+\s*/, '')
+      const mappedHeader = mapHeaderToSection(noEmoji)
+      if (mappedHeader) {
+        currentSection = mappedHeader
+        previousLine = line
+        return
+      }
+
+      if (!currentSection) {
+        previousLine = line
+        return
+      }
+
+      if (!line.trim()) {
+        previousLine = line
+        return
+      }
+
+      // Normalize roadmap inline arrows to numbered steps
+      if (currentSection === 'healingRoadmap' && /\s→\s/.test(line)) {
+        const parts = line.split(/\s→\s/).map(p => p.trim()).filter(Boolean)
+        parts.forEach((p, idx) => {
+          sections.healingRoadmap += `${idx + 1}. ${p}\n`
+        })
+        previousLine = line
+        return
+      }
+
+      // Convert "1) text" to "1. text" for step rendering
+      line = line.replace(/^(\d+)\)\s+/, '$1. ')
+
+      // Ensure bullets are normalized
+      if (/^\s*[-*]\s+/.test(line)) {
+        line = line.replace(/^\s*[-*]\s+/, '• ')
+      }
+
+      sections[currentSection] += line + '\n'
+      previousLine = line
     })
 
     return `
@@ -570,10 +783,13 @@ Your investment helps us continue improving and supporting people on their heali
     )
   }
 
-  if (loading) {
+  // Show loading while Clerk is loading or while we're loading data
+  console.log('🔍 Loading state check:', { isLoaded, loading })
+  if (!isLoaded || loading) {
+    console.log('⏳ Showing loading spinner')
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 pt-20 sm:pt-4">
-        <LoadingSpinner size="lg" text="Loading your diagnostic data..." />
+        <LoadingSpinner size="lg" text={!isLoaded ? "Loading..." : "Loading your diagnostic data..."} />
       </div>
     )
   }
@@ -610,26 +826,32 @@ Your investment helps us continue improving and supporting people on their heali
             </div>
             <div>
               <h1 className="responsive-heading neon-heading key-info [text-shadow:0_0_28px_rgba(204,255,0,0.9),0_0_56px_rgba(204,255,0,0.6),1px_1px_0_rgba(0,0,0,0.55),-1px_-1px_0_rgba(0,0,0,0.55)] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)]">A Glimpse at Your Mess</h1>
-              <p className="responsive-body text-muted-foreground">Here’s what we can tell you for free... the full truth comes in your complete report.</p>
+              <p className="responsive-body text-muted-foreground">Here's what we can tell you for free... the full truth comes in your complete report.</p>
+            
+            {/* Status indicator removed for production */}
             </div>
           </div>
 
           {/* Progress Summary */}
-          <div className="inline-flex items-center gap-2 bg-accent/20 rounded-full px-4 py-2 border border-accent/30">
-            <CheckCircle className="h-5 w-5 text-accent-foreground" />
-            <span className="text-sm font-medium text-accent-foreground">
-              {questionCount} questions completed
-            </span>
+          <div className="flex flex-col items-center gap-4">
+            <div className="inline-flex items-center gap-2 bg-accent/20 rounded-full px-4 py-2 border border-accent/30">
+              <CheckCircle className="h-5 w-5 text-accent-foreground" />
+              <span className="text-sm font-medium text-accent-foreground">
+                {questionCount} questions completed
+              </span>
+            </div>
+            
+            {/* Testing controls removed for production */}
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* CTA Buttons */}
+            {/* CTA Buttons (Top) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Button 
-                onClick={() => setShowPaywall(true)}
+                onClick={() => router.push('/report')}
                 variant="outline"
                 size="lg"
                 className="h-16 text-lg flex items-center gap-3 group hover:scale-105 transition-transform duration-200 border-2 border-[#ff1aff]/30 hover:border-[#ff1aff]/50 bg-[#ff1aff]/5 hover:bg-[#ff1aff]/10"
@@ -654,78 +876,45 @@ Your investment helps us continue improving and supporting people on their heali
               </Button>
             </div>
 
-            {/* Summary Card */}
-            {summary && (
-              <Card className="feature-card border-0 shadow-[0_0_18px_rgba(204,255,0,0.25)]">
-                <CardHeader className="bg-background border-b border-border/50 p-4 sm:p-6">
-                  <div className="flex items-center gap-3">
-                    <Target className="hidden sm:block h-6 w-6 text-primary" />
-                    <CardTitle className="text-lg sm:text-xl font-semibold neon-heading">Diagnostic Summary</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6">
-                  <div className="prose prose-sm max-w-none">
-                    <p className="text-foreground leading-relaxed text-base sm:text-lg tracking-wide">{summary}</p>
-                  </div>
-                </CardContent>
-            </Card>
-          )}
+            {/* Debug panel removed for production */}
 
-            {/* Key Insights Card */}
-            {keyInsights && (
-              <Card className="feature-card border-0 shadow-[0_0_18px_rgba(0,229,255,0.25)]">
-                <CardHeader className="bg-background border-b border-border/50 p-4 sm:p-6">
-                  <div className="flex items-center gap-3">
-                    <Sparkles className="hidden sm:block h-6 w-6 text-accent-foreground" />
-                    <CardTitle className="text-lg sm:text-xl font-semibold neon-heading">Key Insights</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6">
-                  <div className="space-y-3 sm:space-y-4">
-                    {keyInsights.split('\n').filter(line => line.trim()).map((insight, index) => (
-                      <div key={index} className="border-l-4 border-accent pl-3 sm:pl-4 py-2 sm:py-3">
-                        <p className="text-foreground leading-relaxed text-sm sm:text-base tracking-wide">{insight}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {/* Structured Preview only */}
+              <div key={`structured-${questions.length}-${answers.length}`}>
+                <DiagnosticPreview
+                  questions={questions}
+                  answers={answers}
+                  onPurchaseReport={() => router.push('/report')}
+                  onStartProgram={handleStartProgram}
+                />
+              </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Button 
-                onClick={() => setShowPaywall(true)}
-                variant="outline"
-                size="lg"
-                className="h-16 text-lg flex items-center gap-3 group hover:scale-105 transition-transform duration-200 border-2 border-[#ff1aff]/30 hover:border-[#ff1aff]/50 bg-[#ff1aff]/5 hover:bg-[#ff1aff]/10"
-              >
-                <BookOpen className="h-5 w-5 group-hover:scale-110 transition-transform duration-200 text-[#ff1aff]" style={{ filter: 'drop-shadow(0 0 6px #ff1aff)' }} />
-                <div className="text-left">
-                  <div className="font-semibold neon-glow-pink">Full Diagnostic Report</div>
-                  <div className="text-sm text-muted-foreground">$9.99</div>
-                </div>
-              </Button>
-              
-              <Button 
-                onClick={handleStartProgram}
-                className="h-16 text-lg flex items-center gap-3 group hover:scale-105 transition-transform duration-200 neon-cta"
-                size="lg"
-              >
-                <Heart className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                <div className="text-left">
-                  <div className="font-semibold">30-Day Healing Program</div>
-                  <div className="text-sm opacity-90">$29.95</div>
-                </div>
-              </Button>
-                </div>
-
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                Your personalized healing journey is ready to begin. 
-                The program has been tailored based on your diagnostic responses.
-                      </p>
+            {/* Bottom CTA Buttons (match top) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Button 
+                    onClick={() => router.push('/report')}
+                    variant="outline"
+                    size="lg"
+                    className="h-16 text-lg flex items-center gap-3 group hover:scale-105 transition-transform duration-200 border-2 border-[#ff1aff]/30 hover:border-[#ff1aff]/50 bg-[#ff1aff]/5 hover:bg-[#ff1aff]/10"
+                  >
+                    <BookOpen className="h-5 w-5 group-hover:scale-110 transition-transform duration-200 text-[#ff1aff]" style={{ filter: 'drop-shadow(0 0 6px #ff1aff)' }} />
+                    <div className="text-left">
+                      <div className="font-semibold neon-glow-pink">Full Diagnostic Report</div>
+                      <div className="text-sm text-muted-foreground">$9.99</div>
                     </div>
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleStartProgram}
+                    className="h-16 text-lg flex items-center gap-3 group hover:scale-105 transition-transform duration-200 neon-cta"
+                    size="lg"
+                  >
+                    <Heart className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                    <div className="text-left">
+                      <div className="font-semibold">30-Day Healing Program</div>
+                      <div className="text-sm opacity-90">$29.95</div>
+                    </div>
+                  </Button>
+                </div>
                   </div>
 
           {/* Right Sidebar */}
@@ -778,29 +967,6 @@ Your investment helps us continue improving and supporting people on their heali
                         </div>
                         
       {/* Diagnostic Report Paywall Modal */}
-      {showPaywall && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <Card className="glass-card w-full max-w-md border-0 shadow-2xl">
-            <CardContent className="p-6">
-              <div className="text-center mb-6">
-                <div className="mx-auto mb-4 w-16 h-16 flex items-center justify-center">
-                  <AlertTriangle className="h-8 w-8 text-warning" />
-                </div>
-                <h2 className="text-xl font-bold text-foreground mb-2">Comprehensive Diagnostic Report</h2>
-                <p className="text-muted-foreground">
-                  Get your complete trauma analysis, personality profile, and personalized healing roadmap.
-                            </p>
-                          </div>
-              <PaymentForm
-                productName="Comprehensive Diagnostic Report"
-                amount={999} // $9.99 in cents
-                onSuccess={handlePaymentSuccess}
-                onCancel={() => setShowPaywall(false)}
-              />
-            </CardContent>
-                </Card>
-                          </div>
-      )}
 
       {/* 30-Day Program Paywall Modal */}
       {showProgramPaywall && (

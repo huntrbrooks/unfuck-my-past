@@ -18,7 +18,21 @@ export type TextField = {
   subheading?: string;
 };
 
-export type Field = ChoiceField | TextField;
+export type ScaleField = {
+  id: string;
+  label: string;
+  type: "scale";
+  min: number;
+  max: number;
+  step?: number;
+  subheading?: string;
+  suffix?: string; // e.g., /10
+  minLabel?: string;
+  maxLabel?: string;
+  valueLabels?: Record<number, string>; // optional exact labels for values
+};
+
+export type Field = ChoiceField | TextField | ScaleField;
 
 export type Step = {
   id: string;

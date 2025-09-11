@@ -61,13 +61,13 @@ export default function FullReportGenerationLoader({
   ]
 
   return (
-    <div className="fixed inset-0 z-50 min-h-screen bg-background flex items-center justify-center p-6 overflow-y-auto pt-[calc(env(safe-area-inset-top,_0px)_+_56px)]">
+    <div className="fixed inset-0 z-50 min-h-screen bg-background flex items-start justify-center p-6 overflow-y-auto pt-[calc(env(safe-area-inset-top,_0px)_+_72px)] pb-8">
       <div className="max-w-2xl w-full space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="relative inline-block">
-            <div className="mx-auto mb-6 animate-float">
-              <Image src="/Line_art3-02.png" alt="loader art" width={96} height={96} className="w-20 sm:w-24 h-auto drop-shadow-[0_0_18px_#00e5ff]" />
+            <div className="mx-auto mt-2 sm:mt-0 mb-6 animate-float">
+              <Image src="/Line_art3-02.png" alt="loader art" width={96} height={96} className="w-20 sm:w-24 h-auto object-contain drop-shadow-[0_0_18px_#00e5ff]" />
             </div>
           </div>
           

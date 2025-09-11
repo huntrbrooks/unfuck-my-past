@@ -70,12 +70,12 @@ export default function DiagnosticAnalysisLoader({
   ]
 
   return (
-    <div className="fixed inset-0 z-50 min-h-screen bg-background flex items-center justify-center p-6 overflow-y-auto pt-[calc(env(safe-area-inset-top,_0px)_+_56px)]">
+    <div className="fixed inset-0 z-50 min-h-screen bg-background flex items-start justify-center p-6 overflow-y-auto pt-[calc(env(safe-area-inset-top,_0px)_+_72px)] pb-8">
       <div className="max-w-2xl w-full space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="relative inline-block">
-            <div className="mx-auto mb-6 animate-float">
+            <div className="mx-auto mt-2 sm:mt-0 mb-6 animate-float">
               <Image src="/Lineartneon-07.png" alt="analysis art" width={96} height={96} className="block mx-auto w-20 sm:w-24 h-auto object-contain drop-shadow-[0_0_18px_#ff1aff]" />
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function DiagnosticAnalysisLoader({
                         isPending && "bg-muted/30"
                       )}>
                         {isComplete ? (
-                          <CheckCircle className="w-6 h-6 text-success" />
+                          <CheckCircle className="h-6 w-6 text-[#ccff00]" style={{ filter: 'drop-shadow(0 0 8px #ccff00)' }} />
                         ) : (
                           <div className="relative">
                             <Image 

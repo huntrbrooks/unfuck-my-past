@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, users } from '../../../../db'
 import { eq } from 'drizzle-orm'
-import { AIOnboardingAnalyzer } from '../../../../lib/ai-onboarding-analyzer'
+import { generateDiagnosticQuestions } from '../../../../lib/diagnostic/generate'
+import { mapLegacyToOnboardingPrefs } from '../../../../lib/diagnostic/mapper'
+import { HSI_QUESTIONS } from '@/lib/hsi'
 
 export async function POST() {
   try {
@@ -29,35 +31,57 @@ export async function POST() {
       }, { status: 400 })
     }
 
-    // Create onboarding data object
-    const onboardingData = {
-      tone: user.tone,
-      voice: user.voice,
-      rawness: user.rawness,
-      depth: user.depth,
+    // Map legacy onboarding data to new format
+    const legacyData = {
+      tone: user.tone || 'gentle',
+      voice: user.voice || 'friend',
+      rawness: user.rawness || 'moderate',
+      depth: user.depth || 'moderate',
       learning: user.learning || 'text',
       engagement: user.engagement || 'passive',
-      safety: {
-        crisisSupport: safetyData.crisisSupport || false,
-        contentWarnings: safetyData.contentWarnings || false,
-        skipTriggers: safetyData.skipTriggers || false
+      safety: safetyData
+    }
+    
+    const onboardingPrefs = mapLegacyToOnboardingPrefs(legacyData)
+    console.log('Starting personalized questions generation...')
+    console.log('Mapped onboarding preferences:', JSON.stringify(onboardingPrefs, null, 2))
+
+    // Generate questions using the new system
+    const result = generateDiagnosticQuestions({ 
+      onboarding: onboardingPrefs,
+      nowISO: new Date().toISOString()
+    })
+
+    console.log('Successfully generated questions:', result.count)
+    console.log('Generation rationale:', result.rationale)
+
+    // Convert new format to legacy format for backward compatibility
+    const legacyQuestions = result.questions.map((q, index) => ({
+      id: index + 1,
+      category: q.category,
+      question: q.prompt,
+      followUp: q.helper,
+      options: [],
+      adaptive: {
+        tone: onboardingPrefs.tones,
+        rawness: [onboardingPrefs.guidanceStrength],
+        depth: [onboardingPrefs.depth]
       },
-      goals: safetyData.goals || [],
-      experience: safetyData.experience || 'beginner',
-      timeCommitment: safetyData.timeCommitment || '15min'
+      aiPrompt: `Analyze this response for patterns related to: ${q.tags.join(', ')}`
+    }))
+
+    // Create analysis object for backward compatibility
+    const analysis = {
+      focusAreas: [onboardingPrefs.primaryFocus],
+      communicationStyle: onboardingPrefs.tones.join(', '),
+      intensityLevel: onboardingPrefs.guidanceStrength,
+      depthLevel: onboardingPrefs.depth,
+      customCategories: result.questions.map(q => q.category),
+      recommendedQuestionCount: result.count,
+      rationale: result.rationale
     }
 
-    console.log('Starting personalized questions generation...')
-    console.log('Onboarding data:', JSON.stringify(onboardingData, null, 2))
-
-    // Generate personalized questions
-    const analyzer = new AIOnboardingAnalyzer()
-    const { analysis, questions } = await analyzer.analyzeOnboardingAndGenerateQuestions(onboardingData)
-
-    console.log('Generated analysis:', JSON.stringify(analysis, null, 2))
-    console.log('Generated questions count:', questions.length)
-
-    if (!questions || questions.length === 0) {
+    if (!legacyQuestions || legacyQuestions.length === 0) {
       throw new Error('No questions were generated')
     }
 
@@ -65,7 +89,7 @@ export async function POST() {
     const updatedSafety = {
       ...safetyData,
       diagnosticAnalysis: analysis,
-      personalizedQuestions: questions,
+      personalizedQuestions: legacyQuestions,
       questionGenerationTimestamp: new Date().toISOString()
     }
 
@@ -79,7 +103,8 @@ export async function POST() {
     return NextResponse.json({
       success: true,
       analysis,
-      questions,
+      questions: legacyQuestions,
+      hsi: { questions: HSI_QUESTIONS },
       message: 'Personalized diagnostic questions generated successfully'
     })
 

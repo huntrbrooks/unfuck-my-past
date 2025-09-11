@@ -1,46 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, users, diagnosticResponses, diagnosticSummaries } from '@/db'
-import { eq, desc } from 'drizzle-orm'
-import { generateStructuredDiagnosticReport, renderLegacyReportFromStructured } from '@/lib/structured-diagnostic-ai'
-import { buildEnhancedDiagnosticPrompt } from '@/lib/enhanced-diagnostic-prompt-builder'
+import { AIService } from '@/lib/ai-service'
+import { eq, desc, and } from 'drizzle-orm'
+import { buildOfflineReport } from '@/lib/offline-report'
 
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
-    // Use request to avoid unused variable warning
-    if (!request) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Get all user responses from the current session using Drizzle ORM
-    const responsesResult = await db.select({
+    const responses = await db.select({
       question: diagnosticResponses.question,
       response: diagnosticResponses.response,
       insight: diagnosticResponses.insight,
       createdAt: diagnosticResponses.createdAt
-    })
-    .from(diagnosticResponses)
-    .where(eq(diagnosticResponses.userId, userId))
-    .orderBy(desc(diagnosticResponses.createdAt))
-    .limit(20) // Get more responses for comprehensive analysis
+    }).from(diagnosticResponses)
+      .where(eq(diagnosticResponses.userId, userId))
+      .orderBy(desc(diagnosticResponses.createdAt))
+      .limit(50)
 
-    if (!responsesResult || responsesResult.length === 0) {
-      return NextResponse.json({ error: 'No diagnostic responses found' }, { status: 404 })
-    }
+    if (!responses.length) return NextResponse.json({ error: 'No diagnostic responses found' }, { status: 404 })
 
-    // Get user preferences using Drizzle ORM
-    const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+    const userRows = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+    if (!userRows.length) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    const user = userRows[0]
 
-    if (!userResult || userResult.length === 0) {
-      return NextResponse.json({ error: 'User preferences not found' }, { status: 404 })
-    }
-
-    const user = userResult[0]
     const safetyData = typeof user.safety === 'string' ? JSON.parse(user.safety) : user.safety
-
     const userPreferences = {
       tone: user.tone || 'gentle',
       voice: user.voice || 'friend',
@@ -49,90 +35,46 @@ export async function POST(request: NextRequest) {
       learning: user.learning || 'text',
       engagement: user.engagement || 'passive',
       goals: safetyData?.goals || [],
-      experience: safetyData?.experience || 'beginner'
+      experience: safetyData?.experience || 'beginner',
+      minutesPerDay: 20
     }
 
-    // Format responses for structured generation
-    const allResponses = responsesResult
-      .filter(response => response.response && response.insight)
-      .map((response, index) => {
-        const questionData = typeof response.question === 'string' 
-          ? JSON.parse(response.question) 
-          : response.question
-        return {
-          question: questionData?.question || `Question ${index + 1}`,
-          response: response.response || '',
-          insight: response.insight || ''
-        }
+    const allResponses = responses
+      .filter(r => r.response && r.insight)
+      .map((r, i) => {
+        const q = typeof r.question === 'string' ? JSON.parse(r.question as unknown as string) : r.question
+        return { question: q?.question || `Question ${i + 1}`, response: r.response || '', insight: r.insight || '' }
       })
 
-    // Build enhanced structured prompt with deeper context
-    const structuredPrompt = buildEnhancedDiagnosticPrompt({
-      responses: allResponses,
-      preferences: userPreferences,
-      responseCount: allResponses.length,
-      // TODO: Add mood history and journal insights when available
-      // moodHistory: userMoodHistory,
-      // journalInsights: userJournalInsights
-    })
-
-    console.log('🔄 Generating structured diagnostic report...')
-    
-    // Generate structured diagnostic report
-    const structuredReport = await generateStructuredDiagnosticReport(structuredPrompt)
-    
-    // Convert structured report to legacy text format for existing UI
-    const legacyReportText = renderLegacyReportFromStructured(structuredReport)
-
-    // Save both structured and legacy formats
-    const updatedSafety = {
-      ...safetyData,
-      comprehensiveReport: {
-        content: legacyReportText,
-        structuredData: structuredReport,
-        model: 'gpt-4o-structured',
-        timestamp: new Date().toISOString(),
-        regenerated: true,
-        regeneratedAt: new Date().toISOString(),
-        isStructured: true
-      }
+    const ai = new AIService()
+    let outReport = ''
+    let outModel = 'unknown'
+    let outTs = new Date().toISOString()
+    try {
+      const structured = await ai.generateStructuredFullReport(allResponses, userPreferences)
+      outReport = structured.formatted
+      outModel = structured.model
+      outTs = structured.timestamp
+    } catch (e1) {
+      return NextResponse.json({ error: 'Structured generation failed' }, { status: 502 })
     }
 
-    await db.update(users)
-      .set({ safety: updatedSafety })
-      .where(eq(users.id, userId))
-
-    // Also save to diagnosticSummaries table
+    const now = new Date()
     await db.insert(diagnosticSummaries).values({
-      userId: userId,
+      userId,
       type: 'comprehensive_report',
-      summary: legacyReportText,
-      createdAt: new Date()
+      summary: outReport,
+      createdAt: now,
+      updatedAt: now
     }).onConflictDoUpdate({
       target: [diagnosticSummaries.userId, diagnosticSummaries.type],
-      set: {
-        summary: legacyReportText,
-        updatedAt: new Date()
-      }
+      set: { summary: outReport, updatedAt: now }
     })
 
-    console.log('✅ Structured report regenerated successfully')
-
-    return NextResponse.json({
-      report: legacyReportText,
-      structuredData: structuredReport,
-      model: 'gpt-4o-structured',
-      timestamp: new Date().toISOString(),
-      responseCount: allResponses.length,
-      regenerated: true,
-      isStructured: true
-    })
-
+    return NextResponse.json({ report: outReport, model: outModel, timestamp: outTs })
   } catch (error) {
-    console.error('Error regenerating structured diagnostic report:', error)
-    return NextResponse.json(
-      { error: 'Failed to regenerate structured diagnostic report' },
-      { status: 500 }
-    )
+    console.error('Error regenerating structured report:', error)
+    return NextResponse.json({ error: 'Failed to regenerate structured report' }, { status: 500 })
   }
 }
+ 

@@ -1,89 +1,151 @@
 {
   "steps": [
     {
-      "id": "about",
-      "title": "About You",
-      "helper": null,
+      "id": "consent",
+      "title": "Consent & Safety",
+      "subheading": "Please confirm a few safety items before we begin.",
+      "helper": "These help us keep this space ethical and safe. If you are under 18 or currently in crisis, we will share resources and pause the experience.",
       "fields": [
         {
-          "id": "ageBracket",
-          "label": "How old are you? Pick the range your age fits into.",
+          "id": "is18OrOver",
+          "label": "Are you 18 or older?",
+          "subheading": "This experience is designed for adults.",
           "multi": false,
-          "options": ["0-18","18-25","26-35","36-45","46-55","56-65","65+"],
+          "options": ["Yes","No"],
           "descriptions": {
-            "0-18": "Minors under 18 - requires special consideration and guidance",
-            "18-25": "Young adults - early adulthood and identity formation",
-            "26-35": "Early career and relationship building years",
-            "36-45": "Mid-life reflection and career establishment",
-            "46-55": "Life assessment and mid-life transition period",
-            "56-65": "Pre-retirement planning and life review",
-            "65+": "Retirement years and legacy building"
+            "Yes": "I am 18+ and ready to proceed",
+            "No": "I am under 18 (we’ll share resources)"
           },
-          "type": "choice",
-          "warnings": {
-            "0-18": "⚠️ Age Restriction Notice\n\nThis tool is designed for adults (18+) who are ready to engage in deep personal healing work. If you are under 18, we strongly recommend:\n\n• Speaking with a trusted adult, parent, or guardian\n• Consulting with a qualified mental health professional\n• Using age-appropriate resources for your healing journey\n\nThis tool involves complex emotional processing that requires adult emotional maturity and support systems. Your safety and well-being are our priority."
-          }
+          "type": "choice"
+        },
+        {
+          "id": "crisisCheck",
+          "label": "Are you currently in crisis?",
+          "subheading": "If yes, we will show immediate support options.",
+          "multi": false,
+          "options": ["Yes","No"],
+          "descriptions": {
+            "Yes": "I need immediate support or feel unsafe",
+            "No": "I am not in crisis right now"
+          },
+          "type": "choice"
+        },
+        {
+          "id": "consentToProceed",
+          "label": "Consent to proceed",
+          "subheading": "Confirm that you consent to AI-guided coaching and that this is not a substitute for therapy.",
+          "multi": false,
+          "options": ["Agree","Disagree"],
+          "descriptions": {
+            "Agree": "I consent to AI‑guided support (not medical advice)",
+            "Disagree": "I do not consent"
+          },
+          "type": "choice"
+        },
+        {
+          "id": "agreeDisclaimer",
+          "label": "Disclaimer",
+          "subheading": "You understand content can be direct and you can adjust tone at any time.",
+          "multi": false,
+          "options": ["Agree","Disagree"],
+          "descriptions": {
+            "Agree": "I understand tone may be direct and adjustable",
+            "Disagree": "I don’t agree"
+          },
+          "type": "choice"
         }
       ]
     },
     {
       "id": "communication",
       "title": "How Should We Talk to You?",
-      "subheading": "We want to make sure the way we guide you feels right. Choose what works best for you.",
-      "helper": "We want to make sure the way we guide you feels right. Choose what works best for you.",
+      "subheading": "Choose the style that feels most supportive. You can change this anytime.",
+      "helper": "These choices shape tone, rawness, and interpretive risk in your guidance.",
       "fields": [
         {
-          "id": "tone", 
-          "label": "Communication Tone", 
-          "subheading": "What emotional tone feels most comfortable and supportive for you?",
-          "multi": true, 
-          "options": ["Gentle","Direct","Coaching","Casual"], 
+          "id": "tone",
+          "label": "Communication Tone",
+          "subheading": "What emotional tone feels most comfortable?",
+          "multi": true,
+          "options": ["Gentle","Direct","Coaching","Casual","Clinical","Spiritual"],
           "descriptions": {
             "Gentle": "Soft, nurturing approach with extra care and patience",
             "Direct": "Clear, straightforward communication without sugar-coating",
             "Coaching": "Motivational and encouraging with actionable guidance",
-            "Casual": "Relaxed, friendly tone like talking to a close friend"
+            "Casual": "Relaxed, friendly tone like talking to a close friend",
+            "Clinical": "Objective, grounded and precise language",
+            "Spiritual": "Meaning-oriented language that honors intuition and beliefs"
           },
           "type": "choice"
         },
         {
-          "id": "guideStyle", 
-          "label": "Guide Style", 
-          "subheading": "What type of relationship dynamic feels most helpful?",
-          "multi": true, 
-          "options": ["Friend","Mentor","Therapist","Coach"], 
+          "id": "guideStyle",
+          "label": "Guide Style",
+          "subheading": "What relationship dynamic helps most?",
+          "multi": true,
+          "options": ["Friend","Mentor","Therapist-style","Coach"],
           "descriptions": {
             "Friend": "Supportive peer who listens and shares experiences",
             "Mentor": "Wise advisor who shares knowledge and perspective",
-            "Therapist": "Professional guidance with therapeutic techniques",
+            "Therapist-style": "Reflective, boundaried and validating guidance",
             "Coach": "Motivational trainer focused on goals and progress"
           },
           "type": "choice"
         },
         {
-          "id": "strength", 
-          "label": "Guidance Strength", 
-          "subheading": "How much intensity and challenge do you want in your guidance?",
-          "multi": false, 
-          "options": ["Mild","Moderate","Intense"], 
+          "id": "strength",
+          "label": "Guidance Strength",
+          "subheading": "How strong should the push be?",
+          "multi": false,
+          "options": ["Mild","Moderate","Intense"],
           "descriptions": {
-            "Mild": "Gentle encouragement with minimal pressure to change",
-            "Moderate": "Balanced support with some gentle pushing for growth",
-            "Intense": "Strong motivation and accountability for rapid transformation"
+            "Mild": "Gentle nudges and soft accountability",
+            "Moderate": "Balanced support with some challenge",
+            "Intense": "Direct, no‑fluff accountability"
           },
           "type": "choice"
         },
         {
-          "id": "depth", 
-          "label": "Depth of Exploration", 
-          "subheading": "How deep do you want to go in exploring your inner world?",
-          "multi": false, 
-          "options": ["Surface","Moderate","Deep","Profound"], 
+          "id": "depth",
+          "label": "Depth",
+          "subheading": "How deep should we go?",
+          "multi": false,
+          "options": ["Surface","Moderate","Deep","Profound"],
           "descriptions": {
-            "Surface": "Light exploration of current thoughts and feelings",
-            "Moderate": "Meaningful self-reflection with some emotional depth",
-            "Deep": "Intensive exploration of patterns and root causes",
-            "Profound": "Transformative work on core beliefs and deep healing"
+            "Surface": "Light touch; keep it simple",
+            "Moderate": "Some self‑reflection and insight",
+            "Deep": "Go under patterns and roots",
+            "Profound": "Transformative, core‑belief work"
+          },
+          "type": "choice"
+        }
+      ]
+    },
+    {
+      "id": "primaryFocus",
+      "title": "Primary Focus Area",
+      "subheading": "What should we focus on first?",
+      "helper": "This seeds the next set of adaptive questions.",
+      "fields": [
+        {
+          "id": "primaryFocus",
+          "label": "Choose one",
+          "subheading": "Pick the area that matters most right now.",
+          "multi": false,
+          "options": [
+            "Sleep","Anxiety","Confidence","Relationships","Trauma-processing","Habits/consistency","Purpose/direction","Money/behavior","Mood regulation","Addiction/compulsions"
+          ],
+          "descriptions": {
+            "Sleep": "Falling asleep, staying asleep, or waking unrefreshed",
+            "Anxiety": "Persistent worry, tension, or physical stress symptoms",
+            "Confidence": "Self‑belief, self‑trust, and expressing yourself",
+            "Relationships": "Communication, boundaries, intimacy, attachment patterns",
+            "Trauma-processing": "Gently processing past events and reducing triggers",
+            "Habits/consistency": "Routines, motivation, and follow‑through",
+            "Purpose/direction": "Clarity on values, direction, and goals",
+            "Money/behavior": "Spending habits, avoidance, and financial stress",
+            "Mood regulation": "Stabilizing emotions and reducing swings",
+            "Addiction/compulsions": "Craving loops, urges, and harm‑reduction support"
           },
           "type": "choice"
         }
@@ -91,137 +153,275 @@
     },
     {
       "id": "goals",
-      "title": "Your Goals",
-      "subheading": "What do you want to get out of this program? Pick everything that applies.",
-      "helper": "What do you want to get out of this program? Pick everything that applies.",
+      "title": "Goals & Learning Preferences",
+      "subheading": "What do you want and how do you like to learn?",
+      "helper": "This frames recommendations and cadence.",
       "fields": [
         {
-          "id": "primaryGoals", 
-          "label": "Primary Goals", 
-          "subheading": "What are your main objectives for this healing journey?",
-          "multi": true, 
-          "options": ["Healing","Growth","Self Discovery","Trauma Recovery","Relationships","Confidence","Peace","Purpose"], 
+          "id": "primaryGoals",
+          "label": "Goals",
+          "subheading": "Choose all that apply.",
+          "multi": true,
+          "options": ["Healing","Growth","Self-discovery","Trauma recovery","Relationships","Confidence","Peace","Purpose"],
           "descriptions": {
-            "Healing": "Recovering from emotional wounds and finding inner peace",
-            "Growth": "Personal development and becoming your best self",
-            "Self Discovery": "Understanding who you are and what you want",
-            "Trauma Recovery": "Processing and healing from past traumatic experiences",
-            "Relationships": "Improving connections with others and yourself",
-            "Confidence": "Building self-esteem and belief in your abilities",
-            "Peace": "Finding inner calm and emotional stability",
-            "Purpose": "Discovering your life's meaning and direction"
+            "Healing": "Reduce pain and resolve wounds",
+            "Growth": "Build skills and capacity",
+            "Self-discovery": "Understand yourself better",
+            "Trauma recovery": "Stabilize and process trauma",
+            "Relationships": "Improve connection and boundaries",
+            "Confidence": "Increase self‑belief and expression",
+            "Peace": "More calm and nervous‑system balance",
+            "Purpose": "Direction and meaning"
           },
           "type": "choice"
         },
         {
-          "id": "learningStyle", 
-          "label": "Learning Style", 
-          "subheading": "How do you prefer to absorb and process new information?",
-          "multi": true, 
-          "options": ["Text","Visual","Audio","Interactive"], 
+          "id": "learningStyle",
+          "label": "Learning Style",
+          "subheading": "What formats work best?",
+          "multi": true,
+          "options": ["Text","Visual","Audio","Interactive"],
           "descriptions": {
-            "Text": "Reading and written exercises work best for you",
-            "Visual": "Diagrams, charts, and visual aids help you learn",
-            "Audio": "Listening to guidance and verbal explanations",
-            "Interactive": "Hands-on activities and real-time feedback"
+            "Text": "Reading + written prompts",
+            "Visual": "Diagrams and visuals",
+            "Audio": "Listen to guidance",
+            "Interactive": "Hands‑on exercises"
           },
           "type": "choice"
         },
         {
-          "id": "engagement", 
-          "label": "Engagement Level", 
-          "subheading": "How actively do you want to participate in your healing process?",
-          "multi": false, 
-          "options": ["Passive","Moderate","Active"], 
+          "id": "engagement",
+          "label": "Engagement",
+          "subheading": "How active do you want to be?",
+          "multi": false,
+          "options": ["Passive","Moderate","Active"],
           "descriptions": {
-            "Passive": "Gentle guidance with minimal effort required",
-            "Moderate": "Balanced participation with some homework and practice",
-            "Active": "Full commitment with daily exercises and deep work"
+            "Passive": "Light involvement, low effort",
+            "Moderate": "Some practice between sessions",
+            "Active": "Daily work and accountability"
           },
           "type": "choice"
         }
       ]
     },
     {
-      "id": "experience",
-      "title": "Experience and Time",
-      "subheading": "This helps us adjust the program to your background and schedule.",
-      "helper": "This helps us adjust the program to your background and schedule.",
+      "id": "constraints",
+      "title": "Constraints & Context",
+      "subheading": "Help us size the work to your day.",
+      "helper": "This controls action length and the UI we present.",
       "fields": [
         {
-          "id": "experienceLevel", 
-          "label": "Experience Level", 
-          "subheading": "What is your experience level with personal healing work, therapy, or self-development practices?",
-          "multi": false, 
-          "options": ["Beginner","Intermediate","Experienced"], 
+          "id": "timePerDay",
+          "label": "Time per day",
+          "multi": false,
+          "options": ["5 minutes","15 minutes","30 minutes","60 minutes"],
           "descriptions": {
-            "Beginner": "New to personal development and healing work",
-            "Intermediate": "Some experience with therapy or self-improvement",
-            "Experienced": "Extensive background in healing and personal growth"
+            "5 minutes": "Micro‑nudges only",
+            "15 minutes": "Short sessions",
+            "30 minutes": "Deeper exercises",
+            "60 minutes": "Full practice blocks"
           },
           "type": "choice"
         },
         {
-          "id": "timeCommitment", 
-          "label": "Time Commitment", 
-          "subheading": "How much time are you willing to put aside each day to focus on your healing journey?",
-          "multi": false, 
-          "options": ["5 min","15 min","30 min","60 min"], 
+          "id": "attentionSpan",
+          "label": "Attention span",
+          "multi": false,
+          "options": ["Micro (≤3 min)","Short (3–10)","Standard (10–20)"],
           "descriptions": {
-            "5 min": "Quick daily check-ins and brief reflections",
-            "15 min": "Short but meaningful daily practice sessions",
-            "30 min": "Dedicated time for deeper work and exercises",
-            "60 min": "Comprehensive daily healing and growth sessions"
+            "Micro (≤3 min)": "Very quick bites",
+            "Short (3–10)": "Short focused windows",
+            "Standard (10–20)": "Normal attention span"
           },
           "type": "choice"
+        },
+        {
+          "id": "inputMode",
+          "label": "Input mode",
+          "multi": false,
+          "options": ["Text","Voice","Either"],
+          "descriptions": {
+            "Text": "Type responses",
+            "Voice": "Speak responses",
+            "Either": "Switch anytime"
+          },
+          "type": "choice"
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "title": "Lived Context (Optional)",
+      "subheading": "Anything that helps us pace and support you.",
+      "helper": "Select any context that applies to you. These are not diagnoses—just signals to tune pacing, safety, and copy.",
+      "optional": true,
+      "fields": [
+        {
+          "id": "flags",
+          "label": "Context flags (check any that apply)",
+          "subheading": "Choose anything you live with or manage. This helps us adapt difficulty, tone, and safety—not label you.",
+          "multi": true,
+          "options": ["ADHD","ASD","PTSD","Depression","Anxiety","Chronic pain/illness","Meds","Substance recovery"],
+          "descriptions": {
+            "ADHD": "Attention or executive function differences",
+            "ASD": "On the autism spectrum or self-identified",
+            "PTSD": "History of trauma with ongoing symptoms",
+            "Depression": "Ongoing low mood or depressive episodes",
+            "Anxiety": "General or social anxiety patterns",
+            "Chronic pain/illness": "Conditions that affect energy or mobility",
+            "Meds": "Currently taking mental‑health related medication",
+            "Substance recovery": "In recovery or reducing use"
+          },
+          "type": "choice"
+        },
+        {
+          "id": "scheduleNote",
+          "label": "Schedule note",
+          "subheading": "Optional: tell us when you have energy or constraints (e.g., mornings only, long shifts Tue/Thu). We’ll size and time suggestions to fit.",
+          "type": "text",
+          "placeholder": "e.g., Mornings best; Tue/Thu busy; 10 mins after kids' bedtime",
+          "optional": true
+        }
+      ]
+    },
+    {
+      "id": "baselines",
+      "title": "Current Baselines",
+      "subheading": "3 quick checks to anchor your plan.",
+      "helper": "These anchor toxicity subscales and confidence.",
+      "fields": [
+        {
+          "id": "stressLevel",
+          "label": "Stress",
+          "type": "scale",
+          "min": 0,
+          "max": 10,
+          "subheading": "Drag the slider to reflect your current stress.",
+          "minLabel": "None",
+          "maxLabel": "Extreme",
+          "valueLabels": {"0":"none","1":"very low","2":"very low","3":"low","4":"low","5":"moderate","6":"moderate","7":"high","8":"high","9":"very high","10":"extreme"}
+        },
+        {
+          "id": "sleepQuality",
+          "label": "Sleep quality",
+          "type": "scale",
+          "min": 0,
+          "max": 10,
+          "subheading": "Overall quality of your recent sleep.",
+          "minLabel": "Very poor",
+          "maxLabel": "Excellent",
+          "valueLabels": {"0":"very poor","1":"very poor","2":"poor","3":"poor","4":"fair","5":"ok","6":"good","7":"good","8":"very good","9":"excellent","10":"excellent"}
+        },
+        {
+          "id": "rumination",
+          "label": "Rumination frequency",
+          "type": "scale",
+          "min": 0,
+          "max": 5,
+          "subheading": "How often you get stuck looping on thoughts.",
+          "minLabel": "Never",
+          "maxLabel": "Daily",
+          "valueLabels": {"0":"never","1":"monthly","2":"weekly","3":"few times/week","4":"almost daily","5":"daily"}
+        }
+      ]
+    },
+    {
+      "id": "boundaries",
+      "title": "Triggers & Boundaries",
+      "subheading": "Tell us what to avoid.",
+      "helper": "Safe personalization and tone guard.",
+      "fields": [
+        {
+          "id": "topicsToAvoid",
+          "label": "Topics to avoid",
+          "multi": true,
+          "options": ["Explicit trauma detail","Self-harm content","Abuse narratives","Addiction content","Sexual content"],
+          "descriptions": {
+            "Explicit trauma detail": "Avoid graphic descriptions or specifics",
+            "Self-harm content": "Do not include methods or directives",
+            "Abuse narratives": "Avoid detailed recounting of abuse events",
+            "Addiction content": "Skip content about substance use specifics",
+            "Sexual content": "Avoid sexual material in examples or copy"
+          },
+          "type": "choice"
+        },
+        {
+          "id": "triggerWords",
+          "label": "Trigger words (optional)",
+          "type": "text",
+          "placeholder": "Words or phrases to avoid",
+          "optional": true
         }
       ]
     },
     {
       "id": "challenges",
-      "title": "Challenges (Optional)",
-      "subheading": "What is your biggest challenge right now? Pick all that apply.",
-      "helper": "What is your biggest challenge right now? Pick all that apply.",
-      "optional": true,
+      "title": "Challenges",
+      "subheading": "What are you dealing with?",
+      "helper": "This weights subscales and guides adaptive questions.",
       "fields": [
         {
-          "id": "challenges", 
-          "label": "Challenges", 
-          "subheading": "What obstacles are you currently facing in your healing journey?",
-          "multi": true, 
-          "options": ["Stress or Anxiety","Lack of Confidence","Relationship Struggles","Past Trauma","Lack of Purpose","Feeling Stuck"], 
+          "id": "challenges",
+          "label": "Choose all that apply",
+          "multi": true,
+          "options": ["Stress/anxiety","Low confidence","Relationship struggles","Past trauma","Lack of purpose","Feeling stuck","Procrastination","Anger/irritability","Financial stress"],
           "descriptions": {
-            "Stress or Anxiety": "Managing overwhelming feelings and nervous energy",
-            "Lack of Confidence": "Struggling with self-doubt and low self-esteem",
-            "Relationship Struggles": "Difficulty connecting with others or maintaining boundaries",
-            "Past Trauma": "Processing and healing from difficult life experiences",
-            "Lack of Purpose": "Feeling directionless or questioning life's meaning",
-            "Feeling Stuck": "Unable to move forward or make positive changes"
+            "Stress/anxiety": "High tension, worry, or overwhelm",
+            "Low confidence": "Self‑doubt or fear of expressing",
+            "Relationship struggles": "Conflict, disconnection, or boundaries",
+            "Past trauma": "Events still impacting today",
+            "Lack of purpose": "Direction feels unclear",
+            "Feeling stuck": "Hard to move forward",
+            "Procrastination": "Avoiding tasks or delaying",
+            "Anger/irritability": "Short fuse or resentment",
+            "Financial stress": "Money pressure impacting wellbeing"
           },
           "type": "choice"
         },
         {
-          "id": "challengeOther", 
-          "label": "Other", 
-          "subheading": "Is there another challenge not listed above?",
-          "type": "text", 
-          "placeholder": "Add any other challenge you're facing", 
+          "id": "challengeOther",
+          "label": "Other (optional)",
+          "type": "text",
+          "placeholder": "Anything else? (Why we ask: captures edge cases for personalization)",
           "optional": true
         }
       ]
     },
     {
       "id": "final",
-      "title": "Final Personalization",
-      "subheading": "Is there anything else you would like the AI to know about you, so it can personalize your journey more accurately?",
-      "helper": null,
+      "title": "Final Personalisation",
+      "subheading": "Anything else that will help tailor your plan?",
+      "helper": "Examples: ‘short blunt advice’, ‘no fluff’, ‘I want accountability’.",
       "fields": [
         {
-          "id": "freeNote", 
-          "label": "Additional Information", 
-          "subheading": "Share anything else that would help personalize your experience",
-          "type": "longtext", 
-          "placeholder": "For example: I struggle with motivation, I have ADHD, I prefer shorter content, I want more accountability, etc.", 
+          "id": "finalNote",
+          "label": "Additional context",
+          "type": "longtext",
+          "placeholder": "Share any preferences or context (e.g., ‘short blunt advice’, ‘no fluff’, ‘I want accountability’).",
+          "optional": true
+        },
+        {
+          "id": "anonymizedDataOK",
+          "label": "Allow anonymized data to improve the model?",
+          "multi": false,
+          "options": ["Yes","No"],
+          "descriptions": {
+            "Yes": "Help us improve—never stored with your identity",
+            "No": "Do not use my data for improvement"
+          },
+          "type": "choice",
+          "optional": true
+        },
+        {
+          "id": "exportPromiseShown",
+          "label": "I understand I can export/delete my data",
+          "multi": false,
+          "options": ["Yes","No"],
+          "descriptions": {
+            "Yes": "I know I can export or delete data anytime",
+            "No": "Please show me how later"
+          },
+          "type": "choice",
           "optional": true
         }
       ],

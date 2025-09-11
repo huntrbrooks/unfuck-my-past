@@ -13,6 +13,7 @@ import LoadingSpinner from '../../components/LoadingSpinner'
 import VoiceRecorder from '../../components/VoiceRecorder'
 import QuestionGenerationLoader from '../../components/QuestionGenerationLoader'
 import { DiagnosticQuestion } from '../../lib/diagnostic-questions'
+type HSIQuestion = { id: number; text: string }
 
 interface DiagnosticResponse {
   question: DiagnosticQuestion
@@ -40,6 +41,12 @@ export default function Diagnostic() {
   const [showLoader, setShowLoader] = useState(false)
   const [loaderStep, setLoaderStep] = useState(1)
   const [showReadyPrompt, setShowReadyPrompt] = useState(false)
+  // HSI (Hidden Struggles Index) state
+  const [hsiQuestions, setHsiQuestions] = useState<HSIQuestion[]>([])
+  const [hsiAnswers, setHsiAnswers] = useState<Record<number, boolean>>({})
+  const [hsiSaving, setHsiSaving] = useState(false)
+  const [hsiSaved, setHsiSaved] = useState(false)
+  const [hsiError, setHsiError] = useState<string | null>(null)
 
   useEffect(() => {
     // Check if we're coming from onboarding with generating=true
@@ -243,9 +250,16 @@ export default function Diagnostic() {
 
       const data = await response.json()
       console.log('Questions loaded:', data.questions?.length || 0)
-      
-      if (data.questions && data.questions.length > 0) {
-        setQuestions(data.questions)
+      // Client-side dedupe by text to prevent accidental duplicates in UI
+      const deduped = Array.isArray(data.questions) ? dedupeQuestionsByText(data.questions) : []
+      if (deduped.length > 0) {
+        setQuestions(deduped)
+        // Load HSI questions if provided; otherwise fetch separately
+        if (data.hsi?.questions && Array.isArray(data.hsi.questions)) {
+          setHsiQuestions(data.hsi.questions as HSIQuestion[])
+        } else {
+          try { await loadHSIQuestions() } catch {}
+        }
         // setUserPreferences(data.userPreferences) // Currently unused
       } else {
         throw new Error('No questions found. Please try generating personalized questions.')
@@ -256,6 +270,55 @@ export default function Diagnostic() {
     } finally {
       setIsLoadingQuestions(false)
       setLoading(false)
+    }
+  }
+
+  async function loadHSIQuestions() {
+    try {
+      const r = await fetch('/api/diagnostic/hsi')
+      if (r.ok) {
+        const j = await r.json()
+        if (Array.isArray(j.questions)) setHsiQuestions(j.questions as HSIQuestion[])
+      }
+    } catch (e) {
+      // best-effort; ignore
+    }
+  }
+
+  function dedupeQuestionsByText(qs: DiagnosticQuestion[]): DiagnosticQuestion[] {
+    const seen = new Set<string>()
+    const out: DiagnosticQuestion[] = []
+    for (const q of qs) {
+      const norm = (q.question || '').toLowerCase().replace(/\s+/g, ' ').replace(/[\.,!?;:()\[\]\-_'"`]/g, '').trim()
+      if (norm && !seen.has(norm)) {
+        seen.add(norm)
+        out.push(q)
+      }
+    }
+    return out
+  }
+
+  function toggleHSI(id: number, value: boolean) {
+    setHsiAnswers(prev => ({ ...prev, [id]: value }))
+    setHsiSaved(false)
+    setHsiError(null)
+  }
+
+  async function saveHSI() {
+    try {
+      setHsiSaving(true)
+      setHsiError(null)
+      const trueIds = Object.entries(hsiAnswers).filter(([,v]) => !!v).map(([k]) => Number(k))
+      const r = await fetch('/api/diagnostic/hsi', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ trueIds }) })
+      if (!r.ok) {
+        const j = await r.json().catch(()=>({}))
+        throw new Error(j.error || 'Failed to save')
+      }
+      setHsiSaved(true)
+    } catch (e) {
+      setHsiError(e instanceof Error ? e.message : 'Failed to save')
+    } finally {
+      setHsiSaving(false)
     }
   }
 
@@ -827,6 +890,42 @@ export default function Diagnostic() {
                     </Card>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Hidden Struggles Index (separate, not counted in progress) */}
+            {hsiQuestions.length > 0 && (
+              <div className="mb-6 sm:mb-8">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Hidden Struggles Index (True/False)</h3>
+                <div className="space-y-2">
+                  {hsiQuestions.map((q) => {
+                    const val = !!hsiAnswers[q.id]
+                    return (
+                      <div key={q.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-xl p-3">
+                        <div className="text-sm sm:text-base leading-relaxed">{q.text}</div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant={val ? 'cta' : 'outline'}
+                            onClick={() => toggleHSI(q.id, true)}
+                            size="sm"
+                          >True</Button>
+                          <Button
+                            variant={!val ? 'default' : 'outline'}
+                            onClick={() => toggleHSI(q.id, false)}
+                            size="sm"
+                          >False</Button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="flex items-center gap-3 mt-3">
+                  <Button onClick={saveHSI} disabled={hsiSaving} variant={hsiSaved ? 'secondary' : 'cta'}>
+                    {hsiSaving ? 'Saving…' : hsiSaved ? 'Saved' : 'Save HSI'}
+                  </Button>
+                  {hsiError && <span className="text-sm text-destructive">{hsiError}</span>}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">These don’t count toward your question progress. They help refine your report.</p>
               </div>
             )}
 

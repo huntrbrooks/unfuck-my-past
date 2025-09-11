@@ -1,3 +1,21 @@
+/* Utilities for neon glows used in report sidebar */
+.uyp-glow-pink {
+  color: #ff1aff;
+  filter: drop-shadow(0 0 24px #ff1aff);
+}
+.uyp-glow-bar {
+  filter: drop-shadow(0 0 6px var(--uyp-bar-color, #22c55e));
+}
+.uyp-bar {
+  position: relative;
+}
+.uyp-bullet-neon {
+  background: var(--neon-cta, #ccff00);
+  filter: drop-shadow(0 0 6px var(--neon-cta, #ccff00));
+}
+.uyp-glow-indigo-panel {
+  box-shadow: 0 0 28px rgba(99, 102, 241, 0.25);
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,6 +23,33 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  /* Dynamic viewport height utility to avoid mobile browser chrome issues */
+  .min-h-screen-dvh {
+    min-height: 100dvh;
+  }
+
+  /* Safe-area padding helpers for iOS notch and home indicator */
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+  .px-safe {
+    padding-left: max(env(safe-area-inset-left), 0px);
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+
+  /* Small-screen container padding tightening */
+  @media (max-width: 640px) {
+    .container,
+    .prose,
+    .content-wrapper {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
   }
   
   /* Neon heading utility */
@@ -82,6 +127,15 @@
       0 0 8px rgba(20,184,166,0.6),
       0 0 14px rgba(20,184,166,0.45),
       0 0 22px rgba(20,184,166,0.3);
+  }
+  .neon-glow-green {
+    color: #22c55e;
+    -webkit-text-stroke: 0.6px rgba(0,0,0,0.35);
+    text-shadow:
+      0 0 2px rgba(0,0,0,0.45),
+      0 0 8px rgba(34,197,94,0.6),
+      0 0 14px rgba(34,197,94,0.45),
+      0 0 22px rgba(34,197,94,0.3);
   }
   .neon-glow-rose {
     color: #fb7185;
@@ -208,6 +262,37 @@
   .feature-card {
     @apply bg-gradient-to-br from-card to-card/50 border border-border/30 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-500 hover:-translate-y-1;
   }
+
+  /* Text glow utility used for last paragraph highlight */
+  .text-glow-pink {
+    color: #ff1aff;
+    text-shadow: 0 0 10px #ff1aff, 0 0 20px #ff1aff;
+  }
+
+  /* Neon card glows for metric tiles */
+  .neon-card {
+    @apply transition-transform duration-300;
+    transform: translateY(0);
+  }
+  .neon-card:hover { transform: translateY(-4px); }
+  .glow-cyan { box-shadow: 0 0 14px rgba(0,229,255,0.25), 0 0 34px rgba(0,229,255,0.15); }
+  .glow-pink { box-shadow: 0 0 14px rgba(255,26,255,0.25), 0 0 34px rgba(255,26,255,0.15); }
+  .glow-orange { box-shadow: 0 0 14px rgba(255,153,0,0.25), 0 0 34px rgba(255,153,0,0.15); }
+  .glow-purple { box-shadow: 0 0 14px rgba(168,85,247,0.25), 0 0 34px rgba(168,85,247,0.15); }
+  .glow-blue { box-shadow: 0 0 14px rgba(59,130,246,0.25), 0 0 34px rgba(59,130,246,0.15); }
+  .glow-teal { box-shadow: 0 0 14px rgba(20,184,166,0.25), 0 0 34px rgba(20,184,166,0.15); }
+  .glow-red { box-shadow: 0 0 14px rgba(239,68,68,0.25), 0 0 34px rgba(239,68,68,0.15); }
+  .glow-green { box-shadow: 0 0 14px rgba(34,197,94,0.25), 0 0 34px rgba(34,197,94,0.15); }
+  .glow-yellow { box-shadow: 0 0 14px rgba(250,204,21,0.3), 0 0 34px rgba(250,204,21,0.18); }
+
+  /* Themed neon cards for archetypes */
+  .neon-card-theme-blue { background-color: rgba(59,130,246,0.06); border-color: rgba(59,130,246,0.35); box-shadow: 0 0 14px rgba(59,130,246,0.35), 0 0 34px rgba(59,130,246,0.2); }
+  .neon-card-theme-red { background-color: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.35); box-shadow: 0 0 14px rgba(239,68,68,0.35), 0 0 34px rgba(239,68,68,0.2); }
+  .neon-card-theme-pink { background-color: rgba(255,26,255,0.06); border-color: rgba(255,26,255,0.35); box-shadow: 0 0 14px rgba(255,26,255,0.35), 0 0 34px rgba(255,26,255,0.2); }
+  .neon-card-theme-green { background-color: rgba(34,197,94,0.06); border-color: rgba(34,197,94,0.35); box-shadow: 0 0 14px rgba(34,197,94,0.35), 0 0 34px rgba(34,197,94,0.2); }
+  .neon-card-theme-yellow { background-color: rgba(250,204,21,0.08); border-color: rgba(250,204,21,0.35); box-shadow: 0 0 14px rgba(250,204,21,0.35), 0 0 34px rgba(250,204,21,0.2); }
+  .neon-card-theme-purple { background-color: rgba(168,85,247,0.06); border-color: rgba(168,85,247,0.35); box-shadow: 0 0 14px rgba(168,85,247,0.35), 0 0 34px rgba(168,85,247,0.2); }
+  .neon-card-theme-orange { background-color: rgba(234,88,12,0.06); border-color: rgba(234,88,12,0.35); box-shadow: 0 0 14px rgba(234,88,12,0.35), 0 0 34px rgba(234,88,12,0.2); }
   
   /* Button Enhancements */
   .btn-primary {

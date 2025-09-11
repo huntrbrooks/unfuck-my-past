@@ -18,7 +18,7 @@ export default function Home() {
 
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-background min-h-screen">
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center pt-28 sm:pt-28 lg:pt-16 pb-10 space-y-8 sm:space-y-9 lg:space-y-8">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center pt-8 sm:pt-10 lg:pt-10 pb-10 space-y-8 sm:space-y-10">
             {/* Edgy graphic hero */}
             <div>
               <div className="rounded-none overflow-visible shadow-none border-0 bg-transparent w-full md:max-w-2xl lg:max-w-3xl mx-auto">

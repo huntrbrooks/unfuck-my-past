@@ -1,58 +1,77 @@
-# Onboarding Flow Spec
+# Onboarding Flow Spec (10-step)
 
-Use this as the product copy and the single source of truth for the flow.
-All copy is plain English, no jargon, and supports multi select where noted.
+Use this as the product copy and single source of truth for the flow. All copy is plain English, no jargon. Multi-select supported where noted.
 
 ## Steps overview
-1. About You
-   - Question: "How old are you? Pick the range your age fits into."
-   - Single select: 18-25, 26-35, 36-45, 46-55, 56-65, 65+
+1. Consent & Safety (Required)
+   - Fields: is18OrOver (Yes/No), crisisCheck (Yes/No), consentToProceed (Agree/Disagree), agreeDisclaimer (Agree/Disagree)
+   - Helper: Confirms safe, ethical use. If under 18 or in crisis, show resources and exit.
 
-2. How Should We Talk to You?
-   Helper: "We want to make sure the way we guide you feels right. Choose what works best for you."
-   - Communication Tone (multi select): Gentle, Direct, Coaching, Casual
-   - Guide Style (multi select): Friend, Mentor, Therapist, Coach
-   - Guidance Strength (single select): Mild, Moderate, Intense
-   - Depth of Exploration (single select): Surface, Moderate, Deep, Profound
+2. Communication Fit
+   - Tone (multi): Gentle, Direct, Coaching, Casual, Clinical, Spiritual
+   - Guide Style (multi): Friend, Mentor, Therapist‑style, Coach
+   - Guidance Strength (single): Mild, Moderate, Intense
+   - Depth (single): Surface, Moderate, Deep, Profound
+   - Helper: Drives language, rawness, interpretive risk.
 
-3. Your Goals
-   Helper: "What do you want to get out of this program? Pick everything that applies."
-   - Primary Goals (multi select):
-     Healing, Growth, Self Discovery, Trauma Recovery, Relationships, Confidence, Peace, Purpose
-   - Learning Style (multi select): Text, Visual, Audio, Interactive
-   - Engagement Level (single select): Passive, Moderate, Active
+3. Primary Focus Area (single, required)
+   - Options: Sleep, Anxiety, Confidence, Relationships, Trauma‑processing, Habits/consistency, Purpose/direction, Money/behavior, Mood regulation, Addiction/compulsions
+   - Helper: Seeds 3–8 adaptive questions.
 
-4. Experience and Time
-   Helper: "This helps us adjust the program to your background and schedule."
-   - Experience Level (multi select): Beginner, Intermediate, Experienced
-   - Time Commitment (multi select): 5 min, 15 min, 30 min, 60 min
+4. Goals & Learning
+   - Goals (multi): Healing, Growth, Self‑discovery, Trauma recovery, Relationships, Confidence, Peace, Purpose
+   - Learning Style (multi): Text, Visual, Audio, Interactive
+   - Engagement (single): Passive, Moderate, Active
+   - Helper: Frames recommendations and cadence.
 
-5. Challenges (Optional)
-   Helper: "What is your biggest challenge right now? Pick all that apply."
-   Multi select: Stress or Anxiety, Lack of Confidence, Relationship Struggles, Past Trauma, Lack of Purpose, Feeling Stuck
-   Free text: Other
+5. Constraints & Context
+   - Time per day (single): 5, 15, 30, 60 minutes
+   - Attention span (single): Micro (≤3 min), Short (3–10), Standard (10–20)
+   - Input mode (single): Text, Voice, Either
+   - Helper: Controls action length and UI.
 
-6. Final Personalization
-   Question: "Is there anything else you would like the AI to know about you, so it can personalize your journey more accurately?"
-   Long text, optional. Placeholder examples provided in UI.
+6. Lived Context (optional)
+   - Flags (multi): ADHD, ASD, PTSD, Depression, Anxiety, Chronic pain/illness, Meds, Substance recovery
+   - Schedule note (free text ≤120 chars)
+   - Helper: Tunes pacing, safety, and copy.
+
+7. Current Baselines
+   - Stress (0–10)
+   - Sleep quality (0–10)
+   - Rumination: Never, Monthly, Weekly, Few times/week, Daily
+   - Helper: Anchors toxicity subscales and confidence.
+
+8. Triggers & Boundaries
+   - Topics to avoid (multi): Explicit trauma detail, Self‑harm content, Abuse narratives, Addiction content, Sexual content
+   - Trigger words (free text, optional)
+   - Helper: Safe personalization and tone guard.
+
+9. Challenges
+   - Multi: Stress/anxiety, Low confidence, Relationship struggles, Past trauma, Lack of purpose, Feeling stuck, Procrastination, Anger/irritability, Financial stress
+   - Free text: Other
+   - Helper: Weights toxicity subscales + adaptive Qs.
+
+10. Final Personalisation
+   - Long text prompt: “Anything else that will help tailor your plan? e.g., ‘short blunt advice’, ‘no fluff’, ‘I want accountability’.”
+   - Toggles: anonymizedDataOK (Yes/No), exportPromiseShown (Yes/No)
+   - Helper: Lets users steer outputs; covers privacy UX.
 
 ## Data model
-See src/onboarding/flow.json for config. Each step contains fields with `multi: true|false`.
-The component normalizes output as:
-- Arrays for multi select fields
-- Single strings for single select fields
+See `src/onboarding/flow.json`. Each step contains fields with `multi: true|false`. Component normalizes output as:
+- Arrays for multi-select fields
+- Single strings for single-select fields
 - Optional free text
 
 ## Analytics
-Emit `onChange` per step and a final `onComplete(payload)` with the full normalized object.
+Emit `onChange` per step and a final `onComplete(payload)` with the normalized object.
 
 ## Accessibility
-- Buttons are real buttons with aria-pressed states for toggles
-- Each step shows "Select one" or "Choose all that apply"
-- Large hit areas, minimum 44px high
-- Helper sentences at the top of steps 2 to 5
+- Real buttons with aria-pressed for toggles
+- Step shows “Select one” or “Choose all that apply”
+- Large hit areas (≥44px)
+- Helper sentences at the top of steps
 
 ## Dev notes
-- Tailwind classes are included
-- Works without shadcn/ui, but will use it if Button/Card exist
-- Config driven, so copy changes do not require code changes
+- Tailwind classes included; uses existing card/progress layout
+- Config driven; copy changes do not require code changes
+- Consent/crisis step gates progression and shows resources when required

@@ -102,10 +102,17 @@ export async function POST() {
         }
       })
 
+    // Prepare optional HSI context for AI
+    const hsi = safetyData?.hsi?.result ? {
+      totalTrue: Number(safetyData.hsi.result.totalTrue || 0),
+      category: String(safetyData.hsi.result.category || ''),
+      patterns: (safetyData.hsi.result.patterns || {}) as Record<string, boolean>
+    } : undefined
+
     // Generate short, intriguing diagnostic summary and key insights
     const aiService = new AIService()
-    const summary = await aiService.generateDiagnosticSummary(allResponses, userPreferences)
-    const keyInsights = await aiService.generateKeyInsights(allResponses, userPreferences)
+    const summary = await aiService.generateDiagnosticSummary(allResponses, userPreferences, hsi)
+    const keyInsights = await aiService.generateKeyInsights(allResponses, userPreferences, hsi)
 
     // Save the summary and insights to database using Drizzle ORM
     const updatedSafety = {

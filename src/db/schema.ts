@@ -81,3 +81,11 @@ export const diagnosticSummaries = pgTable('diagnostic_summaries', {
   userIdTypeUnique: unique('user_id_type_unique').on(table.userId, table.type),
 }));
 
+// Preference audits for versioning and revert support
+export const preferenceAudits = pgTable('preference_audits', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  changes: jsonb('changes').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
