@@ -1,58 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, users, diagnosticResponses, purchases, progress, analyticsEvents, diagnosticSummaries } from '@/db'
-import { and, eq, sql } from 'drizzle-orm'
+import { db, users, diagnosticResponses, purchases, progress, analyticsEvents } from '@/db'
+import { sql } from 'drizzle-orm'
 
 export async function GET(_req: NextRequest) {
   try {
-    // Basic KPIs
-    const [onboardingCount] = await db.execute(sql`SELECT COUNT(*)::int AS c FROM ${users}`) as any
-    const [diagnosticUsers] = await db.execute(sql`SELECT COUNT(DISTINCT ${diagnosticResponses.userId})::int AS c FROM ${diagnosticResponses}`) as any
-    const [avgAnswerLen] = await db.execute(sql`SELECT COALESCE(AVG(LENGTH(${diagnosticResponses.response})),0)::float AS v FROM ${diagnosticResponses}`) as any
+    // Basic KPIs via Drizzle selects
+    const [{ c: onboardingUsers }] = await db
+      .select({ c: sql<number>`cast(count(*) as int)` })
+      .from(users)
 
-    const [fullReportPurchases] = await db.execute(sql`SELECT COUNT(*)::int AS c FROM ${purchases} WHERE ${purchases.product} = 'diagnostic'`) as any
-    const [programPurchases] = await db.execute(sql`SELECT COUNT(*)::int AS c FROM ${purchases} WHERE ${purchases.product} = 'program'`) as any
+    const [{ c: diagnosticUsers }] = await db
+      .select({ c: sql<number>`cast(count(distinct ${diagnosticResponses.userId}) as int)` })
+      .from(diagnosticResponses)
 
-    const [programUsersWithProgress] = await db.execute(sql`SELECT COUNT(DISTINCT ${progress.userId})::int AS c FROM ${progress}`) as any
-    const [avgProgramMaxDay] = await db.execute(sql`
-      SELECT COALESCE(AVG(max_day),0)::float AS v FROM (
-        SELECT ${progress.userId}, MAX(${progress.day}) AS max_day
-        FROM ${progress}
-        GROUP BY ${progress.userId}
-      ) t
-    `) as any
+    const [{ v: avgDiagnosticAnswerCharsRaw }] = await db
+      .select({ v: sql<number>`coalesce(avg(length(${diagnosticResponses.response})), 0)` })
+      .from(diagnosticResponses)
 
-    const [avgSessionSeconds] = await db.execute(sql`
-      SELECT COALESCE(AVG(sess_seconds),0)::float AS v FROM (
-        SELECT session_id, EXTRACT(EPOCH FROM (MAX(server_ts) - MIN(server_ts))) AS sess_seconds
-        FROM ${analyticsEvents}
-        WHERE event IN ('session_start','heartbeat','session_end','page_view')
-        GROUP BY session_id
-      ) s
-    `) as any
+    const [{ c: fullReport }] = await db
+      .select({ c: sql<number>`cast(count(*) as int)` })
+      .from(purchases)
+      .where(sql`${purchases.product} = 'diagnostic'`)
 
-    const [avgVisitsPerUser] = await db.execute(sql`
-      SELECT COALESCE(AVG(visits),0)::float AS v FROM (
-        SELECT COALESCE(${analyticsEvents.userId}, 'anon') AS uid, COUNT(*) FILTER (WHERE event = 'page_view') AS visits
-        FROM ${analyticsEvents}
-        GROUP BY uid
-      ) t
-    `) as any
+    const [{ c: program }] = await db
+      .select({ c: sql<number>`cast(count(*) as int)` })
+      .from(purchases)
+      .where(sql`${purchases.product} = 'program'`)
+
+    const [{ c: usersWithProgress }] = await db
+      .select({ c: sql<number>`cast(count(distinct ${progress.userId}) as int)` })
+      .from(progress)
+
+    const [{ v: avgFurthestDayRaw }] = await db
+      .select({
+        v: sql<number>`coalesce(
+          (select avg(max_day) from (
+            select ${progress.userId} as uid, max(${progress.day}) as max_day
+            from ${progress}
+            group by ${progress.userId}
+          ) t), 0
+        )`
+      })
+      .from(progress)
+      .limit(1)
+
+    const [{ v: avgSessionSecondsRaw }] = await db
+      .select({
+        v: sql<number>`coalesce(
+          (select avg(sess_seconds) from (
+            select session_id, extract(epoch from (max(server_ts) - min(server_ts))) as sess_seconds
+            from ${analyticsEvents}
+            where event in ('session_start','heartbeat','session_end','page_view')
+            group by session_id
+          ) s), 0
+        )`
+      })
+      .from(analyticsEvents)
+      .limit(1)
+
+    const [{ v: avgVisitsPerUserRaw }] = await db
+      .select({
+        v: sql<number>`coalesce(
+          (select avg(visits) from (
+            select coalesce(${analyticsEvents.userId}, 'anon') as uid,
+                   count(*) filter (where event = 'page_view') as visits
+            from ${analyticsEvents}
+            group by uid
+          ) t), 0
+        )`
+      })
+      .from(analyticsEvents)
+      .limit(1)
 
     return NextResponse.json({
-      onboardingUsers: onboardingCount?.rows?.[0]?.c ?? 0,
-      diagnosticUsers: diagnosticUsers?.rows?.[0]?.c ?? 0,
-      avgDiagnosticAnswerChars: Number((avgAnswerLen?.rows?.[0]?.v ?? 0).toFixed(1)),
+      onboardingUsers: Number(onboardingUsers ?? 0),
+      diagnosticUsers: Number(diagnosticUsers ?? 0),
+      avgDiagnosticAnswerChars: Number((avgDiagnosticAnswerCharsRaw ?? 0).toFixed?.(1) ?? 0),
       purchases: {
-        fullReport: fullReportPurchases?.rows?.[0]?.c ?? 0,
-        program: programPurchases?.rows?.[0]?.c ?? 0,
+        fullReport: Number(fullReport ?? 0),
+        program: Number(program ?? 0),
       },
       program: {
-        usersWithProgress: programUsersWithProgress?.rows?.[0]?.c ?? 0,
-        avgFurthestDay: Number((avgProgramMaxDay?.rows?.[0]?.v ?? 0).toFixed(1)),
+        usersWithProgress: Number(usersWithProgress ?? 0),
+        avgFurthestDay: Number((avgFurthestDayRaw ?? 0).toFixed?.(1) ?? 0),
       },
       engagement: {
-        avgSessionSeconds: Number((avgSessionSeconds?.rows?.[0]?.v ?? 0).toFixed(1)),
-        avgVisitsPerUser: Number((avgVisitsPerUser?.rows?.[0]?.v ?? 0).toFixed(2))
+        avgSessionSeconds: Number((avgSessionSecondsRaw ?? 0).toFixed?.(1) ?? 0),
+        avgVisitsPerUser: Number((avgVisitsPerUserRaw ?? 0).toFixed?.(2) ?? 0)
       }
     })
   } catch (e: any) {
