@@ -1,0 +1,29 @@
+flowchart LR
+  subgraph Onboarding
+    A[OnboardingData] --> B[Analyze Onboarding\nGPT-4 | Fallback: Claude 3.5]
+    B --> C[Generate Questions\nGPT-4 | Fallback: Claude 3.5]
+  end
+
+  C --> D[User Answers]
+  D --> E[Per-question Insight\nClaude 3.5 | Fallback: GPT-4o-mini]
+
+  E --> F[Preview (Free, Structured)\nGPT-4 | Fallback: Claude 3.5]
+  E --> G[Summary (Teaser)\nClaude 3 Opus | Fallback: GPT-4o-mini]
+  E --> H[Key Insights\nClaude 3.5 | Fallback: GPT-4o-mini]
+
+  E --> I[Full Diagnostic (15 sections)\nGPT-4o-mini | Fallback: Claude 3 Opus]
+  I --> J[Program Analysis\nGPT-4 | Fallback: Claude 3.5]
+  J --> K[Daily Plan x30\nGPT-4 | Fallback: Claude 3.5]
+
+  I --> L[Behavioral Image\ngpt-image-1 | Fallback: Local SVG]
+  I --> M[Roadmap Flow\nGPT-4o-mini | Fallback: Local]
+
+  classDef openai fill:#143,stroke:#0a6,color:#eaffea
+  classDef claude fill:#2a2830,stroke:#8b5cf6,color:#ffffff
+  classDef local fill:#0b0b0c,stroke:#555,color:#ddd
+
+  class B,C,F,I,J,K,L,M openai
+  class E,G,H claude
+  class L,M local
+
+
