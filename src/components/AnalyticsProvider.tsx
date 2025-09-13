@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { usePathname } from 'next/navigation'
 import { analytics } from '../lib/analytics'
 import { performanceMonitor } from '../lib/performance'
-import { useEffect, useRef } from 'react'
 
 interface AnalyticsProviderProps {
   children: React.ReactNode

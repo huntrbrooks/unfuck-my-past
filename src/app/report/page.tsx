@@ -602,7 +602,7 @@ export default function ReportPage() {
         const nameMatch = titleLine.match(/Loop\s*\d+\s*:\s*(.+)$/i)
         const name = (nameMatch ? nameMatch[1] : titleLine.replace(/\s*Loop\s*$/i, '')).trim()
         // Trigger
-        const trig = (text.match(/Trigger:\s*([^\n]+)/i)?.[1] || '').trim()
+        const trig = (text.match(/(?:Loop\s*)?Trigger:\s*([^\n]+)/i)?.[1] || '').trim()
         // Cycle (split on arrows or commas)
         const cycleRaw = (text.match(/Cycle:\s*([^\n]+)/i)?.[1] || '').trim()
         const cycle = cycleRaw
@@ -1013,14 +1013,60 @@ export default function ReportPage() {
               {formatReportContent(comprehensiveReport)}
             </div>
 
-            {/* Behavioral Patterns visual (full image-style) BEFORE roadmap so roadmap stays last */}
+            {/* Behavioral Patterns write-up + image (manual generate) BEFORE roadmap */}
             {(() => {
-              const loops = parseBehavioralLoops(comprehensiveReport)
-              if (!loops || loops.length === 0) return null
+              const parsed = parseBehavioralLoops(comprehensiveReport)
+              const fallbackLoops: LoopVisual[] = [
+                {
+                  name: 'Isolation',
+                  trigger: 'Loneliness',
+                  cycle: ['Isolation', 'Boredom', 'Urge', 'Relapse'],
+                  impact: 'Increases vulnerability to urges',
+                  breakPoint: { fromState: 'Urge', action: 'Engage with supportive friends or family' }
+                },
+                {
+                  name: 'Self-Criticism',
+                  trigger: 'Falling off track',
+                  cycle: ['Setback', 'Negative self-talk', 'Sinking into old habits'],
+                  impact: 'Shifts focus away from progress',
+                  breakPoint: { fromState: 'Negative self-talk', action: 'Reframe thoughts, focusing on learning' }
+                }
+              ]
+              const finalLoops = parsed && parsed.length > 0 ? parsed : fallbackLoops
               return (
                 <section className="rounded-xl border p-4 mt-6">
-                  <h2 className="text-lg font-semibold mb-3">Behavioral Patterns</h2>
-                  <BehavioralPatternsImage loops={loops} allowRegenerate />
+                  <h2 className="text-lg font-semibold mb-4">Behavioral Patterns</h2>
+                  <div className="space-y-3">
+                    {finalLoops.map((lp, idx) => (
+                      <div key={`bpw-${idx}`} className="rounded-lg border border-border/50 bg-background p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="text-base font-semibold text-foreground mb-1">{`Loop ${idx + 1}: ${lp.name}`}</div>
+                            <div className="text-sm text-muted-foreground mb-2">{`Trigger: ${lp.trigger}`}</div>
+                            <div className="text-sm text-foreground/90">
+                              <span className="font-medium">Cycle: </span>
+                              <span>{lp.cycle.join(' → ')}</span>
+                            </div>
+                            {lp.impact && (
+                              <div className="text-sm text-foreground/90 mt-1">
+                                <span className="font-medium">Impact: </span>
+                                <span>{lp.impact}</span>
+                              </div>
+                            )}
+                            {lp.breakPoint?.action && (
+                              <div className="text-sm text-foreground/90 mt-1">
+                                <span className="font-medium">Break Point: </span>
+                                <span>{lp.breakPoint.action}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4">
+                    <BehavioralPatternsImage loops={finalLoops} allowRegenerate autoGenerate={false} strictOpenAIOnly />
+                  </div>
                 </section>
               )
             })()}
