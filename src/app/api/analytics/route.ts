@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
+import { db, analyticsEvents } from '@/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,8 +26,16 @@ export async function POST(request: NextRequest) {
       event.userId = userId
     }
     
-    // Add server timestamp
-    event.serverTimestamp = new Date().toISOString()
+    // Map known fields
+    const toInsert = {
+      userId: userId || event.userId || null,
+      sessionId: event?.properties?.sessionId || event.sessionId || null,
+      event: String(event.event || 'unknown'),
+      path: typeof event?.properties?.path === 'string' ? event.properties.path : (typeof event.path === 'string' ? event.path : null),
+      title: typeof event?.properties?.title === 'string' ? event.properties.title : (typeof event.title === 'string' ? event.title : null),
+      properties: event.properties ?? null,
+      clientTimestamp: event.timestamp ? new Date(event.timestamp) : null,
+    }
     
     // In production, you would:
     // 1. Validate the event structure
@@ -34,15 +43,10 @@ export async function POST(request: NextRequest) {
     // 3. Send to external analytics services
     // 4. Apply data retention policies
     
-    console.log('Analytics event received:', event)
-    
-    // Example: Store in database (you'd need to create an analytics table)
-    // await db.insert(analyticsEvents).values({
-    //   userId: event.userId,
-    //   event: event.event,
-    //   properties: event.properties,
-    //   timestamp: new Date(event.timestamp)
-    // })
+    console.log('Analytics event received:', toInsert)
+
+    // Store in database
+    await db.insert(analyticsEvents).values(toInsert as any)
     
     // Example: Send to external service
     // await fetch('https://api.posthog.com/capture', {

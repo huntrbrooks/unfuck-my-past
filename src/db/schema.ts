@@ -89,3 +89,16 @@ export const preferenceAudits = pgTable('preference_audits', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+// Analytics events (session, page views, heartbeats, conversions)
+export const analyticsEvents = pgTable('analytics_events', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id'),
+  sessionId: text('session_id'),
+  event: text('event').notNull(),
+  path: text('path'),
+  title: text('title'),
+  properties: jsonb('properties'),
+  clientTimestamp: timestamp('client_ts'),
+  serverTimestamp: timestamp('server_ts').defaultNow(),
+});
+
