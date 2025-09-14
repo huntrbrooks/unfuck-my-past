@@ -86,7 +86,7 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-2 text-foreground">Loading diagnostic report...</span>
+            <span className="ml-2 text-foreground">Loading prognostic report...</span>
           </div>
         </CardContent>
       </Card>
@@ -111,8 +111,8 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
         <CardContent className="p-6">
           <div className="text-center text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-            <p>No diagnostic responses found.</p>
-            <p className="text-sm">Complete the diagnostic section to generate your report.</p>
+            <p>No prognostic responses found.</p>
+            <p className="text-sm">Complete the prognostic section to generate your report.</p>
           </div>
         </CardContent>
       </Card>
@@ -211,7 +211,7 @@ const DiagnosticReport: React.FC<DiagnosticReportProps> = ({ userId }) => {
           Report Summary
         </h3>
         <p className="text-foreground text-sm">
-          This report contains {responses.length} diagnostic responses with AI-generated insights. 
+          This report contains {responses.length} prognostic responses with AI-generated insights. 
           Each response has been analyzed to provide personalized recommendations for your healing journey.
         </p>
       </div>

@@ -136,7 +136,7 @@ export default function Home() {
                           <span className="w-6 flex justify-center">
                             <CheckCircle className="h-5 w-5 icon-line group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ccff00)' }} />
                           </span>
-                          <span className="text-foreground">3-10 diagnostic questions</span>
+                          <span className="text-foreground">3-10 prognostic questions</span>
                         </div>
                         <div className="flex items-center gap-3 group">
                           <span className="w-6 flex justify-center">
@@ -163,7 +163,7 @@ export default function Home() {
                           <span className="w-6 flex justify-center">
                             <Lock className="h-5 w-5 text-black dark:text-white group-hover:scale-110 transition-transform duration-200" style={{ filter: 'drop-shadow(0 0 6px #ff1aff)' }} />
                           </span>
-                          <span className="text-foreground">Full diagnostic report</span>
+                          <span className="text-foreground">Full prognostic report</span>
                           <span className="ml-2"></span>
                           <Badge className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#000000' }}>$9.99</Badge>
                         </div>

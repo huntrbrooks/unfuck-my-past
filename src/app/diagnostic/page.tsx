@@ -244,7 +244,7 @@ export default function Diagnostic() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         if (response.status === 401) {
-          throw new Error('Please sign in to access your personalized diagnostic questions')
+          throw new Error('Please sign in to access your personalized prognostic questions')
         }
         if (response.status === 429) {
           // If it's a 429 error and we haven't retried too many times, retry after a delay
@@ -686,7 +686,7 @@ export default function Diagnostic() {
                 <div className="mb-6">
                   <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
                   <h2 className="responsive-heading mb-4 neon-heading">No Questions Available</h2>
-                  <p className="responsive-body text-muted-foreground mb-6">No diagnostic questions were found. This might be because:</p>
+                  <p className="responsive-body text-muted-foreground mb-6">No prognostic questions were found. This might be because:</p>
                   <ul className="text-left text-muted-foreground mb-6 space-y-2">
                     <li>• You haven&apos;t completed the onboarding process</li>
                     <li>• The AI service failed to generate questions</li>

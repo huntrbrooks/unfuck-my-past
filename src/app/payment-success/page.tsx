@@ -104,7 +104,7 @@ export default function PaymentSuccess() {
                     <div className="flex items-center justify-between">
                       <span>Product:</span>
                       <span className="font-medium">
-                        {purchaseDetails.product === 'diagnostic' ? 'Full Diagnostic Report' : '30-Day Healing Program'}
+                        {purchaseDetails.product === 'diagnostic' ? 'Full Prognostic Report' : '30-Day Healing Program'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -128,7 +128,7 @@ export default function PaymentSuccess() {
                 >
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
                   {purchaseDetails?.product === 'diagnostic' 
-                    ? 'View Your Diagnostic Report' 
+                    ? 'View Your Prognostic Report' 
                     : 'Start Your Healing Program'
                   }
                 </Button>
@@ -172,10 +172,10 @@ export default function PaymentSuccess() {
                   <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Brain className="h-4 w-4 text-primary" />
-                      <span className="font-medium text-foreground">Diagnostic Report</span>
+                      <span className="font-medium text-foreground">Prognostic Report</span>
                     </div>
                     <p className="text-sm">
-                      Your comprehensive diagnostic report includes detailed insights about your patterns, 
+                      Your comprehensive prognostic report includes detailed insights about your patterns, 
                       strengths, and personalized healing recommendations.
                     </p>
                   </div>

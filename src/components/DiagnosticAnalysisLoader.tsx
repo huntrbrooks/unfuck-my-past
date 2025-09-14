@@ -58,13 +58,13 @@ export default function DiagnosticAnalysisLoader({
     {
       img: '/Icon-04.png',
       title: 'Generating personalized summary',
-      description: 'Creating your tailored diagnostic overview',
+      description: 'Creating your tailored prognostic overview',
       color: 'from-orange-500 to-red-500'
     },
     {
       img: '/Icon-05.png',
       title: 'Finalizing your results',
-      description: 'Preparing your comprehensive diagnostic profile',
+      description: 'Preparing your comprehensive prognostic profile',
       color: 'from-red-500 to-rose-500'
     }
   ]

@@ -111,18 +111,16 @@ const CrisisModal: React.FC<{
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <a
-            href="tel:988"
+            href="tel:000"
             className="w-full text-center bg-primary text-primary-foreground py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors"
           >
-            Call 988
+            Call 000
           </a>
           <a
-            href="https://988lifeline.org/"
-            target="_blank"
-            rel="noreferrer noopener"
+            href="tel:131114"
             className="w-full text-center border border-border bg-background text-foreground py-2 px-4 rounded-lg hover:bg-muted/50 transition-colors"
           >
-            Lifeline Site
+            Lifeline 13 11 14
           </a>
           <button
             onClick={onClose}
@@ -376,8 +374,8 @@ const Onboarding: React.FC<Props> = ({ onComplete, onChange }) => {
           isOpen: true,
           title: !is18 ? 'We care about your safety' : 'If you are in crisis, help is available',
           message: !is18
-            ? 'This experience is for adults 18+. Please talk with a trusted adult or a licensed professional. If you need immediate help, call 988 (US) or your local emergency number.'
-            : 'If you are in immediate danger or thinking of harming yourself, please reach out for live support right now. Call 988 in the US or your local emergency number. You can also visit the 988 Lifeline website.'
+            ? 'This experience is for adults 18+. Please talk with a trusted adult or a licensed professional. If you need immediate help, call 000 (Australia) or Lifeline 13 11 14.'
+            : 'If you are in immediate danger or thinking of harming yourself, please reach out for live support right now. Call 000 (Australia) or Lifeline 13 11 14. You can also visit lifeline.org.au.'
         });
         return;
       }

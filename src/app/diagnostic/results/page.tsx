@@ -15,6 +15,7 @@ import DiagnosticAnalysisLoader from '@/components/DiagnosticAnalysisLoader'
 import DiagnosticCompletionPrompt from '@/components/DiagnosticCompletionPrompt'
 import DiagnosticFreeCompletionPrompt from '@/components/DiagnosticFreeCompletionPrompt'
 import DiagnosticPreview from '@/components/DiagnosticPreview'
+import { useRequireOnboardingAndDiagnostic } from '@/hooks/use-access-guard'
 
 interface DiagnosticResult {
   question: string
@@ -26,6 +27,7 @@ interface DiagnosticResult {
 export default function DiagnosticResults() {
   console.log('🔄 DiagnosticResults component rendering...')
   const { user, isLoaded } = useUser()
+  const { checking, allowed } = useRequireOnboardingAndDiagnostic()
   console.log('👤 Auth state:', { isLoaded, hasUser: !!user })
   const [results, setResults] = useState<DiagnosticResult[]>([])
   const [questionCount, setQuestionCount] = useState(0)
@@ -61,7 +63,7 @@ export default function DiagnosticResults() {
       } else {
         // User not authenticated, show error message
         console.log('❌ User not authenticated')
-        setError('Please sign in to view your diagnostic results')
+        setError('Please sign in to view your prognostic results')
         setLoading(false)
       }
     } else {
@@ -246,7 +248,7 @@ A path ahead that's bright and full of lighting.`)
         if (responsesResponse.status === 401) {
           // User not authenticated, show error message
           console.log('🚫 User not authenticated, setting error')
-          setError('Please sign in to view your diagnostic results')
+          setError('Please sign in to view your prognostic results')
           return
         } else {
           // Other error
@@ -296,7 +298,7 @@ A path ahead that's bright and full of lighting.`)
 
       // Load existing summary only (do not regenerate)
       try {
-        console.log('🔄 Fetching diagnostic summary...')
+        console.log('🔄 Fetching prognostic summary...')
         const sController = new AbortController()
         const sTimeout = setTimeout(() => sController.abort(), 10000)
         const summaryResponse = await fetch('/api/diagnostic/summary', { method: 'GET', signal: sController.signal })
@@ -785,7 +787,7 @@ Your investment helps us continue improving and supporting people on their heali
 
   // Show loading while Clerk is loading or while we're loading data
   console.log('🔍 Loading state check:', { isLoaded, loading })
-  if (!isLoaded || loading) {
+  if (!isLoaded || loading || checking) {
     console.log('⏳ Showing loading spinner')
     return (
       <div className="min-h-screen-dvh bg-background flex items-center justify-center p-4 pt-20 sm:pt-4">
@@ -793,6 +795,8 @@ Your investment helps us continue improving and supporting people on their heali
       </div>
     )
   }
+
+  if (!allowed) return null
 
   if (error) {
     return (
@@ -858,7 +862,7 @@ Your investment helps us continue improving and supporting people on their heali
               >
                 <BookOpen className="h-5 w-5 group-hover:scale-110 transition-transform duration-200 text-[#ff1aff]" style={{ filter: 'drop-shadow(0 0 6px #ff1aff)' }} />
                 <div className="text-left">
-                  <div className="font-semibold neon-glow-pink">Full Diagnostic Report</div>
+                  <div className="font-semibold neon-glow-pink">Full Prognostic Report</div>
                   <div className="text-sm text-muted-foreground">$9.99</div>
                 </div>
               </Button>
@@ -898,7 +902,7 @@ Your investment helps us continue improving and supporting people on their heali
                   >
                     <BookOpen className="h-5 w-5 group-hover:scale-110 transition-transform duration-200 text-[#ff1aff]" style={{ filter: 'drop-shadow(0 0 6px #ff1aff)' }} />
                     <div className="text-left">
-                      <div className="font-semibold neon-glow-pink">Full Diagnostic Report</div>
+                      <div className="font-semibold neon-glow-pink">Full Prognostic Report</div>
                       <div className="text-sm text-muted-foreground">$9.99</div>
                     </div>
                   </Button>

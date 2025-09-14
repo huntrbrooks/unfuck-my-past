@@ -190,7 +190,7 @@ export default function DiagnosticPreview({
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Generating your diagnostic preview...</p>
+          <p className="text-muted-foreground">Generating your prognostic preview...</p>
         </div>
       </div>
     )
@@ -223,7 +223,7 @@ export default function DiagnosticPreview({
         <CardHeader className="bg-background border-b border-border/50 p-4 sm:p-6">
           <div className="flex items-center gap-3">
             <Target className="hidden sm:block h-6 w-6 text-primary" />
-            <CardTitle className="text-lg sm:text-xl font-semibold neon-heading">Diagnostic Summary</CardTitle>
+            <CardTitle className="text-lg sm:text-xl font-semibold neon-heading">Prognostic Summary</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="p-4 sm:p-6">
@@ -326,7 +326,7 @@ export default function DiagnosticPreview({
               {preview.confidence.score >= 0.8 ? 'HIGH' : preview.confidence.score >= 0.6 ? 'MEDIUM' : 'LOW'} ({Math.round(preview.confidence.score * 100)}%)
             </Badge>
             <div className="flex-1">
-              <p className="text-foreground leading-relaxed mb-2">Confidence based on available diagnostic data.</p>
+              <p className="text-foreground leading-relaxed mb-2">Confidence based on available prognostic data.</p>
               {preview.confidence.missingData.length > 0 && (
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Missing data:</p>

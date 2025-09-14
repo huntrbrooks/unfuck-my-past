@@ -55,7 +55,7 @@ export default function FullReportGenerationLoader({
     {
       img: '/Icon-05.png',
       title: 'Finalising & saving',
-      description: 'Preparing your full diagnostic report',
+      description: 'Preparing your full prognostic report',
       color: 'from-red-500 to-rose-500'
     }
   ]
@@ -72,7 +72,7 @@ export default function FullReportGenerationLoader({
           </div>
           
           <h1 className="text-3xl font-bold key-info neon-heading [text-shadow:0_0_28px_rgba(204,255,0,0.9),0_0_56px_rgba(204,255,0,0.6),1px_1px_0_rgba(0,0,0,0.55),-1px_-1px_0_rgba(0,0,0,0.55)] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)]">
-            Creating Your Full Diagnostic Report
+            Creating Your Full Prognostic Report
           </h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
             We’re analysing your responses to produce a comprehensive, personalised report

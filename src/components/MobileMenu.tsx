@@ -7,10 +7,14 @@ import UserButton from './UserButton'
 import ThemeToggle from './ThemeToggle'
 import Link from 'next/link'
 import { Menu, X, Target, Sparkles, TrendingUp, Heart, Calendar, Clock } from 'lucide-react'
+import { useAppStatus } from '@/hooks/use-access-guard'
 
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const { isSignedIn, isLoaded } = useAuth()
+  const { status } = useAppStatus()
+  const isLocked = !!status && (!status.onboardingCompleted || !status.diagnosticCompleted)
+  const nextLocked = status?.nextStep === 'onboarding' ? '/onboarding' : '/diagnostic'
 
   const toggleMenu = () => setIsOpen(!isOpen)
 
@@ -73,8 +77,8 @@ export default function MobileMenu() {
                   <>
                     <Link
                       href="/dashboard"
-                      className="flex items-center gap-3 text-lg font-medium text-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
-                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 text-lg font-medium transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group ${isLocked ? 'text-muted-foreground/70' : 'text-foreground hover:text-primary'}`}
+                      onClick={(e) => { if (isLocked) { e.preventDefault(); setIsOpen(false); window.location.href = nextLocked } else { setIsOpen(false) }}}
                     >
                       <Target className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
                       Dashboard
@@ -90,32 +94,32 @@ export default function MobileMenu() {
                     {/* My Results replaces Continue Journey on mobile */}
                     <Link
                       href="/diagnostic/results"
-                      className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
-                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 text-lg font-medium transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group ${isLocked ? 'text-muted-foreground/70' : 'text-muted-foreground hover:text-primary'}`}
+                      onClick={(e) => { if (isLocked) { e.preventDefault(); setIsOpen(false); window.location.href = nextLocked } else { setIsOpen(false) }}}
                     >
                       <TrendingUp className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
                       My Results
                     </Link>
                     <Link
                       href="/report"
-                      className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
-                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 text-lg font-medium transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group ${isLocked ? 'text-muted-foreground/70' : 'text-muted-foreground hover:text-primary'}`}
+                      onClick={(e) => { if (isLocked) { e.preventDefault(); setIsOpen(false); window.location.href = nextLocked } else { setIsOpen(false) }}}
                     >
                       <Heart className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
                       My Report
                     </Link>
                     <Link
                       href="/program"
-                      className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
-                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 text-lg font-medium transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group ${isLocked ? 'text-muted-foreground/70' : 'text-muted-foreground hover:text-primary'}`}
+                      onClick={(e) => { if (isLocked) { e.preventDefault(); setIsOpen(false); window.location.href = nextLocked } else { setIsOpen(false) }}}
                     >
                       <Calendar className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
                       30-Day Program
                     </Link>
                     <Link
                       href="/preferences"
-                      className="flex items-center gap-3 text-lg font-medium text-muted-foreground hover:text-primary transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group"
-                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 text-lg font-medium transition-all duration-300 p-3 rounded-xl hover:bg-accent/50 group ${isLocked ? 'text-muted-foreground/70' : 'text-muted-foreground hover:text-primary'}`}
+                      onClick={(e) => { if (isLocked) { e.preventDefault(); setIsOpen(false); window.location.href = nextLocked } else { setIsOpen(false) }}}
                     >
                       <Clock className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
                       Preferences

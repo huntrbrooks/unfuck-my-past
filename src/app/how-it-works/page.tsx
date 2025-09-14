@@ -52,7 +52,7 @@ export default function HowItWorks() {
                 <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                   <Bot className="h-10 w-10 text-accent-foreground" />
                 </div>
-                <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-cyan">2. Diagnose</CardTitle>
+                <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-cyan">2. Prognose</CardTitle>
                 <p className="text-muted-foreground leading-relaxed">
                   Answer 3-10 adaptive questions about your past and patterns. 
                   Our advanced AI analyzes your responses to provide deep, actionable insights 
@@ -96,7 +96,7 @@ export default function HowItWorks() {
                       </div>
                       <div className="flex items-center gap-3 group">
                         <CheckCircle className="h-5 w-5 text-success group-hover:scale-110 transition-transform duration-200" />
-                        <span className="text-foreground">3-10 diagnostic questions</span>
+                        <span className="text-foreground">3-10 prognostic questions</span>
                       </div>
                       <div className="flex items-center gap-3 group">
                         <CheckCircle className="h-5 w-5 text-success group-hover:scale-110 transition-transform duration-200" />
@@ -117,7 +117,7 @@ export default function HowItWorks() {
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 group">
                         <Lock className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-200" />
-                        <span className="text-foreground">Full diagnostic report</span>
+                        <span className="text-foreground">Full prognostic report</span>
                         <span className="ml-2"></span>
                         <Badge variant="success" className="ml-auto" style={{ backgroundColor: '#ccff00', color: '#0a0a0a' }}>$9.99</Badge>
                       </div>

@@ -14,6 +14,7 @@ import { Loader2, Save, History, Settings } from 'lucide-react'
 import { PrefsSchema, type PrefsUpdate } from '@/lib/prefsSchema'
 import { analytics } from '@/lib/analytics'
 import { toast } from 'sonner'
+import { useRequireOnboardingAndDiagnostic } from '@/hooks/use-access-guard'
 
 const TONES = ['gentle','direct','coaching','casual','clinical','spiritual'] as const
 const GUIDE_STYLES = ['friend','mentor','therapist-style','coach'] as const
@@ -77,6 +78,7 @@ function computeLevers(form: PrefsUpdate) {
 export default function PreferencesPage() {
   const { userId, isLoaded } = useAuth()
   const router = useRouter()
+  const { checking, allowed } = useRequireOnboardingAndDiagnostic()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<PrefsUpdate>(DEFAULT_PREFS)
@@ -217,11 +219,12 @@ export default function PreferencesPage() {
     }
   }
 
-  if (loading) {
+  if (loading || checking) {
     return (
       <div className="p-6">Loading…</div>
     )
   }
+  if (!allowed) return null
 
   const disableIntense = crisisLockActive
 
@@ -342,7 +345,7 @@ export default function PreferencesPage() {
           <CardContent className="space-y-4">
             <div>
               <Label className="mb-1 block">Primary focus</Label>
-              <p className="text-xs text-muted-foreground mb-2">Changing focus will adjust the next diagnostic questions.</p>
+              <p className="text-xs text-muted-foreground mb-2">Changing focus will adjust the next prognostic questions.</p>
               <Select value={form.primaryFocus} onValueChange={(v)=> setForm({ ...form, primaryFocus: v as PrefsUpdate['primaryFocus'] })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -402,7 +405,7 @@ export default function PreferencesPage() {
                 <p className="text-xs text-muted-foreground mt-1">We’ll cap actions to this time.</p>
               </div>
               <div>
-                <Label className="mb-2 block">Diagnostic questions</Label>
+                <Label className="mb-2 block">Prognostic questions</Label>
                 <Select value={String(form.preferredQuestionCount || '')} onValueChange={(v)=> setForm({ ...form, preferredQuestionCount: Number(v) })}>
                   <SelectTrigger><SelectValue placeholder="Auto" /></SelectTrigger>
                   <SelectContent>

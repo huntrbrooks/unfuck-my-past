@@ -15,8 +15,10 @@ const ScoresRadar = dynamic(() => import('@/components/charts/ScoresRadarImpl'),
 const AvoidanceBar = dynamic(() => import('@/components/charts/AvoidanceBarImpl'), { ssr: false })
 import AIFlow from '@/components/AIFlow'
 import BehavioralPatternsImage from '../../components/BehavioralPatternsImage'
+import { useRequireOnboardingAndDiagnostic } from '@/hooks/use-access-guard'
 
 export default function ReportPage() {
+  const { checking, allowed } = useRequireOnboardingAndDiagnostic()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [comprehensiveReport, setComprehensiveReport] = useState('')
@@ -106,7 +108,7 @@ export default function ReportPage() {
     try {
       setLoading(true)
       
-      // Load diagnostic responses
+      // Load prognostic responses
       const responsesResponse = await fetch('/api/diagnostic/responses')
       let responsesPayload: any[] = []
       if (responsesResponse.ok) {
@@ -770,13 +772,15 @@ export default function ReportPage() {
     }
   }
 
-  if (checkingAccess) {
+  if (checkingAccess || checking) {
     return (
       <div className="min-h-screen-dvh bg-background flex items-center justify-center">
         <LoadingSpinner size="lg" text="Checking your access..." />
       </div>
     )
   }
+
+  if (!allowed) return null
 
   if (showPaywall) {
     return (
@@ -796,7 +800,7 @@ export default function ReportPage() {
             <CardHeader className="text-center pb-6">
               <CardTitle className="flex items-center justify-center gap-3 neon-heading">
                 <span>📊</span>
-                Complete Diagnostic Report
+                Complete Prognostic Report
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-8">
@@ -865,7 +869,7 @@ export default function ReportPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold neon-heading">Here's Why Your Past Is Fucked</h1>
-              <p className="text-muted-foreground">Based on your {questionCount} diagnostic responses</p>
+              <p className="text-muted-foreground">Based on your {questionCount} prognostic responses</p>
             </div>
           </div>
           
@@ -1187,7 +1191,7 @@ export default function ReportPage() {
                     onClick={() => {
                       const link = document.createElement('a')
                       link.href = '/api/export'
-                      link.download = 'diagnostic-report.txt'
+                      link.download = 'prognostic-report.txt'
                       document.body.appendChild(link)
                       link.click()
                       document.body.removeChild(link)

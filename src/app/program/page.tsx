@@ -12,6 +12,7 @@ import Image from 'next/image'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import PaymentForm from '@/components/PaymentForm'
 import { Textarea } from '@/components/ui/textarea'
+import { useRequireOnboardingAndDiagnostic } from '@/hooks/use-access-guard'
 
 interface ProgramProgress {
   completed: number
@@ -49,6 +50,7 @@ interface PersonalizedDay {
 
 export default function Program() {
   const router = useRouter()
+  const { checking, allowed } = useRequireOnboardingAndDiagnostic()
   const [progress, setProgress] = useState<ProgramProgress | null>(null)
   const [currentDay, setCurrentDay] = useState<PersonalizedDay | null>(null)
   const [loading, setLoading] = useState(true)
@@ -1043,13 +1045,15 @@ export default function Program() {
     }
   }, [currentDay, sectionCompleted, sectionTaskCompleted])
 
-  if (checkingAccess) {
+  if (checkingAccess || checking) {
     return (
       <div className="min-h-screen-dvh bg-background flex items-center justify-center">
         <LoadingSpinner size="lg" text="Checking program access..." />
       </div>
     )
   }
+
+  if (!allowed) return null
 
   if (!hasAccess) {
     return (

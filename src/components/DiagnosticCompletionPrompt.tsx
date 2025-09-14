@@ -64,7 +64,7 @@ A journey from survival to truly thriving.`
           {/* Success indicator */}
           <div className="flex items-center justify-center gap-2 text-success">
             <CheckCircle className="w-5 h-5" />
-            <span className="text-sm font-medium">Your full diagnostic report is ready</span>
+            <span className="text-sm font-medium">Your full prognostic report is ready</span>
           </div>
 
           {/* CTA Button */}

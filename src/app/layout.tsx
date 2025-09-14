@@ -12,6 +12,8 @@ import ThemeProvider from '../components/ThemeProvider'
 import MenuBar from '../components/MenuBar'
 import MobileMenu from '../components/MobileMenu'
 import AnalyticsProvider from '../components/AnalyticsProvider'
+import LegalBanner from '../components/LegalBanner'
+import Footer from '../components/Footer'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -70,6 +72,7 @@ export default function RootLayout({
           <ErrorBoundary>
             <ThemeProvider>
               <AnalyticsProvider>
+                <LegalBanner />
                 <div className="w-full flex justify-center">
                   <div className="hidden md:flex w-full justify-center">
                     <MenuBar />
@@ -83,6 +86,7 @@ export default function RootLayout({
                 <Suspense fallback={<div>Loading...</div>}>
                   {children}
                 </Suspense>
+                <Footer />
                 <Analytics />
               </AnalyticsProvider>
             </ThemeProvider>

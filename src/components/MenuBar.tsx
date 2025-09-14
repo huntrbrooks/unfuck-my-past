@@ -6,6 +6,7 @@ import { motion, type Variants, type Transition } from 'framer-motion'
 import { Home, Heart, Sparkles, TrendingUp, Settings, HelpCircle, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
 import { UserButton, useUser } from '@clerk/nextjs'
+import { useAppStatus } from '@/hooks/use-access-guard'
 
 interface MenuItem {
   icon: React.ReactNode
@@ -52,6 +53,14 @@ export default function MenuBar() {
   const isDarkTheme = theme === 'dark'
   const toggleTheme = () => setTheme(isDarkTheme ? 'light' : 'dark')
   const { isSignedIn } = useUser()
+  const { status } = useAppStatus()
+  const locked = {
+    Dashboard: !!status && (!status.onboardingCompleted || !status.diagnosticCompleted),
+    Preferences: !!status && (!status.onboardingCompleted || !status.diagnosticCompleted),
+    'My Results': !!status && (!status.onboardingCompleted || !status.diagnosticCompleted),
+    'My Report': !!status && (!status.onboardingCompleted || !status.diagnosticCompleted),
+    'My Journey': !!status && (!status.onboardingCompleted || !status.diagnosticCompleted),
+  } as Record<string, boolean>
 
   return (
     <motion.nav
@@ -85,11 +94,37 @@ export default function MenuBar() {
             ) : (
               <motion.div className="block rounded-xl overflow-visible group relative" style={{ perspective: '600px' }} whileHover="hover" initial="initial">
                 <motion.div className="absolute inset-0 z-0 pointer-events-none" variants={glowVariants} style={{ background: item.gradient, opacity: 0, borderRadius: '16px' }} />
-                <motion.a href={item.href} className="flex items-center gap-2 px-4 py-2 relative z-10 bg-transparent text-muted-foreground group-hover:text-foreground transition-colors rounded-xl" variants={itemVariants} transition={sharedTransition} style={{ transformStyle: 'preserve-3d', transformOrigin: 'center bottom' }}>
+                <motion.a
+                  href={item.href}
+                  onClick={(e) => {
+                    if (locked[item.label]) {
+                      e.preventDefault()
+                      const next = status?.nextStep === 'onboarding' ? '/onboarding' : '/diagnostic'
+                      window.location.href = next
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 relative z-10 bg-transparent transition-colors rounded-xl ${locked[item.label] ? 'text-muted-foreground/70 cursor-not-allowed' : 'text-muted-foreground group-hover:text-foreground'}`}
+                  variants={itemVariants} transition={sharedTransition} style={{ transformStyle: 'preserve-3d', transformOrigin: 'center bottom' }}
+                  aria-disabled={locked[item.label]}
+                  title={locked[item.label] ? (status?.nextStep === 'onboarding' ? 'Complete onboarding to unlock' : 'Complete diagnostic to unlock') : undefined}
+                >
                   <span className={`transition-colors duration-300 group-hover:${item.iconColor} text-foreground`}>{item.icon}</span>
                   <span>{item.label}</span>
                 </motion.a>
-                <motion.a href={item.href} className="flex items-center gap-2 px-4 py-2 absolute inset-0 z-10 bg-transparent text-muted-foreground group-hover:text-foreground transition-colors rounded-xl" variants={backVariants} transition={sharedTransition} style={{ transformStyle: 'preserve-3d', transformOrigin: 'center top', rotateX: 90 }}>
+                <motion.a
+                  href={item.href}
+                  onClick={(e) => {
+                    if (locked[item.label]) {
+                      e.preventDefault()
+                      const next = status?.nextStep === 'onboarding' ? '/onboarding' : '/diagnostic'
+                      window.location.href = next
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 absolute inset-0 z-10 bg-transparent transition-colors rounded-xl ${locked[item.label] ? 'text-muted-foreground/70 cursor-not-allowed' : 'text-muted-foreground group-hover:text-foreground'}`}
+                  variants={backVariants} transition={sharedTransition} style={{ transformStyle: 'preserve-3d', transformOrigin: 'center top', rotateX: 90 }}
+                  aria-disabled={locked[item.label]}
+                  title={locked[item.label] ? (status?.nextStep === 'onboarding' ? 'Complete onboarding to unlock' : 'Complete diagnostic to unlock') : undefined}
+                >
                   <span className={`transition-colors duration-300 group-hover:${item.iconColor} text-foreground`}>{item.icon}</span>
                   <span>{item.label}</span>
                 </motion.a>

@@ -27,9 +27,11 @@ import {
   Award
 } from 'lucide-react'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { useRequireOnboardingAndDiagnostic } from '@/hooks/use-access-guard'
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser()
+  const { checking, allowed } = useRequireOnboardingAndDiagnostic()
   const [currentStreak, setCurrentStreak] = useState(0)
   const [totalSessions, setTotalSessions] = useState(0)
   const [moodAverage, setMoodAverage] = useState(0)
@@ -173,7 +175,7 @@ export default function Dashboard() {
     setIsLoading(false)
   }
 
-  if (!isLoaded) {
+  if (!isLoaded || checking) {
     return (
       <div className="min-h-screen-dvh bg-background flex items-center justify-center">
         <LoadingSpinner size="lg" text="Loading your dashboard..." />
@@ -192,6 +194,10 @@ export default function Dashboard() {
             </div>
           </div>
     )
+  }
+
+  if (!allowed) {
+    return null
   }
 
   return (
