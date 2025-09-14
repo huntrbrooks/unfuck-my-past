@@ -52,7 +52,7 @@ export default function HowItWorks() {
                 <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                   <Bot className="h-10 w-10 text-accent-foreground" />
                 </div>
-                <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-cyan">2. Prognose</CardTitle>
+                <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-cyan">2. Analyse</CardTitle>
                 <p className="text-muted-foreground leading-relaxed">
                   Answer 3-10 adaptive questions about your past and patterns. 
                   Our advanced AI analyzes your responses to provide deep, actionable insights 

@@ -88,7 +88,7 @@ export default function Home() {
                   <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                     <Bot className="h-9 w-9 text-black dark:text-white" style={{ filter: 'drop-shadow(0 0 8px #00e5ff)' }} />
                   </div>
-                  <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-cyan">2. Diagnose</CardTitle>
+                  <CardTitle className="text-xl font-semibold mb-4 text-foreground neon-glow-cyan">2. Analyse</CardTitle>
                   <p className="text-muted-foreground leading-relaxed">
                     Answer 3-10 adaptive questions about your past and patterns. 
                     Our advanced AI analyzes your responses to provide deep, actionable insights 
