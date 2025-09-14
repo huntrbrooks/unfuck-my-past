@@ -87,10 +87,14 @@ export async function POST(request: NextRequest) {
       timestamp = structured.timestamp
     } catch (e1) {
       console.error('Structured generation error details:', e1)
-      return NextResponse.json({ 
-        error: 'Structured generation failed', 
-        details: e1 instanceof Error ? e1.message : String(e1) 
-      }, { status: 502 })
+      // Fallback: generate an offline report so users still get value
+      const offline = buildOfflineReport(
+        allResponses.map(r => ({ question: r.question, response: r.response, insight: r.insight })),
+        { tone: userPreferences.tone, voice: userPreferences.voice }
+      )
+      normalizedContent = offline
+      model = 'offline'
+      timestamp = new Date().toISOString()
     }
 
     // Save the comprehensive report to database
