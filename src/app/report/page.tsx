@@ -215,6 +215,7 @@ export default function ReportPage() {
       console.error('Error generating report:', err)
       setError(`Failed to generate comprehensive report: ${err instanceof Error ? err.message : 'Unknown error'}`)
       setShowFinalising(false)
+      setLoading(false)
     } finally {
       setGeneratingReport(false)
       isGeneratingRef.current = false
