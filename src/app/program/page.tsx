@@ -1241,6 +1241,7 @@ export default function Program() {
 
   if (!allowed) return null
 
+  // Single gate: only this page should enforce the program paywall
   if (!hasAccess) {
     return (
       <div className="min-h-screen-dvh bg-background py-8">

@@ -15,6 +15,7 @@ import dynamic from 'next/dynamic'
 const ScoresRadar = dynamic(() => import('@/components/charts/ScoresRadarImpl'), { ssr: false })
 const AvoidanceBar = dynamic(() => import('@/components/charts/AvoidanceBarImpl'), { ssr: false })
 import AIFlow from '@/components/AIFlow'
+import DiagnosticCompletionPrompt from '@/components/DiagnosticCompletionPrompt'
 import AnalysisConfidence from '@/components/AnalysisConfidence'
 import { useRequireOnboardingAndDiagnostic } from '@/hooks/use-access-guard'
 import { pickArchetype, COLOURS as ARCH_COLOURS, type ArchetypeColour, colourStory } from '@/lib/persona'
@@ -288,6 +289,7 @@ export default function ReportPage() {
             setGenerationDone(true)
             setLoading(false)
             setShowFinalising(false)
+            if (paymentSuccess) { setShowThankYou(true); setPaymentSuccess(false) }
             return
           }
         }
@@ -302,6 +304,7 @@ export default function ReportPage() {
             setGenerationDone(true)
             setLoading(false)
             setShowFinalising(false)
+            if (paymentSuccess) { setShowThankYou(true); setPaymentSuccess(false) }
             return
           }
         }
@@ -317,6 +320,7 @@ export default function ReportPage() {
         setGenerationDone(true)
         setLoading(false)
         setShowFinalising(false)
+        if (paymentSuccess) { setShowThankYou(true); setPaymentSuccess(false) }
       } else {
         const errorData = await reportResponse.text()
         console.error('Report API error:', errorData)
@@ -1141,6 +1145,16 @@ export default function ReportPage() {
   // Show loader when generating report
   if (showFinalising || generatingReport) {
     return <FullReportGenerationLoader currentStep={loaderStep} totalSteps={5} isGenerating={true} />
+  }
+
+  // Show thank-you completion prompt once after successful paid generation
+  if (showThankYou) {
+    return (
+      <DiagnosticCompletionPrompt
+        poeticMessage={`Through shadows deep, you've found your light,\nEach scar a story of your fight.\nThe past has shaped but not defined—\nA warrior's heart, a healing mind.`}
+        onContinue={() => setShowThankYou(false)}
+      />
+    )
   }
 
   if (loading) {

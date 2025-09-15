@@ -286,7 +286,7 @@ A path ahead that's bright and full of lighting.`)
               shouldShow = new Date(latest).getTime() > new Date(lastSeen).getTime()
             }
           }
-          if (shouldShow && !hasSavedSummary) {
+          if (shouldShow) {
             setIsPaidFlow(false) // This is the free diagnostic flow
             setShowAnalysisLoader(true)
             // Kick off background preview generation as soon as we have data
@@ -383,21 +383,8 @@ A path ahead that's bright and full of lighting.`)
   }
 
   const handleStartProgram = () => {
-    // Before showing the paywall, verify 30-day access window
-    ;(async () => {
-      try {
-        const resp = await fetch('/api/payments/user-purchases')
-        if (resp.ok) {
-          const data = await resp.json()
-          const hasRecentProgram = Array.isArray(data) && data.some((p: { product: string; active: boolean }) => p.product === 'program' && p.active)
-          if (hasRecentProgram) {
-            router.push('/program')
-            return
-          }
-        }
-      } catch {}
-      setShowProgramPaywall(true)
-    })()
+    // Avoid double paywalls: route to Program page, which handles its own gating
+    router.push('/program')
   }
 
   const handleViewReport = async () => {
