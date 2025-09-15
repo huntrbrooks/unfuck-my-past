@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { clerkMiddleware } from '@clerk/nextjs/server'
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
 function unauthorized() {
   return new NextResponse('Unauthorized', {
@@ -10,32 +10,30 @@ function unauthorized() {
 }
 
 const devPublicApi = process.env.NODE_ENV !== 'production' ? ['/api/:path*'] : []
-const clerk = clerkMiddleware({
-  publicRoutes: [
-    '/',
-    '/_not-found',
-    '/how-it-works',
-    '/legal(.*)',
-    '/sign-in(.*)',
-    '/sign-up(.*)',
-    // Public APIs that don't require auth
-    '/api/diagnostic-lite',
-    '/api/diagnostic/preview',
-    '/api/test-keys',
-    '/api/flow',
-    '/api/geocode',
-    ...devPublicApi,
-  ],
-})
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/_not-found',
+  '/how-it-works',
+  '/legal(.*)',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  // Public APIs that don't require auth
+  '/api/diagnostic-lite',
+  '/api/diagnostic/preview',
+  '/api/test-keys',
+  '/api/flow',
+  '/api/geocode',
+  ...devPublicApi,
+])
 
-export default async function middleware(req: NextRequest) {
+export default clerkMiddleware(async (auth, req: NextRequest) => {
   const path = req.nextUrl.pathname
 
   // Protect admin routes with Basic Auth (env-configurable). Defaults provided per request.
   if (path.startsWith('/admin') || path.startsWith('/api/admin')) {
-    const auth = req.headers.get('authorization') || ''
-    if (!auth.startsWith('Basic ')) return unauthorized()
-    const b64 = auth.split(' ')[1] || ''
+    const authorizationHeader = req.headers.get('authorization') || ''
+    if (!authorizationHeader.startsWith('Basic ')) return unauthorized()
+    const b64 = authorizationHeader.split(' ')[1] || ''
     let decoded = ''
     try {
       // atob is available in Edge runtime
@@ -74,10 +72,15 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // All other routes go through Clerk (sets headers needed by auth())
-  // @ts-ignore Clerk middleware signature
-  return clerk(req)
-}
+  // Allow public routes
+  if (isPublicRoute(req)) {
+    return NextResponse.next()
+  }
+
+  // Protect all other routes
+  await auth.protect()
+  return NextResponse.next()
+})
 
 export const config = {
   matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],

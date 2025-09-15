@@ -121,7 +121,10 @@ export async function POST(request: NextRequest) {
     for (const f of providedFollowUps) {
       if (f?.category) extraCategories.add(String(f.category))
     }
-    const combinedCategories = new Set<string>([...followUps.categories, ...extraCategories])
+    const combinedCategories = new Set<string>([
+      ...Array.from(followUps.categories),
+      ...Array.from(extraCategories)
+    ])
     const combinedFollowUpCount = followUps.count + providedFollowUps.length
     const persisted = await loadPersistedConfidence(uid)
 
