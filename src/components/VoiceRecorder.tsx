@@ -324,6 +324,8 @@ export default function VoiceRecorder({
           <div>
             <strong className="text-foreground mb-2 block">Edit Your Response:</strong>
             <Textarea
+              id="voice-edit-text"
+              name="voice-edit-text"
               value={editedText}
               onChange={(e) => setEditedText(e.target.value)}
               placeholder="Edit your transcribed text here..."

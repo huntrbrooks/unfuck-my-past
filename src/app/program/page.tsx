@@ -1606,6 +1606,8 @@ export default function Program() {
                                   ))}
                                 </div>
                                 <Textarea
+                                  id="mini-journal-entry"
+                                  name="mini-journal-entry"
                                   value={miniJournalEntry}
                                   onChange={(e) => setMiniJournalEntry(e.target.value)}
                                   placeholder="Write a quick note about how the practice landed..."

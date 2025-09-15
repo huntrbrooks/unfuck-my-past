@@ -887,6 +887,8 @@ export default function Diagnostic() {
                 {inputMode === 'text' && (
                   <div className="mb-4 sm:mb-6">
                     <Textarea
+                      id="diagnostic-response"
+                      name="diagnostic-response"
                       placeholder="Share your thoughts here... Be as open and honest as you feel comfortable with."
                       value={currentResponse}
                       onChange={(e) => setCurrentResponse(e.target.value)}
