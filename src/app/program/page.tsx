@@ -973,27 +973,87 @@ export default function Program() {
     const { prompt, exclude } = extractPrimaryPrompt(lines)
     const explanation = buildJournalingExplanation(prompt)
     const followUps = buildFollowUpQuestions(prompt)
+
+    // Use negative indices to track computed follow-ups without colliding with line indices
+    const computedFollowUpBaseIndex = -1000
+
+    // Track whether we're within specific sub-sections of the journaling content
+    let inFollowUps = false
+    let inEmotionCheck = false
+
     return (
       <div id="section-journalingPrompt" className={`whitespace-pre-line leading-relaxed space-y-3 ${done ? 'text-[#ccff00]' : 'text-foreground'}`}>
         <div className="space-y-2">
           <div className="font-semibold text-foreground">{prompt}</div>
           <div className="italic text-muted-foreground">{explanation}</div>
-          <ul className="list-disc pl-5 space-y-1">
-            {followUps.map((q, i) => (
-              <li key={i}>{q}</li>
-            ))}
-          </ul>
+          {/* Render follow-up questions as checkboxes */}
+          <div className="space-y-2">
+            {followUps.map((q, i) => {
+              const idx = computedFollowUpBaseIndex - i
+              const checked = (sectionTaskCompleted.journalingPrompt || new Set<number>()).has(idx)
+              return (
+                <label key={`fu-${i}`} className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={checked}
+                    onChange={(e) => markTask('journalingPrompt', idx, e.target.checked)}
+                    aria-label={`Follow-up question ${i + 1}`}
+                  />
+                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{q}</span>
+                </label>
+              )
+            })}
+          </div>
         </div>
+        {/* Render generated lines; convert follow-ups and emotional check-ins to checkboxes */}
         {lines.map((line, index) => {
           if (exclude.has(index)) return null
-          if (isSubheadingLine(line)) {
-            return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
-          } else if (line.trim().startsWith('•')) {
-            return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
-          } else if (line.trim() && !line.trim().startsWith('📝')) {
-            return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
+          const trimmed = line.trim()
+          if (!trimmed) return null
+
+          if (isSubheadingLine(trimmed)) {
+            const heading = trimmed.replace(/:\s*$/, '').toLowerCase()
+            inFollowUps = /follow-?up/.test(heading)
+            inEmotionCheck = /emotional\s*check-?in/.test(heading)
+            return <div key={index} className="font-semibold underline text-foreground">{trimmed}</div>
           }
-          return null
+
+          // Skip the main journaling header line
+          if (trimmed.startsWith('📝')) return null
+
+          // In the Follow-up Questions sub-section, skip generated bullets (we already show computed ones)
+          if (inFollowUps && trimmed.startsWith('•')) return null
+
+          // In the Emotional Check-in sub-section, render bullets as checkboxes
+          if (inEmotionCheck && trimmed.startsWith('•')) {
+            const checked = (sectionTaskCompleted.journalingPrompt || new Set<number>()).has(index)
+            return (
+              <label key={index} className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={checked}
+                  onChange={(e) => markTask('journalingPrompt', index, e.target.checked)}
+                  aria-label={`Emotion check-in item ${index + 1}`}
+                />
+                <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(trimmed.substring(1).trim())}</span>
+              </label>
+            )
+          }
+
+          // Default rendering for non-heading, non-bullet lines
+          if (!trimmed.startsWith('•')) {
+            return <div key={index} className="font-medium text-foreground">{renderQuotedText(trimmed)}</div>
+          }
+
+          // Bullet lines outside the special sub-sections render as simple bullets
+          return (
+            <div key={index} className="flex items-start gap-2">
+              <span className="text-foreground mt-1">•</span>
+              <span>{renderQuotedText(trimmed.substring(1).trim())}</span>
+            </div>
+          )
         })}
       </div>
     )

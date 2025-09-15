@@ -7,6 +7,29 @@ import { generateEnhancedAIPrompt } from '../../../../lib/enhanced-diagnostic-in
 import { eq } from 'drizzle-orm'
 import { validateObject, sanitizeObject, DIAGNOSTIC_RESPONSE_SCHEMA, globalRateLimiter } from '../../../../lib/validation'
 
+// Remove labels/headings like "ANALYSIS OF RESPONSE:", "PERSONALIZED INSIGHT:", and any trailing Note sections.
+function sanitizeInsightText(text: string): string {
+  if (!text) return ''
+  let t = String(text)
+  // Prefer content after a personalized-insight like header, if present
+  const afterPersonalized = t.split(/(?:personal(?:is|iz)ed\s+insight\s*:)/i)
+  if (afterPersonalized.length > 1) {
+    t = afterPersonalized[afterPersonalized.length - 1]
+  }
+  // Strip any leading ALL-CAPS or Title-Case labels at the very start (e.g., "ANALYSIS OF RESPONSE:")
+  t = t.replace(/^(?:[A-Z][A-Z\s/&-]{2,}:\s*)+/g, '')
+  // Remove common intermediate headings encountered in some generations
+  t = t.replace(/\b(?:Vision\s+Elements|Concrete\s+Indicators|Analysis\s+of\s+Response)\s*:\s*/gi, '')
+  // Drop any Note: ... (optionally wrapped in brackets) to end
+  t = t.replace(/\s*(?:\[?\s*Note\s*:\s*[\s\S]*?\]?)(?=$|\n)/gi, '')
+  // Collapse whitespace to a single space
+  t = t.replace(/\s+/g, ' ').trim()
+  // Limit to max 5 sentences for digestibility
+  const sentences = t.split(/(?<=[.!?])\s+/).filter(Boolean)
+  if (sentences.length > 5) t = sentences.slice(0, 5).join(' ')
+  return t
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
@@ -137,17 +160,19 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      const cleanedInsight = sanitizeInsightText(insight.insight)
+
       // Save the response and insight to database using Drizzle ORM
       await db.insert(diagnosticResponses).values({
         userId: userId,
         question: question,
         response: response,
-        insight: insight.insight,
+        insight: cleanedInsight,
         model: insight.model
       })
 
       return NextResponse.json({
-        insight: insight.insight,
+        insight: cleanedInsight,
         model: insight.model,
         timestamp: insight.timestamp,
         // Debug info to verify enhanced onboarding usage

@@ -79,12 +79,8 @@ ${analysisDepth}
 FOCUS-SPECIFIC ANALYSIS:
 ${buildFocusSpecificGuidelines(enhancedOnboarding.primaryFocus)}
 
-Provide a ${enhancedOnboarding.attentionSpan === 'micro' ? 'concise (1-2 sentences)' : 'brief (2-3 sentences)'} insight that:
-1. Directly relates to their ${enhancedOnboarding.primaryFocus} focus
-2. Uses ${enhancedOnboarding.guidanceStrength} intensity language
-3. References their specific challenges: ${enhancedOnboarding.challenges.join('/')}
-4. Matches their communication preference: ${enhancedOnboarding.tones.join(' + ')} tone
-5. Offers actionable direction within their ${enhancedOnboarding.minutesPerDay}-minute capacity
+OUTPUT:
+Return one concise paragraph (3–5 sentences) that synthesizes what their response suggests about who they are and why those patterns may exist. Do not include advice or steps. Absolutely no headers, labels, lists, or "Note:" lines. Do not prefix with "Analysis:" or "Insight:". Write in plain text, second person ("you"), matching ${enhancedOnboarding.tones.join(' + ')} tone with ${enhancedOnboarding.guidanceStrength} intensity.
 
 ${enhancedOnboarding.freeform ? `SPECIAL CONTEXT: "${enhancedOnboarding.freeform}"` : ''}
 `;
@@ -106,13 +102,8 @@ CLIENT PREFERENCES:
 QUESTION: ${question.question}
 ANALYSIS TASK: ${question.aiPrompt || "Analyze the user's response for patterns and insights."}
 
-Provide a brief, insightful analysis (2-3 sentences) that:
-1. Acknowledges their response with empathy
-2. Identifies key patterns or themes
-3. Offers a gentle insight or observation
-4. Matches their preferred communication style (${prefs.tone})
-
-Keep the tone ${prefs.tone} and depth ${prefs.depth}. Be ${prefs.rawness} but always trauma-informed and supportive.
+OUTPUT:
+Return only one short paragraph (1–2 sentences, max 3) that distills what their answer reveals about who they are and why those patterns might exist. No headers, labels, lists, or "Note:" lines. Do not include "Analysis:" or "Insight:". Use second person ("you"), keep the tone ${prefs.tone} and depth ${prefs.depth}, and be ${prefs.rawness} but trauma‑informed and supportive.
 `;
   }
 }

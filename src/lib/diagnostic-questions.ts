@@ -315,13 +315,8 @@ QUESTION: ${question.question}
 
 ANALYSIS TASK: ${basePrompt}
 
-Provide a brief, insightful analysis (2-3 sentences) that:
-1. Acknowledges their response with empathy
-2. Identifies key patterns or themes
-3. Offers a gentle insight or observation
-4. Matches their preferred communication style (${userPreferences.tone})
-
-Keep the tone ${userPreferences.tone} and depth ${userPreferences.depth}. Be ${userPreferences.rawness} but always trauma-informed and supportive.
+OUTPUT:
+Return one concise paragraph (3–5 sentences) that explains what their answer reveals about who they are and why those patterns may exist. Do not provide advice or steps. Absolutely no headers, labels, lists, or "Note:" lines. Do not prepend with "Analysis:" or "Insight:". Speak in second person ("you"), keep the tone ${userPreferences.tone} and depth ${userPreferences.depth}, and be ${userPreferences.rawness} while remaining trauma‑informed and supportive.
 `
 }
 

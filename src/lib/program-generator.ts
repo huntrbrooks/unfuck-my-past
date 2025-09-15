@@ -269,7 +269,8 @@ Pre-bedtime Routine:
 
 🌿 HOLISTIC HEALING BONUS
 Optional Practice:
-[1-2 simple holistic activities]
+• Choose one simple holistic activity (e.g., gentle yoga, nature break)
+• Add a supportive sensory element (aroma, music, or touch)
 
 🛠️ TOOLS & RESOURCES
 Recommended Tools:
@@ -364,7 +365,8 @@ Gentle stretching, reading, journaling, and deep breathing exercises. Avoid scre
 
 🌿 HOLISTIC HEALING BONUS
 Optional Practice:
-Try a 10-minute gentle yoga sequence or progressive muscle relaxation. Use aromatherapy with calming essential oils.
+• Try a 10-minute gentle yoga sequence or progressive muscle relaxation
+• Add one calming element (e.g., essential oils, warm tea, soft music)
 
 🛠️ TOOLS & RESOURCES
 Recommended Tools:

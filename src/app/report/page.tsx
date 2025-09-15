@@ -423,10 +423,7 @@ export default function ReportPage() {
         // We'll render a dedicated visual later
         return null
       }
-      if (/^MOST\s+IMPORTANT\s+TO\s+ADDRESS$/i.test(title)) {
-        // Shown in the Focus Now sidebar card only
-        return null
-      }
+      // Keep this section for a dedicated MAIN BLOCKER card in main content
       if (/^NEXT\s+STEPS$/i.test(title)) {
         // Rendered in the sidebar; skip from main content
         return null
@@ -464,6 +461,51 @@ export default function ReportPage() {
             <CardContent className="p-6">
               <div className="text-sm uppercase tracking-wide text-muted-foreground mb-2">Most Telling Quote</div>
               <div className="text-lg italic text-foreground">{cleanQuote}</div>
+            </CardContent>
+          </Card>
+        )
+      }
+
+      // Custom render: MAIN BLOCKER (from "Most Important To Address")
+      if (/^MOST\s+IMPORTANT\s+TO\s+ADDRESS$/i.test(title)) {
+        const lines = sectionBody
+          .split('\n')
+          .map(l => l.trim())
+          .filter(l => l && !/^=+$/.test(l))
+        let item = ''
+        let impact = ''
+        let firstStep = ''
+        for (const ln of lines) {
+          const mImpact = ln.match(/^Impact\s*now:\s*(.+)$/i)
+          const mFirst = ln.match(/^First\s*step:\s*(.+)$/i)
+          if (mImpact) { impact = mImpact[1].trim(); continue }
+          if (mFirst) { firstStep = mFirst[1].trim(); continue }
+          if (!item) item = ln
+        }
+        return (
+          <Card key={index} className="feature-card mb-6 overflow-hidden bg-background border-0">
+            <CardHeader className="bg-background">
+              <CardTitle className={`flex items-center gap-3 text-foreground neon-glow-purple`}>MAIN BLOCKER</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {item && (
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">What it is</div>
+                  <div className="text-foreground font-semibold">{item}</div>
+                </div>
+              )}
+              {impact && (
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">Impact</div>
+                  <div className="text-foreground/90">{impact}</div>
+                </div>
+              )}
+              {firstStep && (
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">First step</div>
+                  <div className="text-foreground/90">{firstStep}</div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )
