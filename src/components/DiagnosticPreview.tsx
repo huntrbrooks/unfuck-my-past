@@ -25,12 +25,28 @@ export default function DiagnosticPreview({
   onError
 }: DiagnosticPreviewProps) {
   const [preview, setPreview] = useState<Preview | null>(null)
+  const [serverConfidence, setServerConfidence] = useState<{ score: number; missing: string[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const { trackPreviewGenerated, trackCTAClick } = usePreviewAnalytics()
 
   useEffect(() => {
     generatePreview()
+  }, [])
+
+  useEffect(() => {
+    const fetchConfidence = async () => {
+      try {
+        const r = await fetch('/api/diagnostic/analyze-confidence', { method: 'GET' })
+        if (!r.ok) return
+        const d = await r.json()
+        const val = typeof d?.confidence === 'number' ? d.confidence : null
+        if (val !== null) {
+          setServerConfidence({ score: Math.max(0, Math.min(100, Math.round(val))), missing: Array.isArray(d?.missingData) ? d.missingData.map((m: any) => m?.description || '') : [] })
+        }
+      } catch {}
+    }
+    fetchConfidence()
   }, [])
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -80,7 +96,8 @@ export default function DiagnosticPreview({
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
           const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 10000)
+          // Allow sufficient time for the AI preview to generate server-side
+          const timeoutId = setTimeout(() => controller.abort(), 45000)
           response = await fetch('/api/diagnostic/preview', {
             method: 'POST',
             headers: {
@@ -319,21 +336,38 @@ export default function DiagnosticPreview({
         </CardHeader>
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start gap-4">
-            <Badge 
-              variant="outline"
-              className="text-sm border-2 border-[#ff1a1a]/40 bg-[#ff1a1a]/10 text-[#ff1a1a] shadow-[0_0_16px_rgba(255,26,26,0.45)]"
-            >
-              {preview.confidence.score >= 0.8 ? 'HIGH' : preview.confidence.score >= 0.6 ? 'MEDIUM' : 'LOW'} ({Math.round(preview.confidence.score * 100)}%)
-            </Badge>
+            {(() => {
+              const pct = serverConfidence?.score ?? Math.round((preview?.confidence?.score ?? 0.6) * 100)
+              const level = pct >= 85 ? 'HIGH' : pct >= 70 ? 'MEDIUM' : 'LOW'
+              const badgeStyle = level === 'HIGH'
+                ? 'border-2 border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e] shadow-[0_0_16px_rgba(34,197,94,0.45)]'
+                : level === 'MEDIUM'
+                ? 'border-2 border-[#fb923c]/40 bg-[#fb923c]/10 text-[#fb923c] shadow-[0_0_16px_rgba(251,146,60,0.45)]'
+                : 'border-2 border-[#ef4444]/40 bg-[#ef4444]/10 text-[#ef4444] shadow-[0_0_16px_rgba(239,68,68,0.45)]'
+              return (
+                <Badge 
+                  variant="outline"
+                  className={`text-sm ${badgeStyle}`}
+                >
+                  {`${level} (${pct}%)`}
+                </Badge>
+              )
+            })()}
             <div className="flex-1">
               <p className="text-foreground leading-relaxed mb-2">Confidence based on available prognostic data.</p>
-              {preview.confidence.missingData.length > 0 && (
+              {(() => {
+                const missing = serverConfidence?.missing ?? preview?.confidence?.missingData ?? []
+                return Array.isArray(missing) && missing.length > 0
+              })() && (
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Missing data:</p>
                   <ul className="text-sm text-muted-foreground list-disc list-inside">
-                    {preview.confidence.missingData.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
+                    {(() => {
+                      const missing = serverConfidence?.missing ?? preview?.confidence?.missingData ?? []
+                      return missing.map((item: any, index: number) => (
+                        <li key={index}>{typeof item === 'string' ? item : String(item)}</li>
+                      ))
+                    })()}
                   </ul>
                 </div>
               )}

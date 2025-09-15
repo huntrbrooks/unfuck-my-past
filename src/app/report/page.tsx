@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Download, AlertTriangle, CheckCircle, Brain, Target, Sparkles, Heart, BookOpen, TrendingUp, Loader2, RefreshCw, LifeBuoy } from 'lucide-react'
@@ -14,8 +15,9 @@ import dynamic from 'next/dynamic'
 const ScoresRadar = dynamic(() => import('@/components/charts/ScoresRadarImpl'), { ssr: false })
 const AvoidanceBar = dynamic(() => import('@/components/charts/AvoidanceBarImpl'), { ssr: false })
 import AIFlow from '@/components/AIFlow'
-import BehavioralPatternsImage from '../../components/BehavioralPatternsImage'
+import AnalysisConfidence from '@/components/AnalysisConfidence'
 import { useRequireOnboardingAndDiagnostic } from '@/hooks/use-access-guard'
+import { pickArchetype, COLOURS as ARCH_COLOURS, type ArchetypeColour, colourStory } from '@/lib/persona'
 
 export default function ReportPage() {
   const { checking, allowed } = useRequireOnboardingAndDiagnostic()
@@ -38,13 +40,44 @@ export default function ReportPage() {
   const [regeneratingReport, setRegeneratingReport] = useState(false)
   const [personaScores, setPersonaScores] = useState<any | null>(null)
   const [liteDiag, setLiteDiag] = useState<any | null>(null)
+  const [diagnosticResponses, setDiagnosticResponses] = useState<any[]>([])
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [initialConfidence, setInitialConfidence] = useState(75)
   const isGeneratingRef = useRef(false)
+
+  // Behavioral loop image generation (per-loop → append as side cards)
+  const [generatedLoopImages, setGeneratedLoopImages] = useState<{ title: string; dataUrl: string; index: number }[]>([])
+  const [generatingLoop, setGeneratingLoop] = useState<Record<number, boolean>>({})
+  const [loopErrors, setLoopErrors] = useState<Record<number, string>>({})
+  const imagesEndRef = useRef<HTMLDivElement | null>(null)
+  const [reportKey] = useState<string>(() => {
+    // Stable key for the current report session (timestamp + length)
+    const base = typeof window !== 'undefined' ? (localStorage.getItem('current-report-key') || '') : ''
+    if (base) return base
+    const key = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    if (typeof window !== 'undefined') localStorage.setItem('current-report-key', key)
+    return key
+  })
 
   const router = useRouter()
 
   useEffect(() => {
     checkAccess()
   }, [])
+
+  // Load any previously saved loop images for this session so buttons are disabled appropriately
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/report/loop-image?reportKey=${encodeURIComponent(reportKey)}`)
+        if (r.ok) {
+          const d = await r.json()
+          const images = Array.isArray(d.images) ? d.images : []
+          setGeneratedLoopImages(images.map((x: any) => ({ index: x.index, title: x.title, dataUrl: x.dataUrl })))
+        }
+      } catch {}
+    })()
+  }, [reportKey])
 
   // Advance the 5-stage loader while generation is in progress
   useEffect(() => {
@@ -104,6 +137,56 @@ export default function ReportPage() {
     }
   }
 
+  const handleGenerateLoopImage = async (loop: LoopVisual, idx: number) => {
+    setGeneratingLoop(prev => ({ ...prev, [idx]: true }))
+    setLoopErrors(prev => ({ ...prev, [idx]: '' }))
+    try {
+      const res = await fetch('/api/behavioral-loop-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loop })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const dataUrl: string | undefined = data?.dataUrl
+        if (typeof dataUrl === 'string' && dataUrl.length > 0) {
+          // Persist to server so it survives reloads and disables the button next time
+          try {
+            await fetch('/api/report/loop-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reportKey, index: idx, title: `Loop ${idx + 1}: ${loop.name}`, dataUrl })
+            })
+          } catch {}
+
+          setGeneratedLoopImages(prev => ([...prev, { index: idx, title: `Loop ${idx + 1}: ${loop.name}`, dataUrl }]))
+          toast.success('Image generated')
+          // Defer scroll until DOM updates with new card
+          setTimeout(() => {
+            try { imagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) } catch {}
+          }, 60)
+        } else {
+          setLoopErrors(prev => ({ ...prev, [idx]: 'No image returned' }))
+          toast.error('No image returned')
+        }
+      } else if (res.status === 503) {
+        setLoopErrors(prev => ({ ...prev, [idx]: 'Image generation unavailable' }))
+        toast.error('Image generation unavailable')
+      } else {
+        const msg = await res.text().catch(() => '')
+        setLoopErrors(prev => ({ ...prev, [idx]: msg || 'Failed to generate image' }))
+        toast.error('Failed to generate image')
+      }
+    } catch {}
+    finally {
+      setGeneratingLoop(prev => {
+        const next = { ...prev }
+        delete next[idx]
+        return next
+      })
+    }
+  }
+
   const loadReportData = async () => {
     try {
       setLoading(true)
@@ -117,6 +200,18 @@ export default function ReportPage() {
         setResults(arr)
         setQuestionCount(arr.length || 0)
         responsesPayload = arr
+        setDiagnosticResponses(arr)
+      }
+      
+      // Load user profile/onboarding data
+      try {
+        const profileResponse = await fetch('/api/onboarding')
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json()
+          setUserProfile(profileData)
+        }
+      } catch (err) {
+        console.warn('Failed to load user profile:', err)
       }
 
       // Fetch persona (six scores) and diagnostic-lite for charts
@@ -171,7 +266,7 @@ export default function ReportPage() {
     }
   }
 
-  const generateFullReport = async () => {
+  const generateFullReport = async (opts?: { forceNew?: boolean }) => {
     try {
       if (isGeneratingRef.current) return
       isGeneratingRef.current = true
@@ -181,18 +276,34 @@ export default function ReportPage() {
       setLoaderStep(1)
       setError('')
       
-      // Check if report already exists
-      const existingReportResponse = await fetch('/api/diagnostic/comprehensive-report', { method: 'GET' })
-      
-      if (existingReportResponse.ok) {
-        const reportData = await existingReportResponse.json()
-        if (reportData.report) {
-          setComprehensiveReport(reportData.report)
-          await loadReportData()
-          setGenerationDone(true)
-          setLoading(false)
-          setShowFinalising(false)
-          return
+      // Only reuse existing report when not forcing a fresh generation
+      if (!opts?.forceNew) {
+        // First attempt
+        const existingReportResponse = await fetch('/api/diagnostic/comprehensive-report', { method: 'GET' })
+        if (existingReportResponse.ok) {
+          const reportData = await existingReportResponse.json()
+          if (reportData.report) {
+            setComprehensiveReport(reportData.report)
+            await loadReportData()
+            setGenerationDone(true)
+            setLoading(false)
+            setShowFinalising(false)
+            return
+          }
+        }
+        // Quick retry after a short delay to avoid transient cache/consistency miss
+        await new Promise(res => setTimeout(res, 350))
+        const retryResp = await fetch('/api/diagnostic/comprehensive-report', { method: 'GET' })
+        if (retryResp.ok) {
+          const d = await retryResp.json()
+          if (d.report) {
+            setComprehensiveReport(d.report)
+            await loadReportData()
+            setGenerationDone(true)
+            setLoading(false)
+            setShowFinalising(false)
+            return
+          }
         }
       }
       
@@ -221,6 +332,18 @@ export default function ReportPage() {
       isGeneratingRef.current = false
     }
   }
+  const handleGenerateImprovedFromCard = async () => {
+    try {
+      // Clear current report content and show loader while regenerating freshly
+      setComprehensiveReport('')
+      setGenerationDone(false)
+      await generateFullReport({ forceNew: true })
+      // After a successful regeneration, reload persona/lite charts and responses to reflect follow-ups
+      await loadReportData()
+    } catch (e) {
+      console.error('Error generating improved report:', e)
+    }
+  }
 
   const handleRegenerateReport = async () => {
     setRegeneratingReport(true)
@@ -242,15 +365,32 @@ export default function ReportPage() {
     }
   }
 
+  // Strictly split content into sections by matching an ALL‑CAPS header line
+  // immediately followed by an underline made of '=' characters. This avoids
+  // splitting on ordinary sentences.
+  const splitSectionsStrict = (text: string) => {
+    try {
+      if (!text) return [] as string[]
+      // Accept either immediate underline or one optional blank line before underline
+      return text
+        .split(/(?=^[A-Z0-9][A-Z0-9 &'\/\-\(\)]+$\n(?:\n)?=+\s*$)/m)
+        .filter(Boolean)
+    } catch {
+      return (text || '').split(/(?=^[A-Z][^a-z])/m).filter(Boolean)
+    }
+  }
+
   const formatReportContent = (reportContent: string) => {
     if (!reportContent) return null
 
-    const sections = reportContent.split(/(?=^[A-Z][^a-z])/m).filter(Boolean)
+    // Use strict section splitting to prevent accidental card creation
+    const sections = splitSectionsStrict(reportContent)
     
     const sectionColors: Record<string, string> = {
       'EXECUTIVE SUMMARY': 'neon-heading',
       'TRAUMA ANALYSIS': 'neon-glow-orange',
       'TOXICITY SCORE': 'neon-glow-pink',
+      'TOXICITY SCORE & CONFIDENCE': 'neon-glow-pink',
       'HOW TO LEAN INTO YOUR STRENGTHS': 'neon-glow-cyan',
       'MOST IMPORTANT TO ADDRESS': 'neon-glow-purple',
       'BEHAVIORAL PATTERNS': 'neon-glow-blue',
@@ -291,7 +431,7 @@ export default function ReportPage() {
         // Rendered in the sidebar; skip from main content
         return null
       }
-      if (/^RESOURCES$/i.test(title)) {
+      if (/^RESOURCES(?:\s+AND\s+NEXT\s+STEPS)?$/i.test(title)) {
         // Rendered in the sidebar mini card; skip here to avoid duplication
         return null
       }
@@ -307,7 +447,7 @@ export default function ReportPage() {
         // Rendered as a bold sidebar card; skip in main content
         return null
       }
-      if (/^TOXICITY\s+SCORE$/i.test(title)) {
+      if (/^TOXICITY\s+SCORE(?:\s*&\s*CONFIDENCE)?$/i.test(title)) {
         // Now rendered as a spectacle in the top-right sidebar card
         return null
       }
@@ -354,7 +494,7 @@ export default function ReportPage() {
         return (
           <Card key={index} className="feature-card mb-6 overflow-hidden bg-background border-0">
             <CardHeader className="bg-background">
-              <CardTitle className={`flex items-center gap-3 text-foreground ${glowClass}`}>Trauma Analysis</CardTitle>
+              <CardTitle className={`flex items-center gap-3 text-foreground ${glowClass}`}>TRAUMA ANALYSIS</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -471,6 +611,111 @@ export default function ReportPage() {
         </Card>
       )
     })
+  }
+
+  // Unified colour logic: decide one final colour and one explanation paragraph
+  const finalColour = React.useMemo(() => {
+    try {
+      // Prefer deterministic archetype colour from six scores
+      if (personaScores?.scores) {
+        const ranked = pickArchetype({
+          resilience: Number(personaScores.scores.resilience || 0),
+          vulnerability: Number(personaScores.scores.vulnerability || 0),
+          selfAwareness: Number(personaScores.scores.self_awareness ?? personaScores.scores.selfAwareness ?? 0),
+          boundaries: Number(personaScores.scores.boundaries || 0),
+          emotionalRegulation: Number(personaScores.scores.emotional_regulation ?? personaScores.scores.emotionalRegulation ?? 0),
+          growthOrientation: Number(personaScores.scores.growth_orientation ?? personaScores.scores.growthOrientation ?? 0)
+        })
+        const primary = ranked[0]?.colour as ArchetypeColour
+        const hex = ARCH_COLOURS[primary]
+        return { name: primary, hex }
+      }
+      // Fallback to lite diagnostic colour if scores missing
+      const raw = String(liteDiag?.colour_profile?.dominant_colour || '')
+      const allowed: ArchetypeColour[] = ['Blue','Red','Green','Yellow','Purple','Orange']
+      const guess = allowed.find(c => raw.toLowerCase().includes(c.toLowerCase())) || 'Blue'
+      const hex = ARCH_COLOURS[guess]
+      return { name: guess, hex }
+    } catch {
+      return { name: 'Blue' as ArchetypeColour, hex: ARCH_COLOURS.Blue }
+    }
+  }, [personaScores, liteDiag])
+
+  const colourThemeClass = (c: ArchetypeColour) => {
+    switch (c) {
+      case 'Blue': return 'neon-card-theme-blue'
+      case 'Red': return 'neon-card-theme-pink'
+      case 'Green': return 'neon-card-theme-green'
+      case 'Yellow': return 'neon-card-theme-yellow'
+      case 'Purple': return 'neon-card-theme-purple'
+      case 'Orange': return 'neon-card-theme-orange'
+    }
+  }
+
+  const prettyColourLabel = (c: ArchetypeColour) => {
+    const map: Record<ArchetypeColour, string> = {
+      Blue: 'Calm Blue',
+      Red: 'Bold Red',
+      Green: 'Growth Green',
+      Yellow: 'Bright Yellow',
+      Purple: 'Deep Purple',
+      Orange: 'Warm Orange'
+    }
+    return map[c]
+  }
+
+  const COLOUR_MEANINGS: Record<string, { meaning: string; trait: string }> = {
+    Red: { meaning: 'passion, energy and forward drive', trait: 'decisive courage' },
+    Blue: { meaning: 'calm, trust, intelligence and steadiness', trait: 'reliable composure' },
+    Green: { meaning: 'growth, renewal, health and groundedness', trait: 'nurturing steadiness' },
+    Yellow: { meaning: 'happiness, hope, creativity and intellect', trait: 'optimistic curiosity' },
+    Purple: { meaning: 'sensitivity, compassion and creative depth', trait: 'thoughtful intuition' },
+    Orange: { meaning: 'extroversion, warmth and challenge‑seeking vitality', trait: 'spirited enthusiasm' },
+    Pink: { meaning: 'love, nurturance and compassion', trait: 'gentle empathy' },
+    Black: { meaning: 'power, control and confidence', trait: 'quiet self‑assurance' },
+    White: { meaning: 'purity, simplicity and self‑reliance', trait: 'clear‑headed independence' },
+    Brown: { meaning: 'stability, simplicity and grounded relationships', trait: 'dependable loyalty' }
+  }
+
+  const extractAnswerTags = (answers: any[]) => {
+    try {
+      const baseText = answers.map(r => String(r?.response || '')).join(' ')
+      const text = `${baseText}\n${comprehensiveReport || ''}`.toLowerCase()
+      const tags: string[] = []
+      const add = (label: string) => { if (!tags.includes(label)) tags.push(label) }
+      if (/(boundary|boundaries|people-pleas|people pleaser|say no|people pleasing)/i.test(text)) add('boundaries')
+      if (/(anxious|anxiety|panic|worry|ruminat)/i.test(text)) add('anxiety')
+      if (/(avoid|procrastinat|delay|numb(?:ing)?)/i.test(text)) add('avoidance')
+      if (/(self[-\s]?critic|not good enough|worthless|shame|inner critic|perfectionis)/i.test(text)) add('self‑criticism')
+      if (/(sleep|insomnia|rest|tired)/i.test(text)) add('sleep')
+      if (/(burnout|overwhelmed|exhaust|too much|overload)/i.test(text)) add('burnout')
+      if (/(trust|abandonment|attachment|clingy|distant)/i.test(text)) add('attachment')
+      if (/(anger|resentment|irritable)/i.test(text)) add('anger')
+      if (/(alcohol|substance|porn|binge|compulsion|addiction)/i.test(text)) add('compulsions')
+      // Heuristics from six scores
+      try {
+        const s = personaScores?.scores || {}
+        if (Number(s.boundaries) <= 4) add('boundaries')
+        if (Number(s.emotional_regulation ?? s.emotionalRegulation) <= 4) add('emotion regulation')
+        if (Number(s.self_awareness ?? s.selfAwareness) <= 4) add('self‑awareness')
+      } catch {}
+      return tags.slice(0, 3)
+    } catch { return [] }
+  }
+
+  const buildColourParagraph = (c: ArchetypeColour) => {
+    const base = COLOUR_MEANINGS[c] || COLOUR_MEANINGS.Blue
+    const focus = String((userProfile && (userProfile.primaryFocus || userProfile.focus || userProfile.goal)) || '').trim()
+    const tags = extractAnswerTags(diagnosticResponses)
+    const most = parseMostImportant(comprehensiveReport)
+    const focusPart = focus ? ` in ${focus.replace(/\.$/, '')}` : ''
+    const tagsPart = tags.length ? ` around ${tags.join(' and ')}` : ''
+    const blocker = most?.item ? ` — especially ${String(most.item).toLowerCase()}` : ''
+    const brandLine = colourStory(c)
+    const aiColour = extractColourInfo(comprehensiveReport)
+    const aiStory = aiColour?.explanation && aiColour.explanation.length > 24 ? aiColour.explanation : ''
+    const tail = aiStory || brandLine
+    return `This ${c.toLowerCase()} profile reflects ${base.meaning}${focusPart}. Your answers${tagsPart}${blocker} are why your patterns align most with ${prettyColourLabel(c)}. ${tail}`
   }
 
   const buildHealingFlowSeed = (content: string) => {
@@ -640,19 +885,20 @@ export default function ReportPage() {
       const sections = content.split(/(?=^[A-Z][^a-z])/m).filter(Boolean)
       const resSection = sections.find(sec => {
         const firstLine = sec.trim().split('\n')[0]?.trim()
-        return /^RESOURCES$/i.test(firstLine)
+        return /^RESOURCES(?:\s+AND\s+NEXT\s+STEPS)?$/i.test(firstLine)
       })
       if (!resSection) return null
       const lines = resSection.trim().split('\n')
       if (lines.length < 3) return null
-      let current: 'apps' | 'books' | 'articles' | null = null
-      const out: { apps: Array<{ name: string; note?: string }>; books: Array<{ name: string; note?: string }>; articles: Array<{ name: string; note?: string }> } = { apps: [], books: [], articles: [] }
+      let current: 'apps' | 'books' | 'articles' | 'podcasts' | null = null
+      const out: { apps: Array<{ name: string; note?: string }>; books: Array<{ name: string; note?: string }>; articles: Array<{ name: string; note?: string }>; podcasts: Array<{ name: string; note?: string }> } = { apps: [], books: [], articles: [], podcasts: [] }
       for (let i = 2; i < lines.length; i++) {
         const raw = lines[i].trim()
         if (!raw) continue
-        if (/^Apps:/i.test(raw)) { current = 'apps'; continue }
-        if (/^Books:/i.test(raw)) { current = 'books'; continue }
+        if (/^(Apps|Apps\/Tools):/i.test(raw)) { current = 'apps'; continue }
+        if (/^(Books|Books\/Articles):/i.test(raw)) { current = 'books'; continue }
         if (/^Articles:/i.test(raw)) { current = 'articles'; continue }
+        if (/^Podcasts:/i.test(raw)) { current = 'podcasts'; continue }
         const m = raw.match(/^•\s*(.+)$/)
         if (m && current) {
           const txt = m[1]
@@ -864,21 +1110,17 @@ export default function ReportPage() {
       {/* Header - Dashboard Style */}
       <div className="bg-background border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center">
-              <Image src="/Lineartneon-01.png" alt="report art" width={64} height={64} className="w-16 h-auto drop-shadow-[0_0_18px_#22c55e]" />
+          <div className="flex flex-col items-center gap-3 mb-6 text-center">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center">
+              <Image src="/Lineartneon-01.png" alt="report art" width={80} height={80} className="w-20 h-auto drop-shadow-[0_0_18px_#22c55e]" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold neon-heading">Here's Why Your Past Is Fucked</h1>
-              <p className="text-muted-foreground">Based on your {questionCount} prognostic responses</p>
+              <h1 className="font-bold neon-heading text-[2.35rem]">Here's Why Your Past Is Fucked</h1>
+              <p className="text-xl text-muted-foreground">Based on your {questionCount} prognostic responses</p>
             </div>
           </div>
           
-          <div className="flex justify-center gap-4">
-            <Button asChild className="neon-cta">
-              <a href="/program">Start 30‑Day Unfuck Your Life Journey</a>
-            </Button>
-          </div>
+          
         </div>
       </div>
 
@@ -898,37 +1140,20 @@ export default function ReportPage() {
               </div>
             )}
 
-            {/* Your Colour Card (augmented with generated explanation) */}
-            {liteDiag?.colour_profile && (
-              <Card className={`border neon-card ${(() => {
-                const c = (liteDiag.colour_profile.dominant_colour || '').toLowerCase()
-                if (c.includes('blue')) return 'neon-card-theme-blue'
-                if (c.includes('red')) return 'neon-card-theme-pink'
-                if (c.includes('green')) return 'neon-card-theme-green'
-                if (c.includes('yellow')) return 'neon-card-theme-yellow'
-                if (c.includes('purple')) return 'neon-card-theme-purple'
-                if (c.includes('orange')) return 'neon-card-theme-orange'
-                return 'neon-card-theme-green'
-              })()}`}>
+            {/* Your Colour Card (unified source of truth) */}
+            {finalColour?.name && (
+              <Card className={`border neon-card ${colourThemeClass(finalColour.name as ArchetypeColour)}`}>
                 <CardContent className="p-6">
                   <div className="flex flex-wrap items-center gap-3 mb-3">
                     <div className="text-sm uppercase tracking-wide text-muted-foreground">Your Colour</div>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-1 rounded-md text-xs font-semibold text-foreground border border-border">
-                        {liteDiag.colour_profile.secondary ? `${liteDiag.colour_profile.dominant_colour} → ${liteDiag.colour_profile.secondary.colour}` : liteDiag.colour_profile.dominant_colour}
+                        {prettyColourLabel(finalColour.name as ArchetypeColour)}
                       </span>
                     </div>
                   </div>
                   <div className="text-foreground whitespace-pre-line mb-2">
-                    {(() => {
-                      const extra = extractColourInfo(comprehensiveReport)
-                      const base = String(liteDiag.colour_profile.meaning || '')
-                      if (extra?.explanation) {
-                        // Prefer generated explanation if present; otherwise show base
-                        return extra.explanation
-                      }
-                      return base
-                    })()}
+                    {buildColourParagraph(finalColour.name as ArchetypeColour)}
                   </div>
                 </CardContent>
               </Card>
@@ -1018,7 +1243,7 @@ export default function ReportPage() {
               {formatReportContent(comprehensiveReport)}
             </div>
 
-            {/* Behavioral Patterns write-up + image (manual generate) BEFORE roadmap */}
+            {/* Behavioral Patterns write-up with per-loop image generation buttons BEFORE roadmap */}
             {(() => {
               const parsed = parseBehavioralLoops(comprehensiveReport)
               const fallbackLoops: LoopVisual[] = [
@@ -1040,7 +1265,7 @@ export default function ReportPage() {
               const finalLoops = parsed && parsed.length > 0 ? parsed : fallbackLoops
               return (
                 <section className="rounded-xl border p-4 mt-6">
-                  <h2 className="text-lg font-semibold mb-4">Behavioral Patterns</h2>
+                  <h2 className="text-lg font-semibold mb-4 neon-glow-blue">Behavioral Patterns</h2>
                   <div className="space-y-3">
                     {finalLoops.map((lp, idx) => (
                       <div key={`bpw-${idx}`} className="rounded-lg border border-border/50 bg-background p-4">
@@ -1065,12 +1290,22 @@ export default function ReportPage() {
                               </div>
                             )}
                           </div>
+                          <div className="flex-shrink-0 text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleGenerateLoopImage(lp, idx)}
+                              disabled={Boolean(generatingLoop[idx]) || generatedLoopImages.some(g => g.index === idx)}
+                            >
+                              {generatingLoop[idx] ? 'Generating…' : generatedLoopImages.some(g => g.index === idx) ? 'Saved' : 'Generate Image'}
+                            </Button>
+                            {loopErrors[idx] && (
+                              <div className="mt-1 text-[11px] text-muted-foreground">{loopErrors[idx]}</div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
-                  </div>
-                  <div className="mt-4">
-                    <BehavioralPatternsImage loops={finalLoops} allowRegenerate autoGenerate={false} strictOpenAIOnly />
                   </div>
                 </section>
               )
@@ -1083,7 +1318,7 @@ export default function ReportPage() {
               const seed = buildHealingFlowSeed(comprehensiveReport)
               return (
                 <section className="rounded-xl border p-4 mt-6">
-                  <h2 className="text-lg font-semibold mb-3">Healing Roadmap</h2>
+                  <h2 className="text-lg font-semibold mb-3 neon-glow-green">Healing Roadmap</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mb-6">
                     {pairs.map((p, idx) => (
                       <React.Fragment key={`pair-${idx}`}>
@@ -1106,12 +1341,12 @@ export default function ReportPage() {
             {Array.isArray(liteDiag?.avoidance_ladder) && liteDiag.avoidance_ladder.length > 0 && (
               <section className="rounded-xl border p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-lg font-semibold">Hierarchy of Avoidance</h2>
+                  <h2 className="text-lg font-semibold neon-glow-yellow">Hierarchy of Avoidance</h2>
                   <div className="text-xs text-muted-foreground">Bars represent each item’s severity score (0–10)</div>
                 </div>
                 <AvoidanceBar
                   data={liteDiag.avoidance_ladder.map((x: any) => ({ name: x.name, severity: x.severity }))}
-                  color={(liteDiag?.colour_profile?.hex) || '#22c55e'}
+                  color={(finalColour?.hex) || (liteDiag?.colour_profile?.hex) || '#22c55e'}
                 />
                 {(() => {
                   // Match legend item colors to the bar colors used in the chart
@@ -1143,7 +1378,7 @@ export default function ReportPage() {
               return (
                 <Card className="feature-card border-0">
                   <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-foreground mb-3">Focus Now</h3>
+                    <h3 className="text-lg font-semibold mb-3 neon-glow-rose">Focus Now</h3>
                     {most.item && (
                       <div className="mb-3">
                         <div className="text-xs uppercase tracking-wide text-muted-foreground">Most important to address</div>
@@ -1162,32 +1397,47 @@ export default function ReportPage() {
                 </Card>
               )
             })()}
+            <Button asChild className="w-full neon-cta">
+              <a href="/program">Start 30‑Day Unfuck Your Life Journey</a>
+            </Button>
+            
+            {/* Analysis Confidence Component */}
+            {diagnosticResponses.length > 0 && userProfile && (
+              <AnalysisConfidence
+                initialConfidence={initialConfidence}
+                diagnosticResponses={diagnosticResponses}
+                userProfile={userProfile}
+                onDataEnhanced={(enhancedData) => {
+                  // Handle enhanced data - could trigger report regeneration
+                  console.log('Data enhanced:', enhancedData)
+                }}
+                onConfidenceUpdate={(newConfidence) => {
+                  setInitialConfidence(newConfidence)
+                }}
+                onRegenerated={async () => {
+                  // Refresh report content and side data after regeneration
+                  try {
+                    const r = await fetch('/api/diagnostic/comprehensive-report', { method: 'GET' })
+                    if (r.ok) {
+                      const d = await r.json()
+                      if (d.report) setComprehensiveReport(d.report)
+                    }
+                    await loadReportData()
+                  } catch {}
+                }}
+                onGenerateImprovedReport={handleGenerateImprovedFromCard}
+              />
+            )}
+            
             {/* Quick Actions Card */}
             <Card className="feature-card border-0">
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
+                <h3 className="text-lg font-semibold mb-4 neon-glow-orange">Quick Actions</h3>
                 <div className="space-y-3">
-                  <Button asChild className="w-full neon-cta">
+                  <Button asChild variant="outline" className="w-full">
                     <a href="/program">Start 30‑Day Journey</a>
                   </Button>
-                  <Button
-                    onClick={handleRegenerateReport}
-                    disabled={regeneratingReport}
-                    variant="outline"
-                    className="w-full border-2 border-[#ff1aff]/30 hover:border-[#ff1aff]/50 bg-[#ff1aff]/5 hover:bg-[#ff1aff]/10"
-                  >
-                    {regeneratingReport ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Regenerating...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Regenerate Report
-                      </>
-                    )}
-                  </Button>
+                  {/* Removed per spec: this regeneration path is now handled via the Analysis Confidence card's flow */}
                   <Button
                     onClick={() => {
                       const link = document.createElement('a')
@@ -1230,7 +1480,8 @@ export default function ReportPage() {
                 { label: 'Self‑Criticism', value: getVal('Self\-?Criticism'), color: '#ff1aff' },
                 { label: 'Avoidance', value: getVal('Avoidance'), color: '#00e5ff' },
                 { label: 'Anxiety', value: getVal('Anxiety'), color: '#ccff00' },
-                { label: 'External Pressures', value: getVal('External\s*Pressures'), color: '#ff9900' }
+                // Fix: correctly match whitespace between words (previously `\s` was not escaped in string)
+                { label: 'External Pressures', value: getVal('External\\s*Pressures'), color: '#ff9900' }
               ]
 
               return (
@@ -1272,7 +1523,7 @@ export default function ReportPage() {
             {/* Report Stats Card */}
             <Card className="feature-card border-0">
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Report Overview</h3>
+                <h3 className="text-lg font-semibold mb-4 neon-glow-cyan">Report Overview</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Responses Analyzed</span>
@@ -1297,7 +1548,7 @@ export default function ReportPage() {
               return (
                 <Card className="feature-card border-0">
                   <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-foreground mb-3">Next Steps</h3>
+                    <h3 className="text-lg font-semibold mb-3 neon-glow-orange">Next Steps</h3>
                     <ul className="space-y-2">
                       {steps.slice(0, 5).map((s, i) => (
                         <li key={`ns-side-${i}`} className="flex items-start gap-2">
@@ -1315,11 +1566,11 @@ export default function ReportPage() {
             {(() => {
               const res = parseResources(comprehensiveReport)
               if (!res) return null
-              const emoji = { apps: '📱', books: '📕', articles: '🗞️' }
+              const emoji = { apps: '📱', books: '📕', articles: '🗞️', podcasts: '🎙️' }
               return (
                 <Card className="feature-card border-0">
                   <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Resources</h3>
+                    <h3 className="text-lg font-semibold mb-4 neon-glow-teal">Resources</h3>
                     <div className="space-y-4">
                       {res.apps.length > 0 && (
                         <div className="space-y-2">
@@ -1363,6 +1614,20 @@ export default function ReportPage() {
                           ))}
                         </div>
                       )}
+                      {Array.isArray((res as any).podcasts) && (res as any).podcasts.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="text-sm text-foreground">
+                            <span className="mr-2">{emoji.podcasts}</span>
+                            <span>Podcasts</span>
+                          </div>
+                          {(res as any).podcasts.slice(0, 3).map((it: any, idx: number) => (
+                            <div key={`podcast-${idx}`} className="ml-6">
+                              <div className="text-sm font-bold">{it.name}</div>
+                              {it.note && <div className="text-xs italic text-muted-foreground">{it.note}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1392,6 +1657,22 @@ export default function ReportPage() {
                 </Card>
               )
             })()}
+            {/* Generated Loop Images (appended at bottom of sidebar) */}
+            {generatedLoopImages.map((it, i) => (
+              <Card key={`gli-${i}`} className="feature-card border-0">
+                <CardContent className="p-4">
+                  <div className="text-sm font-semibold mb-2 text-foreground">{it.title}</div>
+                  <div className="rounded-xl overflow-hidden border border-border/50">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={it.dataUrl} alt={it.title} className="w-full h-auto" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            <div ref={imagesEndRef} />
+            <Button asChild className="w-full neon-cta">
+              <a href="/program">Start 30‑Day Unfuck Your Life Journey</a>
+            </Button>
           </div>
         </div>
       </div>

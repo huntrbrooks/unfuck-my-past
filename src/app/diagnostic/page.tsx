@@ -48,6 +48,7 @@ export default function Diagnostic() {
   const [hsiSaved, setHsiSaved] = useState(false)
   const [hsiError, setHsiError] = useState<string | null>(null)
   const [collapsedOptions, setCollapsedOptions] = useState<Record<number, boolean>>({})
+  const [hsiCollapsed, setHsiCollapsed] = useState(false)
 
   useEffect(() => {
     // Check if we're coming from onboarding with generating=true
@@ -328,6 +329,7 @@ export default function Diagnostic() {
         throw new Error(j.error || 'Failed to save')
       }
       setHsiSaved(true)
+      setHsiCollapsed(true)
     } catch (e) {
       setHsiError(e instanceof Error ? e.message : 'Failed to save')
     } finally {
@@ -937,36 +939,50 @@ export default function Diagnostic() {
             {/* Hidden Struggles Index (separate, not counted in progress) */}
             {hsiQuestions.length > 0 && (
               <div className="mb-6 sm:mb-8">
-                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Hidden Struggles Index (True/False)</h3>
-                <div className="space-y-2">
-                  {hsiQuestions.map((q) => {
-                    const val = !!hsiAnswers[q.id]
-                    return (
-                      <div key={q.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-xl p-3">
-                        <div className="text-sm sm:text-base leading-relaxed">{q.text}</div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant={val ? 'cta' : 'outline'}
-                            onClick={() => toggleHSI(q.id, true)}
-                            size="sm"
-                          >True</Button>
-                          <Button
-                            variant={!val ? 'default' : 'outline'}
-                            onClick={() => toggleHSI(q.id, false)}
-                            size="sm"
-                          >False</Button>
-                        </div>
+                <div className="border border-border/50 rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setHsiCollapsed(!hsiCollapsed)}
+                    aria-controls="hsi-section"
+                    className="w-full flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 bg-muted/30 hover:bg-muted/40 transition-colors"
+                  >
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground">Hidden Struggles Index (True/False)</h3>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${hsiCollapsed ? '' : 'rotate-180'}`} />
+                  </button>
+                  {!hsiCollapsed && (
+                    <div id="hsi-section" className="px-4 py-3 sm:px-6 sm:py-4 border-t border-border/50">
+                      <div className="space-y-2">
+                        {hsiQuestions.map((q) => {
+                          const val = !!hsiAnswers[q.id]
+                          return (
+                            <div key={q.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-xl p-3">
+                              <div className="text-sm sm:text-base leading-relaxed">{q.text}</div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant={val ? 'cta' : 'outline'}
+                                  onClick={() => toggleHSI(q.id, true)}
+                                  size="sm"
+                                >True</Button>
+                                <Button
+                                  variant={!val ? 'default' : 'outline'}
+                                  onClick={() => toggleHSI(q.id, false)}
+                                  size="sm"
+                                >False</Button>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
-                    )
-                  })}
+                      <div className="flex items-center gap-3 mt-3">
+                        <Button onClick={saveHSI} disabled={hsiSaving} variant={hsiSaved ? 'secondary' : 'cta'}>
+                          {hsiSaving ? 'Saving…' : hsiSaved ? 'Saved' : 'Save HSI'}
+                        </Button>
+                        {hsiError && <span className="text-sm text-destructive">{hsiError}</span>}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">These don’t count toward your question progress. They help refine your report.</p>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-3 mt-3">
-                  <Button onClick={saveHSI} disabled={hsiSaving} variant={hsiSaved ? 'secondary' : 'cta'}>
-                    {hsiSaving ? 'Saving…' : hsiSaved ? 'Saved' : 'Save HSI'}
-                  </Button>
-                  {hsiError && <span className="text-sm text-destructive">{hsiError}</span>}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">These don’t count toward your question progress. They help refine your report.</p>
               </div>
             )}
 

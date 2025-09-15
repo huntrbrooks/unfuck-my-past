@@ -20,11 +20,23 @@ export async function GET() {
     .from(purchases)
     .where(and(eq(purchases.userId, userId), eq(purchases.active, true)))
 
-    const purchasesList = userPurchases.map((p) => ({
-      product: p.product,
-      active: Boolean(p.active),
-      createdAt: p.createdAt as Date
-    }))
+    // Apply 30-day validity window for the 30-day healing program
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+    const now = Date.now()
+
+    const purchasesList = userPurchases.map((p) => {
+      const created = new Date(p.createdAt as Date)
+      const isProgram = p.product === 'program'
+      const withinWindow = now - created.getTime() <= THIRTY_DAYS_MS
+      const active = Boolean(p.active) && (!isProgram || withinWindow)
+      const expiresAt = isProgram ? new Date(created.getTime() + THIRTY_DAYS_MS).toISOString() : undefined
+      return {
+        product: p.product,
+        active,
+        createdAt: created.toISOString(),
+        ...(expiresAt ? { expiresAt } : {})
+      }
+    })
 
     return NextResponse.json(purchasesList)
 

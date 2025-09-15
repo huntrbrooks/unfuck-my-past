@@ -54,6 +54,9 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
         document.documentElement.style.colorScheme = 'light'
       }
       localStorage.setItem('theme', theme)
+      try {
+        document.cookie = `theme=${theme}; path=/; max-age=31536000; samesite=lax`
+      } catch (e) {}
     }
   }, [theme, mounted])
 

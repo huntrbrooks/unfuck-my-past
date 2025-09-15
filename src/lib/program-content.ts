@@ -407,14 +407,18 @@ export function getProgramProgress(userId: string, completedDays: number[]): {
     ? Math.max(...completedDays) + 1 
     : 1
   
-  // Calculate streak (consecutive days completed)
+  // Calculate days-visited streak: length of the consecutive block
+  // ending at the highest completed day number, regardless of calendar date.
   let streak = 0
-  for (let i = 1; i <= 30; i++) {
-    if (completedDays.includes(i)) {
-      streak++
-    } else {
-      break
+  if (completedDays.length) {
+    const unique = Array.from(new Set(completedDays)).sort((a, b) => a - b)
+    let idx = unique.length - 1
+    let run = 1
+    while (idx > 0 && unique[idx] - unique[idx - 1] === 1) {
+      run += 1
+      idx -= 1
     }
+    streak = run
   }
   
   return {

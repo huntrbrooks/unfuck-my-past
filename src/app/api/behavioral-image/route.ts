@@ -129,6 +129,8 @@ export async function POST(request: NextRequest) {
       prompt: `${stylePrompt}\n\nJSON:\n${JSON.stringify({ loops, palette }, null, 2)}`,
       size: '1792x1024',
       n: 1,
+      // Ensure we receive base64 content explicitly; some deployments default to URL
+      response_format: 'b64_json',
       // background: 'transparent' // keep opaque for better readability on dark pages
     }
 
@@ -150,14 +152,22 @@ export async function POST(request: NextRequest) {
 
     const data = await resp.json()
     const b64 = data?.data?.[0]?.b64_json
-    if (!b64) {
-      const svg = buildFallbackSvg(loops, palette)
-      const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
-      return NextResponse.json({ dataUrl, warning: 'OpenAI returned no image; served local SVG' }, { status: 200 })
+    const directUrl = data?.data?.[0]?.url
+
+    if (b64) {
+      const dataUrl = `data:image/png;base64,${b64}`
+      return NextResponse.json({ dataUrl })
     }
 
-    const dataUrl = `data:image/png;base64,${b64}`
-    return NextResponse.json({ dataUrl })
+    if (typeof directUrl === 'string' && directUrl.length > 0) {
+      // Return the direct URL (client uses <img>, so no domain whitelist needed)
+      return NextResponse.json({ dataUrl: directUrl })
+    }
+
+    // Fallback if neither base64 nor URL is present
+    const svg = buildFallbackSvg(loops, palette)
+    const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
+    return NextResponse.json({ dataUrl, warning: 'OpenAI returned no image; served local SVG' }, { status: 200 })
   } catch (error) {
     console.error('behavioral-image error:', error)
     try {

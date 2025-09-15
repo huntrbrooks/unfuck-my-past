@@ -11,12 +11,21 @@ function buildLocalFlowFromSeed(seed: any) {
     ? seed.stages.map((s: any) => String(s))
     : ['Today', 'This Week', 'This Month', '3 Months', '1 Year']
 
-  const nodes = stages.map((label, i) => ({
+  // Build in forward order, then reverse for UI (end-to-beginning)
+  const forwardNodes = stages.map((label, i) => ({
     id: `n${i + 1}`,
     label: label.slice(0, 24),
     type: i === 0 ? 'input' : 'default',
     color: palette[i % palette.length]
   }))
+  const forwardEdges = forwardNodes.slice(0, forwardNodes.length - 1).map((_, i) => ({
+    id: `e${i + 1}`,
+    source: forwardNodes[i].id,
+    target: forwardNodes[i + 1].id
+  }))
+
+  // Reverse to display end → beginning
+  const nodes = [...forwardNodes].reverse()
   const edges = nodes.slice(0, nodes.length - 1).map((_, i) => ({
     id: `e${i + 1}`,
     source: nodes[i].id,
@@ -54,6 +63,8 @@ function repairModelFlow(raw: any, seed: any) {
     .map((e, i) => ({ id: String(e?.id ?? `e${i + 1}`), source: String(e?.source ?? ''), target: String(e?.target ?? ''), label: typeof e?.label === 'string' ? e.label : undefined, animated: Boolean(e?.animated) }))
     .filter(e => e.id && e.source && e.target)
 
+  // Reverse node order for end → beginning display
+  nodes = nodes.reverse()
   const edges = validEdges.length
     ? validEdges
     : nodes.slice(0, nodes.length - 1).map((_, i) => ({ id: `e${i + 1}`, source: nodes[i].id, target: nodes[i + 1].id }))

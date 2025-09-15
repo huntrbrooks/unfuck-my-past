@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { clerkMiddleware } from '@clerk/nextjs/server'
 
-const clerk = clerkMiddleware()
-
 function unauthorized() {
   return new NextResponse('Unauthorized', {
     status: 401,
@@ -11,7 +9,26 @@ function unauthorized() {
   })
 }
 
-export default function middleware(req: NextRequest) {
+const devPublicApi = process.env.NODE_ENV !== 'production' ? ['/api/:path*'] : []
+const clerk = clerkMiddleware({
+  publicRoutes: [
+    '/',
+    '/_not-found',
+    '/how-it-works',
+    '/legal(.*)',
+    '/sign-in(.*)',
+    '/sign-up(.*)',
+    // Public APIs that don't require auth
+    '/api/diagnostic-lite',
+    '/api/diagnostic/preview',
+    '/api/test-keys',
+    '/api/flow',
+    '/api/geocode',
+    ...devPublicApi,
+  ],
+})
+
+export default async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname
 
   // Protect admin routes with Basic Auth (env-configurable). Defaults provided per request.
@@ -41,7 +58,23 @@ export default function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // All other routes go through Clerk
+  // If Clerk is not configured, skip
+  const hasClerkKeys = !!process.env.CLERK_SECRET_KEY && !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  if (!hasClerkKeys) {
+    return NextResponse.next()
+  }
+
+  // Bypass Clerk when dev browser cookie is missing to prevent global 500s
+  const hasDevBrowserCookie =
+    req.cookies.has('__clerk_db_jwt') ||
+    req.cookies.has('__clerk_db') ||
+    req.cookies.has('__clerk') ||
+    req.cookies.has('__clerk_uid')
+  if (!hasDevBrowserCookie && process.env.NODE_ENV !== 'development') {
+    return NextResponse.next()
+  }
+
+  // All other routes go through Clerk (sets headers needed by auth())
   // @ts-ignore Clerk middleware signature
   return clerk(req)
 }

@@ -188,6 +188,61 @@ export default function Program() {
     })
   }
 
+  // Section-specific completion helpers
+  const SLEEP_EXTRA_INDICES = [10001, 10002, 10010, 10011, 10012]
+  const areAllChecked = (done: Set<number>, indices: number[]): boolean => indices.every(i => done.has(i))
+
+  const isSleepSectionDone = (): boolean => {
+    if (!currentDay) return sectionCompleted.sleep
+    const lines = filterSleepLines(currentDay.content.sleep.split('\n'))
+    const taskIndices = lines.map((l, i) => (isTaskLine(l) ? i : -1)).filter(i => i >= 0)
+    const done = (sectionTaskCompleted.sleep || new Set<number>()) as Set<number>
+    const hasTaskLines = taskIndices.length > 0
+    const extrasDone = areAllChecked(done, SLEEP_EXTRA_INDICES)
+    if (hasTaskLines) return sectionCompleted.sleep || (areAllChecked(done, taskIndices) && extrasDone)
+    // If no bullet/numbered tasks exist in Sleep, rely on extras only
+    return sectionCompleted.sleep || extrasDone
+  }
+
+  const toggleSleepSectionCompleted = () => {
+    if (!currentDay) return
+    const lines = filterSleepLines(currentDay.content.sleep.split('\n'))
+    const taskIndices = lines.map((l, i) => (isTaskLine(l) ? i : -1)).filter(i => i >= 0)
+    setSectionCompleted(prev => {
+      const next = !prev.sleep
+      setSectionTaskCompleted(prevTasks => {
+        const set = next ? new Set<number>([...taskIndices, ...SLEEP_EXTRA_INDICES]) : new Set<number>()
+        return { ...prevTasks, sleep: set }
+      })
+      return { ...prev, sleep: next }
+    })
+  }
+
+  const isHolisticSectionDone = (): boolean => {
+    if (!currentDay) return sectionCompleted.holistic
+    const lines = currentDay.content.holistic.split('\n')
+    const taskIndices = lines.map((l, i) => (isTaskLine(l) ? i : -1)).filter(i => i >= 0)
+    if (taskIndices.length === 0) return sectionCompleted.holistic
+    const done = (sectionTaskCompleted.holistic || new Set<number>()) as Set<number>
+    return sectionCompleted.holistic || areAllChecked(done, taskIndices)
+  }
+
+  const toggleHolisticSectionCompleted = () => {
+    if (!currentDay) return
+    const lines = currentDay.content.holistic.split('\n')
+    const taskIndices = lines.map((l, i) => (isTaskLine(l) ? i : -1)).filter(i => i >= 0)
+    setSectionCompleted(prev => {
+      const next = !prev.holistic
+      if (taskIndices.length > 0) {
+        setSectionTaskCompleted(prevTasks => {
+          const set = next ? new Set<number>(taskIndices) : new Set<number>()
+          return { ...prevTasks, holistic: set }
+        })
+      }
+      return { ...prev, holistic: next }
+    })
+  }
+
   // Simple helpers for theme/title and glow classes
   const NEON_CLASSES = ['neon-glow-cyan', 'neon-glow-pink', 'neon-glow-orange'] as const
   const hashString = (s: string) => {
@@ -453,7 +508,7 @@ export default function Program() {
       
       if (response.ok) {
         const data = await response.json()
-        const hasProgramAccess = data.some((purchase: { product: string; active: boolean }) => 
+        const hasProgramAccess = Array.isArray(data) && data.some((purchase: { product: string; active: boolean }) => 
           purchase.product === 'program' && purchase.active === true
         )
         console.log('Program access check:', { hasProgramAccess, purchases: data })
@@ -615,11 +670,30 @@ export default function Program() {
 
     const lines = cleanedContent.split('\n')
     let currentSection = ''
+    const extractInlineMainFocus = (line: string): string => {
+      const candidates = [
+        /🎯\s*MAIN\s*FOCUS\s*:\s*(.+)$/i,
+        /Main\s*Focus\s*:\s*(.+)$/i
+      ]
+      for (const re of candidates) {
+        const m = line.match(re)
+        if (m && m[1]) return m[1].trim()
+      }
+      return ''
+    }
+    const sanitizeFocus = (text: string): string => {
+      const t = (text || '').split('\n').map(s => s.trim()).filter(Boolean)[0] || ''
+      if (!t) return ''
+      // strip any leading header tokens if present
+      return t.replace(/^🎯\s*MAIN\s*FOCUS\s*:\s*/i, '').replace(/^#+\s*🎯\s*Main\s*Focus\s*:\s*/i, '').trim()
+    }
     
     for (const line of lines) {
       // Check for both new and old format headers
-      if (line.includes('🎯 MAIN FOCUS:') || line.includes('## 🎯 Main Focus:')) {
+      if (line.includes('🎯 MAIN FOCUS:') || line.includes('## 🎯 Main Focus:') || /Main\s*Focus\s*:/i.test(line)) {
         currentSection = 'mainFocus'
+        const inline = extractInlineMainFocus(line)
+        if (inline) sections.mainFocus = inline
       } else if (line.includes('🌅 GUIDED PRACTICE') || line.includes('## 🌅 Guided Practice')) {
         currentSection = 'guidedPractice'
       } else if (line.includes('⚡ DAILY CHALLENGE') || line.includes('## ⚡ Daily Challenge')) {
@@ -638,7 +712,12 @@ export default function Program() {
         currentSection = 'tools'
       } else if (currentSection && line.trim()) {
         if (currentSection in sections) {
-          sections[currentSection as keyof typeof sections] += line + '\n'
+          // Keep main focus compact: do not append extra lines beyond the title
+          if (currentSection === 'mainFocus') {
+            // no-op: title already captured; skip verbose lines
+          } else {
+            sections[currentSection as keyof typeof sections] += line + '\n'
+          }
         }
       }
     }
@@ -663,7 +742,10 @@ export default function Program() {
     }
 
     // Ensure all sections have content
-    sections.mainFocus = sections.mainFocus || 'Daily Healing Practice'
+    sections.mainFocus = sanitizeFocus(sections.mainFocus) || (() => {
+      const m = cleanedContent.match(/🎯\s*MAIN\s*FOCUS\s*:\s*(.+)$/im) || cleanedContent.match(/Main\s*Focus\s*:\s*(.+)$/im)
+      return m && m[1] ? m[1].trim() : 'Daily Healing Practice'
+    })()
     sections.guidedPractice = sections.guidedPractice || 'Content not available'
     sections.challenge = sections.challenge || 'Content not available'
     sections.journalingPrompt = sections.journalingPrompt || 'Content not available'
@@ -685,6 +767,44 @@ export default function Program() {
       // Mark day as completed locally
       setCompletedDays(prev => new Set(Array.from(prev).concat(currentDay.day)))
       setShowNextDayButton(true)
+
+      // Tick all section checkboxes and mark sections as completed locally
+      try {
+        const gpLines = currentDay.content.guidedPractice.split('\n')
+        const chLines = currentDay.content.challenge.split('\n')
+        const slLines = filterSleepLines(currentDay.content.sleep.split('\n'))
+        const hoLines = currentDay.content.holistic.split('\n')
+
+        const gpIdx = gpLines.map((l, i) => (isTaskLine(l) ? i : -1)).filter(i => i >= 0)
+        const chIdx = chLines.map((l, i) => (isTaskLine(l) ? i : -1)).filter(i => i >= 0)
+        const slIdx = slLines.map((l, i) => (isTaskLine(l) ? i : -1)).filter(i => i >= 0)
+        const hoIdx = hoLines.map((l, i) => (isTaskLine(l) ? i : -1)).filter(i => i >= 0)
+
+        // Include appended Sleep extras
+        const sleepExtras = [10001, 10002, 10010, 10011, 10012]
+
+        setSectionTaskCompleted(prev => ({
+          ...prev,
+          guidedPractice: new Set<number>(gpIdx),
+          challenge: new Set<number>(chIdx),
+          sleep: new Set<number>([...slIdx, ...sleepExtras]),
+          holistic: new Set<number>(hoIdx)
+        }))
+
+        setSectionCompleted(prev => ({
+          ...prev,
+          mainFocus: true,
+          guidedPractice: true,
+          challenge: true,
+          journalingPrompt: true,
+          reflection: true,
+          weather: true,
+          sleep: true,
+          holistic: true
+        }))
+      } catch (_) {
+        // noop – visual ticking is best-effort
+      }
 
       // Generate PDF for completed day
       try {
@@ -758,7 +878,12 @@ export default function Program() {
       setShowNextDayButton(false)
       
       // Generate next day content with context of previous days
-      const nextDay = progress.currentDay + 1
+      const baseDay = (currentDay?.day || progress.currentDay || 1)
+      if (baseDay >= 30) {
+        setError('Program completed - all 30 days finished')
+        return
+      }
+      const nextDay = Math.min(30, baseDay + 1)
       console.log('Generating content for day', nextDay)
       
       const response = await fetch('/api/program/daily', {
@@ -780,13 +905,14 @@ export default function Program() {
       if (response.ok) {
         const dayData = await response.json()
         const parsedContent = parseDailyContent(dayData.content, weatherData)
-        const theme = deriveTheme(parsedContent.mainFocus)
-        const poeticTitle = derivePoeticTitle(parsedContent.mainFocus, theme)
+        const theme = dayData.theme || deriveTheme(parsedContent.mainFocus)
+        const poeticTitle = dayData.poeticTitle || derivePoeticTitle(parsedContent.mainFocus, theme)
 
-        const effectiveDifficulty = isStructuredDay
-          ? (dayData?.structuredPlan?.difficulty === 'easy' ? 'easy' : dayData?.structuredPlan?.difficulty === 'medium' ? 'moderate' : 'challenging')
+        const effectiveDifficulty = (dayData?.isStructured && dayData?.structuredPlan?.difficulty)
+          ? (dayData.structuredPlan.difficulty === 'easy' ? 'easy' : dayData.structuredPlan.difficulty === 'medium' ? 'moderate' : 'challenging')
           : nextDayDifficulty
 
+        setIsStructuredDay(Boolean(dayData.isStructured))
         setCurrentDay({
           day: nextDay,
           title: parsedContent.mainFocus,
@@ -1038,8 +1164,8 @@ export default function Program() {
       isSectionDone('journalingPrompt') &&
       isSectionDone('reflection') &&
       isSectionDone('weather') &&
-      isSectionDone('sleep', filterSleepLines(currentDay.content.sleep.split('\n'))) &&
-      isSectionDone('holistic')
+      isSleepSectionDone() &&
+      isHolisticSectionDone()
     if (othersDone && !sectionCompleted.mainFocus) {
       setSectionCompleted(prev => ({ ...prev, mainFocus: true }))
     }
@@ -1153,7 +1279,7 @@ export default function Program() {
               <Image src="/Icon-02.png" alt="program emblem" width={40} height={40} className="w-10 h-auto drop-shadow-[0_0_12px_#00e5ff]" />
               </div>
             <h1 className="text-3xl font-bold neon-heading">30-Day Healing Program</h1>
-            <p className="text-muted-foreground">Day {progress.currentDay} of 30</p>
+            <p className="text-muted-foreground">Day {currentDay.day} of 30</p>
               </div>
           {/* Centered progress overview */}
           <Card className="feature-card border-0 group max-w-4xl mx-auto">
@@ -1174,7 +1300,7 @@ export default function Program() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:ml-6">
                   <div className="text-center">
                     <div className="text-base text-muted-foreground">Current</div>
-                    <div className="text-xl font-semibold text-foreground">Day {progress.currentDay}</div>
+                    <div className="text-xl font-semibold text-foreground">Day {currentDay.day}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-base text-muted-foreground">Completed</div>
@@ -1251,7 +1377,7 @@ export default function Program() {
           </div>
         )}
 
-        {/* Start Next Day Button */}
+        {/* Start New Day Button */}
         {showNextDayButton && currentDay && (
           <div className="mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
@@ -1287,7 +1413,7 @@ export default function Program() {
               ) : (
                 <>
                   <ArrowRight className="w-5 h-5 mr-2 group-hover:translate-x-1 transition-transform duration-200" />
-                  Start Next Day
+                  Start New Day
                 </>
               )}
             </Button>
@@ -1674,7 +1800,7 @@ export default function Program() {
                           className="text-left"
                         >
                           <h5 className="font-semibold neon-glow-rose flex items-center gap-2 text-lg">
-                            <Moon className={`h-5 w-5 ${isSectionDone('sleep', filterSleepLines(currentDay.content.sleep.split('\n'))) ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#fb7185]'}`} />
+                            <Moon className={`h-5 w-5 ${isSleepSectionDone() ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#fb7185]'}`} />
                         Sleep & Wellness
                             <span className="ml-2 text-muted-foreground">{sectionCollapsed.sleep ? '▼' : '▲'}</span>
                       </h5>
@@ -1683,15 +1809,15 @@ export default function Program() {
                           <input
                             id="chk-sleep"
                             type="checkbox"
-                            checked={isSectionDone('sleep', filterSleepLines(currentDay.content.sleep.split('\n')))}
-                            onChange={() => toggleSectionCompleted('sleep', filterSleepLines(currentDay.content.sleep.split('\n')))}
+                            checked={isSleepSectionDone()}
+                            onChange={toggleSleepSectionCompleted}
                             aria-label="Mark Sleep & Wellness as completed"
                           />
-                          {isSectionDone('sleep', filterSleepLines(currentDay.content.sleep.split('\n'))) && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
+                          {isSleepSectionDone() && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
                         </label>
                       </div>
                       {!sectionCollapsed.sleep && (
-                        <div id="section-sleep" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('sleep', filterSleepLines(currentDay.content.sleep.split('\n'))) ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                        <div id="section-sleep" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSleepSectionDone() ? 'text-[#ccff00]' : 'text-foreground'}`}>
                         {filterSleepLines(currentDay.content.sleep.split('\n')).map((line, index) => {
                              if (isSubheadingLine(line)) {
                                return <div key={index} className="font-semibold text-foreground">{line.trim()}</div>
@@ -1776,7 +1902,7 @@ export default function Program() {
                           className="text-left"
                         >
                           <h5 className="font-semibold neon-glow-purple flex items-center gap-2 text-lg">
-                            <Leaf className={`h-5 w-5 ${isSectionDone('holistic') ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#10b981]'}`} />
+                            <Leaf className={`h-5 w-5 ${isHolisticSectionDone() ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#10b981]'}`} />
                         Holistic Healing Bonus
                             <span className="ml-2 text-muted-foreground">{sectionCollapsed.holistic ? '▼' : '▲'}</span>
                       </h5>
@@ -1785,15 +1911,15 @@ export default function Program() {
                           <input
                             id="chk-holistic"
                             type="checkbox"
-                            checked={isSectionDone('holistic')}
-                            onChange={() => toggleSectionCompleted('holistic')}
+                            checked={isHolisticSectionDone()}
+                            onChange={toggleHolisticSectionCompleted}
                             aria-label="Mark Holistic Healing Bonus as completed"
                           />
-                          {isSectionDone('holistic') && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
+                          {isHolisticSectionDone() && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
                         </label>
                       </div>
                       {!sectionCollapsed.holistic && (
-                        <div id="section-holistic" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('holistic') ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                        <div id="section-holistic" className={`whitespace-pre-line leading-relaxed space-y-3 ${isHolisticSectionDone() ? 'text-[#ccff00]' : 'text-foreground'}`}>
                          {currentDay.content.holistic.split('\n').map((line, index) => {
                             const trimmed = line.trim()
                             if (isSubheadingLine(trimmed)) {

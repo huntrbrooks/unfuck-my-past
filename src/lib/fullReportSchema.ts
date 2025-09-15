@@ -86,7 +86,7 @@ export const FullReportSchema = z.object({
     quote: z.string().min(6).max(180)
   }),
   resources: z.array(z.object({
-    type: z.enum(['app', 'book', 'article', 'service', 'crisis']),
+    type: z.enum(['app', 'book', 'article', 'podcast', 'service', 'crisis']),
     name: z.string(),
     note: z.string().optional()
   })).min(3),

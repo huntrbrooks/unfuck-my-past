@@ -37,6 +37,47 @@ export async function POST(request: NextRequest) {
     if (!responsesResult || responsesResult.length === 0) {
       return NextResponse.json({ error: 'No diagnostic responses found' }, { status: 404 })
     }
+    
+    // Check for enhanced diagnostic data from follow-up questions
+    let enhancedResponses = [...responsesResult]
+    try {
+      const { neon } = await import('@neondatabase/serverless')
+      const sql = neon(process.env.DATABASE_URL!)
+      
+      // Get follow-up responses if they exist
+      const followUpData = await sql`
+        SELECT * FROM diagnostic_followup_responses 
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC
+      `.catch(() => null) // Gracefully handle if table doesn't exist
+      
+      if (followUpData && Array.isArray(followUpData) && followUpData.length > 0) {
+        // Add follow-up responses to the main responses
+        followUpData.forEach((followUp: any) => {
+          enhancedResponses.push({
+            question: { text: followUp.question, category: followUp.category, isFollowUp: true } as any,
+            response: followUp.answer,
+            insight: 'Enhanced response for improved accuracy',
+            createdAt: followUp.created_at
+          })
+        })
+      }
+      
+      // Get confidence score if available
+      const confidenceData = await sql`
+        SELECT confidence_score FROM user_diagnostic_data 
+        WHERE user_id = ${userId}
+        LIMIT 1
+      `.catch(() => null)
+      
+      // Log enhanced data usage for debugging
+      if (followUpData && followUpData.length > 0) {
+        console.log(`Using enhanced data: ${followUpData.length} follow-up responses, confidence: ${confidenceData?.[0]?.confidence_score || 'N/A'}`)
+      }
+    } catch (error) {
+      console.warn('Could not fetch enhanced diagnostic data:', error)
+      // Continue with regular responses if enhanced data unavailable
+    }
 
     // Get user preferences using Drizzle ORM
     const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1)
@@ -60,14 +101,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Format responses for AI comprehensive analysis
-    const allResponses = responsesResult
+    // Use enhanced responses if available
+    const allResponses = enhancedResponses
       .filter(response => response.response && response.insight)
       .map((response, index) => {
         const questionData = typeof response.question === 'string' 
           ? JSON.parse(response.question) 
           : response.question
         return {
-          question: questionData?.question || `Question ${index + 1}`,
+          question: questionData?.question || questionData?.text || `Question ${index + 1}`,
           response: response.response || '',
           insight: response.insight || '',
           questionId: (questionData?.id || questionData?.questionId || `${index + 1}`) as string
@@ -151,7 +193,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get the comprehensive report from database
+    // Get the comprehensive report from database (most recent)
     const reportResult = await db
       .select()
       .from(diagnosticSummaries)
@@ -159,6 +201,7 @@ export async function GET(request: NextRequest) {
         eq(diagnosticSummaries.userId, userId),
         eq(diagnosticSummaries.type, 'comprehensive_report')
       ))
+      .orderBy(desc(diagnosticSummaries.updatedAt), desc(diagnosticSummaries.createdAt))
       .limit(1)
 
     if (reportResult.length === 0) {

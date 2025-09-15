@@ -54,6 +54,30 @@ export default function DiagnosticResults() {
 
   const COMPLETION_SEEN_AT_KEY = 'uyp_completion_prompt_seen_at'
 
+  // Derive a breakdown heading and items from keyInsights for display
+  const breakdownData = React.useMemo(() => {
+    const lines = (keyInsights || '')
+      .split('\n')
+      .map(l => l.trim())
+      .filter(Boolean)
+
+    let heading = lines.length > 0 ? lines[0] : ''
+    if (heading) {
+      // Normalize wording: insights -> breakdowns (plural)
+      heading = heading
+        .replace(/insights?/gi, 'breakdowns')
+        .replace(/breakdown\s+based/gi, 'breakdowns based')
+        .replace(/\s*:\s*$/, ':')
+    }
+
+    // Clean bullet symbols from items and separate final footnote
+    const cleaned = lines.slice(1).map(l => l.replace(/^(?:•|\*|-)\s*/, ''))
+    const footnote = cleaned.length > 0 ? cleaned[cleaned.length - 1] : ''
+    const items = cleaned.slice(0, Math.max(0, cleaned.length - 1))
+
+    return { heading, items, footnote }
+  }, [keyInsights])
+
   useEffect(() => {
     console.log('🔄 useEffect triggered:', { isLoaded, hasUser: !!user })
     if (isLoaded) {
@@ -138,6 +162,11 @@ export default function DiagnosticResults() {
     if (backgroundPreviewStarted) return
     if (!(questions.length > 0 && answers.length >= 3)) return
     setBackgroundPreviewStarted(true)
+    // Ensure the proper analysis loader plays during generation for free flow
+    if (!isPaidFlow && !showAnalysisLoader) {
+      setAnalysisStep(1)
+      setShowAnalysisLoader(true)
+    }
     try {
       const resp = await fetch('/api/diagnostic/preview', {
         method: 'POST',
@@ -196,6 +225,7 @@ A path ahead that's bright and full of lighting.`)
       console.log('🔄 Starting loadResults...')
       setLoading(true)
       setError('') // Clear any previous errors
+      let hasSavedSummary = false
       
       // Load diagnostic responses
       console.log('🔄 Fetching diagnostic responses...')
@@ -221,7 +251,27 @@ A path ahead that's bright and full of lighting.`)
         setAnswers(formattedAnswers)
         console.log('📊 Formatted answers:', formattedAnswers.length)
         
-        // Decide whether to show analysis loader and begin preview generation
+        // Load existing summary first to determine if we should bypass the analysis loader on revisit
+        try {
+          console.log('🔄 Fetching prognostic summary (pre-check)...')
+          const sController = new AbortController()
+          const sTimeout = setTimeout(() => sController.abort(), 10000)
+          const summaryResponse = await fetch('/api/diagnostic/summary', { method: 'GET', signal: sController.signal })
+          clearTimeout(sTimeout)
+          console.log('📡 Summary API status (pre-check):', summaryResponse.status)
+          if (summaryResponse.ok) {
+            const summaryData = await summaryResponse.json()
+            if ((summaryData.summary && summaryData.summary.length > 0) || (summaryData.keyInsights && summaryData.keyInsights.length > 0)) {
+              hasSavedSummary = true
+              setSummary(summaryData.summary || '')
+              setKeyInsights(summaryData.keyInsights || '')
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error pre-checking summary:', error)
+        }
+
+        // Decide whether to show analysis loader and begin preview generation (skip if saved summary exists)
         try {
           const latest = (data.responses || [])
             .map((r: { timestamp?: string }) => r?.timestamp)
@@ -236,7 +286,7 @@ A path ahead that's bright and full of lighting.`)
               shouldShow = new Date(latest).getTime() > new Date(lastSeen).getTime()
             }
           }
-          if (shouldShow) {
+          if (shouldShow && !hasSavedSummary) {
             setIsPaidFlow(false) // This is the free diagnostic flow
             setShowAnalysisLoader(true)
             // Kick off background preview generation as soon as we have data
@@ -296,39 +346,26 @@ A path ahead that's bright and full of lighting.`)
         console.error('Questions API error:', error)
       }
 
-      // Load existing summary only (do not regenerate)
-      try {
-        console.log('🔄 Fetching prognostic summary...')
-        const sController = new AbortController()
-        const sTimeout = setTimeout(() => sController.abort(), 10000)
-        const summaryResponse = await fetch('/api/diagnostic/summary', { method: 'GET', signal: sController.signal })
-        clearTimeout(sTimeout)
-        console.log('📡 Summary API status:', summaryResponse.status)
-        if (summaryResponse.ok) {
-          const summaryData = await summaryResponse.json()
-          if ((summaryData.summary && summaryData.summary.length > 0) || (summaryData.keyInsights && summaryData.keyInsights.length > 0)) {
-            setSummary(summaryData.summary || '')
-            setKeyInsights(summaryData.keyInsights || '')
+      // If no saved summary was found earlier, generate once then rely on stored data afterwards
+      if (!hasSavedSummary) {
+        try {
+          console.log('🔄 No existing summary found, generating new one...')
+          const rController = new AbortController()
+          const rTimeout = setTimeout(() => rController.abort(), 15000)
+          const regen = await fetch('/api/diagnostic/summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: rController.signal })
+          clearTimeout(rTimeout)
+          console.log('📡 Summary generation status:', regen.status)
+          if (regen.ok) {
+            const regenData = await regen.json()
+            console.log('✅ Summary generated:', { summary: !!regenData.summary, insights: !!regenData.keyInsights })
+            setSummary(regenData.summary || '')
+            setKeyInsights(regenData.keyInsights || '')
           } else {
-            // If missing, generate once then rely on stored data afterwards
-            console.log('🔄 No existing summary found, generating new one...')
-            const rController = new AbortController()
-            const rTimeout = setTimeout(() => rController.abort(), 15000)
-            const regen = await fetch('/api/diagnostic/summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: rController.signal })
-            clearTimeout(rTimeout)
-            console.log('📡 Summary generation status:', regen.status)
-            if (regen.ok) {
-              const regenData = await regen.json()
-              console.log('✅ Summary generated:', { summary: !!regenData.summary, insights: !!regenData.keyInsights })
-              setSummary(regenData.summary || '')
-              setKeyInsights(regenData.keyInsights || '')
-            } else {
-              console.error('❌ Failed to generate summary:', regen.status)
-            }
+            console.error('❌ Failed to generate summary:', regen.status)
           }
+        } catch (error) {
+          console.error('❌ Error generating summary:', error)
         }
-      } catch (error) {
-        console.error('❌ Error loading/generating summary:', error)
       }
     } catch (err) {
       console.error('Error loading results:', err)
@@ -346,7 +383,21 @@ A path ahead that's bright and full of lighting.`)
   }
 
   const handleStartProgram = () => {
-    setShowProgramPaywall(true)
+    // Before showing the paywall, verify 30-day access window
+    ;(async () => {
+      try {
+        const resp = await fetch('/api/payments/user-purchases')
+        if (resp.ok) {
+          const data = await resp.json()
+          const hasRecentProgram = Array.isArray(data) && data.some((p: { product: string; active: boolean }) => p.product === 'program' && p.active)
+          if (hasRecentProgram) {
+            router.push('/program')
+            return
+          }
+        }
+      } catch {}
+      setShowProgramPaywall(true)
+    })()
   }
 
   const handleViewReport = async () => {
@@ -413,6 +464,11 @@ A path ahead that's bright and full of lighting.`)
 
   const handleFreeCompletionContinue = () => {
     setShowFreeCompletionPrompt(false)
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(COMPLETION_SEEN_AT_KEY, new Date().toISOString())
+      }
+    } catch {}
     // Stay on results page to view free results (no routing needed)
   }
 
@@ -616,7 +672,7 @@ A path ahead that's bright and full of lighting.`)
 
         <!-- Behavioral Patterns -->
         <div>
-          <h2 class="text-xl font-bold text-foreground mb-3 flex items-center gap-2 border-b-2 border-primary/20 pb-2">
+          <h2 class="text-xl font-bold mb-3 flex items-center gap-2 border-b-2 border-primary/20 pb-2 neon-glow-blue">
             <span class="text-2xl">🔄</span>
             Behavioral Patterns
           </h2>
@@ -636,7 +692,7 @@ A path ahead that's bright and full of lighting.`)
 
         <!-- Healing Roadmap -->
         <div>
-          <h2 class="text-xl font-bold text-foreground mb-3 flex items-center gap-2 border-b-2 border-primary/20 pb-2">
+          <h2 class="text-xl font-bold mb-3 flex items-center gap-2 border-b-2 border-primary/20 pb-2 neon-glow-green">
             <span class="text-2xl">🛣️</span>
             Healing Roadmap
           </h2>
@@ -684,7 +740,7 @@ A path ahead that's bright and full of lighting.`)
 
         <!-- Resources and Next Steps -->
         <div>
-          <h2 class="text-xl font-bold text-foreground mb-3 flex items-center gap-2 border-b-2 border-muted-foreground/20 pb-2">
+          <h2 class="text-xl font-bold mb-3 flex items-center gap-2 border-b-2 border-muted-foreground/20 pb-2 neon-glow-teal">
             <span class="text-2xl">📚</span>
             Resources and Next Steps
           </h2>
@@ -852,6 +908,45 @@ Your investment helps us continue improving and supporting people on their heali
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Saved Overview & Breakdown (shown on revisit) */}
+            {(summary || keyInsights) && (
+              <Card className="modern-card border-0 summary-card shadow-[0_0_18px_rgba(255,26,255,0.25)]">
+                <CardHeader className="bg-background border-b border-border/50 p-4 sm:p-6">
+                  <CardTitle className="text-lg sm:text-xl font-semibold neon-heading">Our Thoughts</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 sm:p-6 space-y-6">
+                  {summary && (
+                    <div>
+                      <h4 className="font-semibold mb-2 text-[#ff1aff] [text-shadow:0_0_12px_rgba(255,26,255,0.8)]">Overview</h4>
+                      <div className="whitespace-pre-line text-foreground leading-relaxed">{summary}</div>
+                    </div>
+                  )}
+                  {keyInsights && (
+                    <div>
+                      <h4 className="font-semibold mb-2 text-cyan-300 [text-shadow:0_0_12px_rgba(0,229,255,0.9)]">Breakdown</h4>
+                      {breakdownData.heading && (
+                        <div className="text-foreground font-semibold mb-2">
+                          {breakdownData.heading.replace(/^\s*[•*-]?\s*/, '')}
+                        </div>
+                      )}
+                      <ul className="list-disc pl-5 space-y-1">
+                        {breakdownData.items.map((line, idx) => (
+                          <li key={idx} className="text-foreground">
+                            {line.replace(/^(?:•|\*|-)\s*/, '')}
+                          </li>
+                        ))}
+                      </ul>
+                      {breakdownData.footnote && (
+                        <div className="mt-3 italic text-foreground/90">
+                          {breakdownData.footnote}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* CTA Buttons (Top) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Button 

@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { dayNumber, weatherData, difficulty } = body
+    const { dayNumber, weatherData, difficulty, previousDays, currentProgress, reflectionQA, journal } = body
 
     if (!dayNumber || dayNumber < 1 || dayNumber > 30) {
       return NextResponse.json({ error: 'Invalid day number' }, { status: 400 })
@@ -334,6 +334,24 @@ export async function POST(request: NextRequest) {
       return lines.join('\n')
     }
 
+    // Build previous day context (avoid repetition and ensure continuity)
+    let previousDayContext: { theme?: string; activity?: string; content?: any } | undefined
+    try {
+      const yesterday = dayNumber - 1
+      if (yesterday >= 1) {
+        const prev = (user.safety as { dailyContent?: Record<string, any> })?.dailyContent?.[yesterday]
+        if (prev) {
+          previousDayContext = {
+            theme: prev.theme,
+            activity: prev?.structuredPlan?.dailyChallenge?.activity || undefined,
+            content: prev?.structuredPlan || prev?.content || undefined
+          }
+        }
+      }
+    } catch (_) {
+      // best-effort
+    }
+
     // Try structured generation first, fall back to current system
     let dayPlan
     let isStructured = false
@@ -364,10 +382,10 @@ export async function POST(request: NextRequest) {
           insights: transformedResponses.map(r => `${r.question}: ${r.response}`).slice(0, 3),
           responses: transformedResponses.slice(0, 5)
         },
-        moods: [], // TODO: Add real mood data
-        journals: { insights: [] }, // TODO: Add real journal data
-        fullReport: { keyInsights: [] }, // TODO: Add real report data
-        previousDay: undefined, // TODO: Fetch previous day
+        moods: [],
+        journals: { insights: Array.isArray(journal?.insights) ? journal.insights : [] },
+        fullReport: { keyInsights: [] },
+        previousDay: previousDayContext,
         weatherData: weatherData
       }
 

@@ -42,8 +42,7 @@ export function formatReportMarkdown(r: FullReport) {
     ? `Evidence Quotes:\n${dotBullets((r as any).traumaAnalysis.evidence.map((e: any) => `"${e.quote}" (${e.questionId})`))}` 
     : ''
   sections.push([
-    traumaHeader,
-    underline(traumaHeader),
+    `${traumaHeader}\n${underline(traumaHeader)}`,
     `Root Causes & Triggers:\n${dotBullets(r.traumaAnalysis.rootCauses)}`,
     `How Past Events Shaped Patterns:\n${dotBullets(r.traumaAnalysis.shapedPatterns)}`,
     `Blind Spots:\n${dotBullets(r.traumaAnalysis.blindSpots)}`,
@@ -70,8 +69,7 @@ export function formatReportMarkdown(r: FullReport) {
   // 7) HOW TO LEAN INTO YOUR STRENGTHS (cyan)
   const strengthsHeader = toUpperHeader('How To Lean Into Your Strengths')
   sections.push([
-    strengthsHeader,
-    underline(strengthsHeader),
+    `${strengthsHeader}\n${underline(strengthsHeader)}`,
     ...r.strengths.map((s, i) => [
       `${s.name}`,
       `Why it matters: ${s.whyItMatters}`,
@@ -94,8 +92,7 @@ export function formatReportMarkdown(r: FullReport) {
   // 10) BEHAVIORAL PATTERNS (blue)
   const loopsHeader = toUpperHeader('Behavioral Patterns')
   sections.push([
-    loopsHeader,
-    underline(loopsHeader),
+    `${loopsHeader}\n${underline(loopsHeader)}`,
     ...r.behavioralPatterns.map((l, i) => [
       `Loop ${i + 1}: ${l.name}`,
       `Trigger: ${l.trigger}`,
@@ -109,8 +106,7 @@ export function formatReportMarkdown(r: FullReport) {
   const roadmapHeader = toUpperHeader('Healing Roadmap')
   const stageLabels = { immediate: 'Today', shortTerm: 'This Week', medium: 'This Month', longTerm: '3 Months', aspirational: '1 Year' }
   sections.push([
-    roadmapHeader,
-    underline(roadmapHeader),
+    `${roadmapHeader}\n${underline(roadmapHeader)}`,
     ...r.roadmap.map((step, idx) => {
       const stageLabel = stageLabels[step.stage as keyof typeof stageLabels] || step.stage
       return `${idx + 1}. ${stageLabel}: ${step.action}\n   Success: ${step.successMarker}`
@@ -120,8 +116,7 @@ export function formatReportMarkdown(r: FullReport) {
   // 12) ACTIONABLE RECOMMENDATIONS (red)
   const recHeader = toUpperHeader('Actionable Recommendations')
   sections.push([
-    recHeader,
-    underline(recHeader),
+    `${recHeader}\n${underline(recHeader)}`,
     ...r.recommendations.map((x, i) => [
       `${i + 1}. ${x.action} (${x.durationMin} min)`,
       `Why it works: ${x.whyItWorks}`,
@@ -143,11 +138,13 @@ export function formatReportMarkdown(r: FullReport) {
   const apps = r.resources.filter(x => x.type === 'app').map(x => `${x.name}${x.note ? `: ${x.note}` : ''}`)
   const books = r.resources.filter(x => x.type === 'book').map(x => `${x.name}${x.note ? `: ${x.note}` : ''}`)
   const articles = r.resources.filter(x => x.type === 'article').map(x => `${x.name}${x.note ? `: ${x.note}` : ''}`)
+  const podcasts = r.resources.filter(x => x.type === 'podcast').map(x => `${x.name}${x.note ? `: ${x.note}` : ''}`)
   
   const resourceContent = [
     apps.length ? `Apps:\n${dotBullets(apps)}` : '',
     books.length ? `Books:\n${dotBullets(books)}` : '',
-    articles.length ? `Articles:\n${dotBullets(articles)}` : ''
+    articles.length ? `Articles:\n${dotBullets(articles)}` : '',
+    podcasts.length ? `Podcasts:\n${dotBullets(podcasts)}` : ''
   ].filter(Boolean).join('\n\n')
   
   sections.push(`${resHeader}\n${underline(resHeader)}\n${resourceContent}`)

@@ -13,7 +13,9 @@ import MenuBar from '../components/MenuBar'
 import MobileMenu from '../components/MobileMenu'
 import AnalyticsProvider from '../components/AnalyticsProvider'
 import LegalBanner from '../components/LegalBanner'
+import { cookies } from 'next/headers'
 import Footer from '../components/Footer'
+import AppToaster from '../components/Toaster'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -46,9 +48,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const cookieStore = cookies() as any
+  const initialThemeFromCookie = cookieStore.get?.('theme')?.value
+  const isDarkFromCookie = initialThemeFromCookie === 'dark'
   return (
     <ClerkProvider>
-      <html lang="en" className={`${dmSans.variable} ${GeistMono.variable}`} suppressHydrationWarning={true}>
+      <html lang="en" className={`${dmSans.variable} ${GeistMono.variable} ${isDarkFromCookie ? 'dark' : ''}`} suppressHydrationWarning={true}>
         <body className="font-sans antialiased" suppressHydrationWarning={true}>
           <Script id="apply-initial-theme" strategy="beforeInteractive">
             {`(function(){
@@ -64,6 +69,8 @@ export default function RootLayout({
                   root.classList.remove('dark');
                 }
                 root.style.colorScheme = theme;
+                // keep cookie in sync for SSR to render correct theme
+                document.cookie = 'theme=' + theme + '; path=/; max-age=31536000; samesite=lax';
               } catch (e) {
                 // Theme application failed, but page should still be visible
               }
@@ -87,6 +94,7 @@ export default function RootLayout({
                   {children}
                 </Suspense>
                 <Footer />
+                <AppToaster />
                 <Analytics />
               </AnalyticsProvider>
             </ThemeProvider>

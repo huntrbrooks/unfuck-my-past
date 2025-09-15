@@ -220,7 +220,7 @@ export class AIService {
         }))
       }
       // Ensure resources have name and valid type
-      const resTypes = new Set(['app','book','article','service','crisis'])
+      const resTypes = new Set(['app','book','article','podcast','service','crisis'])
       if (Array.isArray(clone.resources)) {
         clone.resources = clone.resources
           .map((it: any) => ({
@@ -241,6 +241,21 @@ export class AIService {
       clone.meta.quotesUsed = Number(clone.meta.quotesUsed || (clone.traumaAnalysis?.evidence?.length || 2))
       clone.meta.missingData = Array.isArray(clone.meta.missingData) ? clone.meta.missingData : []
       clone.meta.createdAtISO = clone.meta.createdAtISO || new Date().toISOString()
+
+      // Ensure at least one podcast recommendation exists
+      if (Array.isArray(clone.resources)) {
+        const hasPodcast = clone.resources.some((r: any) => String(r?.type) === 'podcast')
+        if (!hasPodcast) {
+          const focus = String(clone.personalization?.primaryFocus || '').toLowerCase()
+          let podcast = { type: 'podcast', name: 'Unlocking Us with Brené Brown', note: 'On self-compassion and boundaries.' }
+          if (focus.includes('trauma')) {
+            podcast = { type: 'podcast', name: 'The Trauma Therapist Podcast', note: 'Trauma-informed coping strategies and healing stories.' }
+          } else if (focus.includes('anxiety') || focus.includes('regulation')) {
+            podcast = { type: 'podcast', name: 'The Happiness Lab', note: 'Science-backed tools for mood and thought patterns.' }
+          }
+          clone.resources.push(podcast)
+        }
+      }
       return clone
     }
     const systemPrompt = `You are the Full Diagnostic Engine for Unfuck Your Past.
@@ -261,7 +276,7 @@ Your output will be formatted into 15 distinct sections with specific color them
 11. Healing Roadmap (green) - 5 ordered steps with success markers
 12. Actionable Recommendations (red) - 5-7 micro-actions ≤15min (shares split card with Strengths; concise bullet points)
 13. Next Steps (orange) - 3-5 concrete actions
-14. Resources (teal) - apps, books, articles (rendered in a sidebar card, not in the main body)
+14. Resources (teal) - apps, books, articles, podcasts (rendered in a sidebar card, not in the main body)
 15. Professional Help (blue) - when to seek help (displayed in a sidebar card for emphasis)
 
 CRITICAL SCHEMA REQUIREMENTS:
@@ -270,7 +285,8 @@ CRITICAL SCHEMA REQUIREMENTS:
 - roadmap items MUST have "stage" field: "immediate"|"shortTerm"|"medium"|"longTerm"|"aspirational"
 - recommendation tags MUST be: "Anxiety"|"Clarity"|"Sleep"|"Energy"|"Relationships"
 -- resources MUST have "name" field for each item
-  • Output at least 3 total across Apps / Books / Articles. Keep notes concise (≤60 chars). These will be grouped in a SIDEBAR UI as shown: Apps, Books, Articles.
+  • Output at least 3 total across Apps / Books / Articles / Podcasts. Keep notes concise (≤60 chars). These will be grouped in a SIDEBAR UI as shown: Apps, Books, Articles, Podcasts.
+  • Include at least 1 Podcast matched to the user's journey (trauma‑informed healing, CBT, boundaries, or self‑compassion). Give a short reason in note.
   • Professional Help: return ONE concise, bold‑worthy sentence (no underlines/section dividers). This text will be highlighted in a sidebar card.
 - personalization and meta objects are REQUIRED
 
@@ -286,7 +302,7 @@ STRICT OUTPUT RULES:
 - recommendations: 5–7 items { action, whyItWorks, habitStack, durationMin: 1–30, tags: ["Anxiety"|"Clarity"|"Sleep"|"Energy"|"Relationships"] }.
 - colorProfile: { primary: "Blue"|"Red"|"Green"|"Yellow"|"Purple"|"Orange", secondary?: string, story }.
 - mostTellingQuote: { questionId: "string", quote: "≤180 chars" } - CLEAN quote only, no prefixes or formatting.
-- resources: ≥2 items { type: "app"|"book"|"article"|"service"|"crisis", name: "required string", note?: string }.
+- resources: ≥2 items { type: "app"|"book"|"article"|"podcast"|"service"|"crisis", name: "required string", note?: string }.
 - nextSteps: OPTIONAL array (3–5 concise actions).
 - personalization: { tone: string, rawness: string, minutesPerDay: number, learningStyle: string, primaryFocus: string }.
 - meta: { quotesUsed: number, missingData: string[], createdAtISO: "ISO string" }.
@@ -331,7 +347,7 @@ GUIDANCE:
 - Name ≥1 explicit contradiction in traumaAnalysis.contradictions.
 - Behavioral patterns use "Trigger → Behavior → Effect → Relapse → Break Point" format.
 - Keep recommendations ≤minutesPerDay duration, varied across domains.
-- Ensure resources map cleanly to Apps / Books / Articles, each with a short note for side-card presentation.
+- Ensure resources map cleanly to Apps / Books / Articles / Podcasts, each with a short note for side-card presentation.
 - Deduce insights from diagnostic responses; keep trauma‑informed and non‑graphic.`
 
     const amplifierChecklist = [
