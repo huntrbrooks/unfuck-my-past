@@ -20,6 +20,7 @@ const isPublicRoute = createRouteMatcher([
   // Public APIs that don't require auth
   '/api/diagnostic-lite',
   '/api/diagnostic/preview',
+  '/api/diagnostic/test-ai',
   '/api/test-keys',
   '/api/flow',
   '/api/geocode',

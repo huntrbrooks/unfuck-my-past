@@ -50,15 +50,11 @@ export async function POST(request: NextRequest) {
     
     console.log('Analytics event received:', toInsert)
 
-    // Store in database (skip silently if table missing in dev)
+    // Store in database (skip silently if table missing)
     try {
       await db.insert(analyticsEvents).values(toInsert as any)
     } catch (e: any) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('Analytics table missing; skipping insert in dev')
-      } else {
-        throw e
-      }
+      console.warn('Analytics insert skipped:', e?.message || e)
     }
     
     // Example: Send to external service
@@ -72,9 +68,7 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Analytics API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to process analytics event' },
-      { status: 500 }
-    )
+    // Do not fail client interactions due to analytics issues
+    return NextResponse.json({ success: false })
   }
 }

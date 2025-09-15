@@ -126,7 +126,16 @@ export async function POST(request: NextRequest) {
 
       // Generate insight using AI
       const aiService = new AIService()
-      const insight = await aiService.generateInsight(prompt, response, useClaude)
+      let insight
+      try {
+        insight = await aiService.generateInsight(prompt, response, useClaude)
+      } catch (aiErr: any) {
+        console.error('AI insight generation failed:', aiErr?.message || aiErr)
+        return NextResponse.json(
+          { error: 'AI service unavailable. Please try again shortly.' },
+          { status: 503 }
+        )
+      }
 
       // Save the response and insight to database using Drizzle ORM
       await db.insert(diagnosticResponses).values({
