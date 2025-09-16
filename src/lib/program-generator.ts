@@ -257,10 +257,15 @@ Self-Compassion Practice:
 [Brief self-compassion guidance]
 
 🌤️ WEATHER & ENVIRONMENT
-${weatherData ? `Weather: ${weatherData.insight.weatherSummary || 'Check local conditions'}
-Activities: ${weatherData.insight.activityRecommendations || 'Adapt to current weather'}` : `Assume location: Melbourne, Australia.
-Weather: Cool, variable. Adapt activities to indoor or mild outdoor conditions.
-Activities: Gentle walk if weather permits; otherwise indoor stretching and breathwork.`}
+Warm & Sunny:
+• [Concise healing activity that uses warm sun, e.g., sunlight walk, grounding in a park]
+• [Second concise activity]
+• [Third concise activity]
+
+Cold & Raining:
+• [Concise healing activity suited to cold rain, e.g., indoor mobility, warm shower ritual]
+• [Second concise activity]
+• [Third concise activity]
 
 😴 SLEEP & WELLNESS
 Sleep Duration: 7-9 hours
@@ -355,8 +360,15 @@ Self-Compassion Practice:
 Speak kindly to yourself about today's experience. Offer yourself the same compassion you'd give a friend. Remember that healing is a journey.
 
 🌤️ WEATHER & ENVIRONMENT
-${weatherData ? `Weather: ${weatherData.insight.weatherSummary || 'Check local conditions'}
-Activities: ${weatherData.insight.activityRecommendations || 'Adapt to current weather'}` : 'Check local weather and adapt activities accordingly'}
+Warm & Sunny:
+• 10–15 min sunlight walk; notice 5 colors and 3 scents
+• Ground barefoot on grass for 2 minutes; breathe slowly
+• Find a sunlit spot; 5-minute warmth meditation on your face/chest
+
+Cold & Raining:
+• 8–12 min indoor mobility flow; neck/shoulders/hips
+• Hot shower ritual: slow breathing; imagine tension washing away
+• Window-gazing: track raindrops for 3 minutes; name feelings
 
 😴 SLEEP & WELLNESS
 Sleep Duration: 7-9 hours

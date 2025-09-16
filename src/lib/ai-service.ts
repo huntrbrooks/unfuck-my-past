@@ -166,6 +166,19 @@ export class AIService {
         const conf = String(clone.toxicity.confidence || '').toLowerCase()
         clone.toxicity.confidence = ['low','medium','high'].includes(conf) ? conf : 'medium'
       }
+      // Normalize weatherEnvironment to arrays of exactly 3 strings
+      if (clone.weatherEnvironment) {
+        const normList = (arr: any): string[] => {
+          if (!Array.isArray(arr)) return []
+          return arr.map((x: any) => String(x || '').trim()).filter((s: string) => !!s).slice(0, 3)
+        }
+        const warm = normList(clone.weatherEnvironment.warmSunny)
+        const cold = normList(clone.weatherEnvironment.coldRaining)
+        clone.weatherEnvironment = undefined
+        if (warm.length === 3 && cold.length === 3) {
+          clone.weatherEnvironment = { warmSunny: warm, coldRaining: cold }
+        }
+      }
       // Normalize behavioral patterns for downstream visual (prefer arrays)
       if (Array.isArray(clone.behavioralPatterns)) {
         clone.behavioralPatterns = clone.behavioralPatterns.map((l: any) => {
@@ -262,7 +275,7 @@ export class AIService {
 Return ONLY valid JSON matching FullReportSchema. Each section will be rendered as a separate card with neon headings.
 
 CRITICAL SECTION STRUCTURE:
-Your output will be formatted into 15 distinct sections with specific color themes:
+Your output will be formatted into 16 distinct sections with specific color themes:
 1. Most Telling Quote (clean quote, no formatting)
 2. Executive Summary (lime) - findings overview, NO advice
 3. Your Colour (from colorProfile) 
@@ -275,9 +288,10 @@ Your output will be formatted into 15 distinct sections with specific color them
 10. Behavioral Patterns (blue) - loops with Trigger → Effect → Break Point (UI may generate an image from this; keep loops stable)
 11. Healing Roadmap (green) - 5 ordered steps with success markers
 12. Actionable Recommendations (red) - 5-7 micro-actions ≤15min (shares split card with Strengths; concise bullet points)
-13. Next Steps (orange) - 3-5 concrete actions
-14. Resources (teal) - apps, books, articles, podcasts (rendered in a sidebar card, not in the main body)
-15. Professional Help (blue) - when to seek help (displayed in a sidebar card for emphasis)
+13. Weather & Environment (yellow) - two lists for conditions: warmSunny (3 items), coldRaining (3 items)
+14. Next Steps (orange) - 3-5 concrete actions
+15. Resources (teal) - apps, books, articles, podcasts (rendered in a sidebar card, not in the main body)
+16. Professional Help (blue) - when to seek help (displayed in a sidebar card for emphasis)
 
 CRITICAL SCHEMA REQUIREMENTS:
 - ALL questionId fields must be STRINGS (not numbers)
@@ -301,14 +315,15 @@ STRICT OUTPUT RULES:
 - roadmap: EXACTLY 5 steps with { stage: "immediate"|"shortTerm"|"medium"|"longTerm"|"aspirational", action: "≤140 chars", rationale, successMarker }.
 - recommendations: 5–7 items { action, whyItWorks, habitStack, durationMin: 1–30, tags: ["Anxiety"|"Clarity"|"Sleep"|"Energy"|"Relationships"] }.
 - colorProfile: { primary: "Blue"|"Red"|"Green"|"Yellow"|"Purple"|"Orange", secondary?: string, story }.
+- weatherEnvironment: { warmSunny: [string, string, string], coldRaining: [string, string, string] }.
 - mostTellingQuote: { questionId: "string", quote: "≤180 chars" } - CLEAN quote only, no prefixes or formatting.
 - resources: ≥2 items { type: "app"|"book"|"article"|"podcast"|"service"|"crisis", name: "required string", note?: string }.
 - nextSteps: OPTIONAL array (3–5 concise actions).
 - personalization: { tone: string, rawness: string, minutesPerDay: number, learningStyle: string, primaryFocus: string }.
 - meta: { quotesUsed: number, missingData: string[], createdAtISO: "ISO string" }.
 
-15-SECTION GOLD STANDARD:
-Your output will be formatted into: Most Telling Quote, Executive Summary, Your Colour, Your Six Scores, Trauma Analysis, Toxicity Score, How To Lean Into Your Strengths, Most Important To Address, Hierarchy of Avoidance, Behavioral Patterns, Healing Roadmap, Actionable Recommendations, Next Steps, Resources, Professional Help.
+16-SECTION GOLD STANDARD:
+Your output will be formatted into: Most Telling Quote, Executive Summary, Your Colour, Your Six Scores, Trauma Analysis, Toxicity Score, How To Lean Into Your Strengths, Most Important To Address, Hierarchy of Avoidance, Behavioral Patterns, Healing Roadmap, Actionable Recommendations, Weather & Environment, Next Steps, Resources, Professional Help.
 
 EXAMPLE STRUCTURE:
 {

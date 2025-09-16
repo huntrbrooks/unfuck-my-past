@@ -662,30 +662,56 @@ export default function ReportPage() {
   // Unified colour logic: decide one final colour and one explanation paragraph
   const finalColour = React.useMemo(() => {
     try {
-      // Prefer deterministic archetype colour from six scores
+      // 1) Highest priority: use the structured report's declared Primary colour (Your Colour)
+      const aiInfo = extractColourInfo(comprehensiveReport)
+      if (aiInfo?.primary) {
+        const allowed: ArchetypeColour[] = ['Blue','Red','Green','Yellow','Purple','Orange']
+        const raw = String(aiInfo.primary).trim()
+        const primaryStr = raw.split('|')[0]?.trim() || raw
+        const found = allowed.find(c => new RegExp(`\\b${c}\\b`, 'i').test(primaryStr))
+        if (found) {
+          const hex = ARCH_COLOURS[found]
+          return { name: found, hex }
+        }
+      }
+
+      // 2) Next: use deterministic archetype colour from six scores (unless it's the known fallback shape)
       if (personaScores?.scores) {
-        const ranked = pickArchetype({
+        const s = {
           resilience: Number(personaScores.scores.resilience || 0),
           vulnerability: Number(personaScores.scores.vulnerability || 0),
           selfAwareness: Number(personaScores.scores.self_awareness ?? personaScores.scores.selfAwareness ?? 0),
           boundaries: Number(personaScores.scores.boundaries || 0),
           emotionalRegulation: Number(personaScores.scores.emotional_regulation ?? personaScores.scores.emotionalRegulation ?? 0),
           growthOrientation: Number(personaScores.scores.growth_orientation ?? personaScores.scores.growthOrientation ?? 0)
-        })
-        const primary = ranked[0]?.colour as ArchetypeColour
-        const hex = ARCH_COLOURS[primary]
-        return { name: primary, hex }
+        }
+        const isFallbackPersona = (
+          s.resilience === 6 &&
+          s.vulnerability === 5 &&
+          s.selfAwareness === 6 &&
+          s.boundaries === 4 &&
+          s.emotionalRegulation === 5 &&
+          s.growthOrientation === 6
+        )
+        if (!isFallbackPersona) {
+          const ranked = pickArchetype(s)
+          const primary = ranked[0]?.colour as ArchetypeColour
+          const hex = ARCH_COLOURS[primary]
+          return { name: primary, hex }
+        }
+        // If scores look like fallback defaults, prefer lite diagnostic colour below
       }
-      // Fallback to lite diagnostic colour if scores missing
+
+      // 3) Fallback: use lite diagnostic colour if available; else default to Blue
       const raw = String(liteDiag?.colour_profile?.dominant_colour || '')
       const allowed: ArchetypeColour[] = ['Blue','Red','Green','Yellow','Purple','Orange']
-      const guess = allowed.find(c => raw.toLowerCase().includes(c.toLowerCase())) || 'Blue'
+      const guess = allowed.find(c => new RegExp(`\\b${c}\\b`, 'i').test(raw)) || 'Blue'
       const hex = ARCH_COLOURS[guess]
       return { name: guess, hex }
     } catch {
       return { name: 'Blue' as ArchetypeColour, hex: ARCH_COLOURS.Blue }
     }
-  }, [personaScores, liteDiag])
+  }, [personaScores, liteDiag, comprehensiveReport])
 
   const colourThemeClass = (c: ArchetypeColour) => {
     switch (c) {
@@ -849,7 +875,7 @@ export default function ReportPage() {
         const line = raw.trim()
         if (!line) continue
         if (/^[=\-\s]+$/.test(line)) continue
-        const pm = line.match(/^Primary:\s*(.+)$/i)
+        const pm = line.match(/^Primary:\s*([^|\n]+)(?:\s*\|.*)?$/i)
         if (pm) { primary = pm[1].trim(); continue }
         body.push(line)
       }

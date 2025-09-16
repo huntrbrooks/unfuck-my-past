@@ -125,15 +125,25 @@ export function formatReportMarkdown(r: FullReport) {
     ].join('\n'))
   ].join('\n\n'))
 
+  // 13) WEATHER & ENVIRONMENT (yellow)
+  const weatherHeader = toUpperHeader('Weather & Environment')
+  if ((r as any).weatherEnvironment && (r as any).weatherEnvironment.warmSunny && (r as any).weatherEnvironment.coldRaining) {
+    const warm = (r as any).weatherEnvironment.warmSunny as string[]
+    const cold = (r as any).weatherEnvironment.coldRaining as string[]
+    sections.push([
+      `${weatherHeader}\n${underline(weatherHeader)}`,
+      `Warm & Sunny:\n${dotBullets(warm)}`,
+      `Cold & Raining:\n${dotBullets(cold)}`
+    ].join('\n\n'))
+  }
 
-
-  // 13) NEXT STEPS (orange)
+  // 14) NEXT STEPS (orange)
   const nextStepsHeader = toUpperHeader('Next Steps')
   if (Array.isArray((r as any).nextSteps) && (r as any).nextSteps.length) {
     sections.push(`${nextStepsHeader}\n${underline(nextStepsHeader)}\n${dotBullets((r as any).nextSteps as string[])}`)
   }
 
-  // 14) RESOURCES (teal)
+  // 15) RESOURCES (teal)
   const resHeader = toUpperHeader('Resources')
   const apps = r.resources.filter(x => x.type === 'app').map(x => `${x.name}${x.note ? `: ${x.note}` : ''}`)
   const books = r.resources.filter(x => x.type === 'book').map(x => `${x.name}${x.note ? `: ${x.note}` : ''}`)
@@ -149,7 +159,7 @@ export function formatReportMarkdown(r: FullReport) {
   
   sections.push(`${resHeader}\n${underline(resHeader)}\n${resourceContent}`)
 
-  // 15) PROFESSIONAL HELP (blue)
+  // 16) PROFESSIONAL HELP (blue)
   const proHeader = toUpperHeader('Professional Help')
   const proMsg = r.toxicity.overall >= 8
     ? 'Recommended: Consider professional support to stabilise daily function.'
@@ -159,7 +169,7 @@ export function formatReportMarkdown(r: FullReport) {
   
   sections.push(`${proHeader}\n${underline(proHeader)}\n${proMsg}`)
 
-  // Return all 15 sections as separate blocks for card rendering
+  // Return all 16 sections as separate blocks for card rendering
   return sections.join('\n\n')
 }
 

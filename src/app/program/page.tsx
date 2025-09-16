@@ -140,6 +140,36 @@ export default function Program() {
   const isSubheadingLine = (line: string) => /:\s*$/.test(line.trim())
   const isDurationHeaderLine = (line: string) => /\(\s*\d+(?:\s*-\s*\d+)?\s*minutes?\s*\)/i.test(line.trim())
   const isMainActivityLine = (line: string) => /^Main\s*Activity\s*\(.*minutes?\)/i.test(line.trim())
+  type GuidedGroup = {
+    headerIndex: number
+    headerText: string
+    taskIndices: number[]
+    lineIndices: number[]
+  }
+  const buildGuidedPracticeGroups = (lines: string[]): { groups: GuidedGroup[]; preface: number[] } => {
+    const groups: GuidedGroup[] = []
+    const preface: number[] = []
+    let current: GuidedGroup | null = null
+    for (let i = 0; i < lines.length; i++) {
+      const raw = lines[i] ?? ''
+      const trimmed = raw.trim()
+      if (!trimmed) continue
+      const isHeader = isSubheadingLine(trimmed) || isDurationHeaderLine(trimmed)
+      if (isHeader) {
+        if (current) groups.push(current)
+        current = { headerIndex: i, headerText: trimmed, taskIndices: [], lineIndices: [] }
+        continue
+      }
+      if (!current) {
+        preface.push(i)
+        continue
+      }
+      current.lineIndices.push(i)
+      if (isTaskLine(trimmed)) current.taskIndices.push(i)
+    }
+    if (current) groups.push(current)
+    return { groups, preface }
+  }
   const renderQuotedText = (text: string): React.ReactNode => {
     const parts = text.split(/(".*?")/g)
     return (
@@ -159,6 +189,18 @@ export default function Program() {
       const set = new Set<number>(existing)
       if (checked) set.add(idx); else set.delete(idx)
       return { ...prev, [sectionKey]: set }
+    })
+  }
+  const toggleGroupTasks = (sectionKey: string, indices: number[], checked: boolean) => {
+    setSectionTaskCompleted(prev => {
+      const existing = (prev[sectionKey] ?? new Set<number>()) as Set<number>
+      const nextSet = new Set<number>(existing)
+      if (checked) {
+        indices.forEach(i => nextSet.add(i))
+      } else {
+        indices.forEach(i => nextSet.delete(i))
+      }
+      return { ...prev, [sectionKey]: nextSet }
     })
   }
   const allTasksCompleted = (sectionKey: string, lines: string[]) => {
@@ -426,78 +468,13 @@ export default function Program() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const requestLocationPermission = async () => {
-    try {
-      if (!navigator.geolocation) {
-        setLocationPermission('denied')
-        return
-      }
-
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000
-        })
-      })
-
-      const { latitude, longitude } = position.coords
-      
-      // Get weather data
-      const response = await fetch('/api/weather', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ latitude, longitude })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setWeatherData(data)
-        setLocationPermission('granted')
-        // After getting weather data, reload program data to generate content
-        loadProgramData()
-      } else {
-        setLocationPermission('denied')
-      }
-    } catch (error) {
-      console.error('Error getting location or weather:', error)
-      setLocationPermission('denied')
-    }
+    // Weather location feature removed per product decision
+    setLocationPermission('denied')
   }
 
   const resolveManualLocation = async () => {
-    if (!locationQuery.trim()) return
-    try {
-      setResolvingLocation(true)
-      const geo = await fetch('/api/geocode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: locationQuery, country: countryCode || undefined })
-      })
-      if (!geo.ok) {
-        console.error('Geocode failed')
-          return
-        }
-      const { latitude, longitude, name } = await geo.json()
-      const w = await fetch('/api/weather', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude, longitude, label: name })
-      })
-      if (!w.ok) {
-        console.error('Weather fetch failed')
-          return
-      }
-      const data = await w.json()
-      setWeatherData(data)
-      setLocationPermission('granted')
-      loadProgramData()
-    } catch (e) {
-      console.error('Manual location resolve error', e)
-    } finally {
-      setResolvingLocation(false)
-    }
+    // Manual location resolution removed
+    setResolvingLocation(false)
   }
 
   const checkProgramAccess = async () => {
@@ -735,11 +712,8 @@ export default function Program() {
       if (!sections.reflection) sections.reflection = pick(3)
     }
 
-    // Enhance weather section with actual weather data if available
-    if (weatherData && sections.weather) {
-      const weatherInsight = weatherData.insight
-      sections.weather = `Current Weather: ${weatherInsight.weatherSummary}\n\nActivity Recommendations:\n${weatherInsight.activityRecommendations}\n\nEnvironmental Adaptations:\n${weatherInsight.environmentalAdaptations}\n\nSeasonal Practices:\n${weatherInsight.seasonalPractices}`
-    }
+    // Do not override; use AI-provided static warm/cold lists
+    sections.weather = sections.weather || 'Warm & Sunny:\n• 10–15 min sunlight walk\n• Ground barefoot on grass\n• Sunlit spot, 5-min warmth meditation\n\nCold & Raining:\n• Indoor mobility flow (10 min)\n• Hot shower ritual\n• Window‑gazing, 3‑min naming practice'
 
     // Ensure all sections have content
     sections.mainFocus = sanitizeFocus(sections.mainFocus) || (() => {
@@ -750,7 +724,6 @@ export default function Program() {
     sections.challenge = sections.challenge || 'Content not available'
     sections.journalingPrompt = sections.journalingPrompt || 'Content not available'
     sections.reflection = sections.reflection || 'Content not available'
-    sections.weather = sections.weather || 'Assume location: Melbourne, Australia. Weather: Variable cool. Activities: Gentle walk if weather permits; otherwise indoor stretching and breathwork.'
     sections.sleep = sections.sleep || 'Sleep recommendations not available'
     sections.holistic = sections.holistic || 'Holistic practices not available'
     sections.tools = sections.tools || 'Tools and resources not available'
@@ -1381,62 +1354,10 @@ export default function Program() {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {/* Location Permission / Manual Input */}
-        {locationPermission === 'pending' && (
-          <div className="mb-8">
-            <Card className="modern-card border-0">
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                    <Target className="h-8 w-8 text-black dark:text-white drop-shadow-[0_0_8px_#ccff00]" />
-                </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">Weather Insights</h3>
-                  <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                    Use your current location or enter a city/postcode to personalize recommendations.
-                  </p>
-                  <div className="flex flex-col md:flex-row gap-3 justify-center items-center">
-                    <Button 
-                      onClick={requestLocationPermission}
-                      className="group hover:scale-105 transition-transform duration-200 neon-cta"
-                    >
-                      <Sun className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform duration-200" />
-                      Use My Location
-                    </Button>
-                    <div className="flex w-full md:w-auto gap-2">
-                      <Input
-                        value={locationQuery}
-                        onChange={(e) => setLocationQuery(e.target.value)}
-                        placeholder="City or postcode"
-                        className="w-full md:w-72"
-                        aria-label="City or postcode"
-                      />
-                      <Input
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
-                        placeholder="Country (e.g., AU)"
-                        className="w-24 uppercase"
-                        aria-label="Country code"
-                        maxLength={2}
-                      />
-                      <Button onClick={resolveManualLocation} disabled={resolvingLocation} variant="outline">
-                        {resolvingLocation ? 'Resolving…' : 'Set'}
-                    </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {false && <div />}
 
         {/* Location Status */}
-        {locationPermission === 'granted' && (
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-2 bg-success/20 rounded-full px-4 py-2 border border-success/30">
-              <CheckCircle className="w-4 h-4 text-success" />
-              <span className="text-sm font-medium text-success">Location enabled - Weather insights available</span>
-            </div>
-          </div>
-        )}
+        {false && <div />}
 
         {/* Start New Day Button */}
         {showNextDayButton && currentDay && (
@@ -1563,26 +1484,64 @@ export default function Program() {
                         </label>
                       </div>
                       {!sectionCollapsed.guidedPractice && (
-                        <div id="section-guidedPractice" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00]' : 'text-foreground'}`}>
-                        {currentDay.content.guidedPractice.split('\n').map((line, index) => {
-                            if (isSubheadingLine(line)) {
-                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
-                            } else if (isDurationHeaderLine(line)) {
-                              return <div key={index} className="font-semibold text-foreground">{renderQuotedText(line.trim())}</div>
-                            } else if (isTaskLine(line)) {
-                              const checked = (sectionTaskCompleted.guidedPractice || new Set()).has(index)
-                              return (
-                                <label key={index} className="flex items-start gap-2 cursor-pointer">
-                                  <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('guidedPractice', index, e.target.checked)} aria-label={`Guided Practice step ${index + 1}`} />
-                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(line))}</span>
-                                </label>
-                              )
-                          } else if (line.trim() && !line.trim().startsWith('🌅')) {
-                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
-                          }
-                          return null
-                        })}
-                      </div>
+                        <div id="section-guidedPractice" className={`whitespace-pre-line leading-relaxed space-y-4 ${isSectionDone('guidedPractice', currentDay.content.guidedPractice.split('\n')) ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                          {(() => {
+                            const lines = currentDay.content.guidedPractice.split('\n')
+                            const { groups, preface } = buildGuidedPracticeGroups(lines)
+                            const done = (sectionTaskCompleted.guidedPractice || new Set()) as Set<number>
+
+                            const renderLine = (text: string, idx: number) => {
+                              const trimmed = (text || '').trim()
+                              if (!trimmed || trimmed.startsWith('🌅')) return null
+                              if (isTaskLine(trimmed)) {
+                                const checked = done.has(idx)
+                                return (
+                                  <label key={`gp-task-${idx}`} className="flex items-start gap-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      className="mt-1"
+                                      checked={checked}
+                                      onChange={(e) => markTask('guidedPractice', idx, e.target.checked)}
+                                      aria-label={`Guided Practice step ${idx + 1}`}
+                                    />
+                                    <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(taskLabel(trimmed))}</span>
+                                  </label>
+                                )
+                              }
+                              // Default text line
+                              return <div key={`gp-text-${idx}`} className="font-medium text-foreground">{renderQuotedText(trimmed)}</div>
+                            }
+
+                            return (
+                              <>
+                                {/* Preface lines before first subheading */}
+                                {preface.map(idx => renderLine(lines[idx], idx))}
+
+                                {/* Groups with subheading checkbox */}
+                                {groups.map(group => {
+                                  const allChecked = group.taskIndices.length > 0 && group.taskIndices.every(i => done.has(i))
+                                  return (
+                                    <div key={`gp-group-${group.headerIndex}`} className="space-y-2">
+                                      <label className="flex items-start gap-2 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          className="mt-1"
+                                          checked={allChecked}
+                                          onChange={(e) => toggleGroupTasks('guidedPractice', group.taskIndices, e.target.checked)}
+                                          aria-label={`Toggle ${group.headerText.replace(/:\s*$/, '')}`}
+                                        />
+                                        <span className="font-semibold underline text-foreground">{renderQuotedText(group.headerText.trim())}</span>
+                                      </label>
+                                      <div className="space-y-2">
+                                        {group.lineIndices.map(idx => renderLine(lines[idx], idx))}
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </>
+                            )
+                          })()}
+                        </div>
                       )}
                     </div>
                     
@@ -1839,17 +1798,31 @@ export default function Program() {
                       </div>
                       {!sectionCollapsed.weather && (
                         <div id="section-weather" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('weather') ? 'text-[#ccff00]' : 'text-foreground'}`}>
-                        {currentDay.content.weather.split('\n').map((line, index) => {
-                            if (isSubheadingLine(line)) {
-                              return <div key={index} className="font-semibold underline text-foreground">{line.trim()}</div>
-                            } else if (line.trim().startsWith('•')) {
-                              return <div key={index} className="flex items-start gap-2"><span className="text-foreground mt-1">•</span><span>{renderQuotedText(line.substring(1).trim())}</span></div>
-                          } else if (line.trim() && !line.trim().startsWith('🌤️')) {
-                              return <div key={index} className="font-medium text-foreground">{renderQuotedText(line.trim())}</div>
-                          }
-                          return null
-                        })}
-                      </div>
+                        {(() => {
+                          const lines = currentDay.content.weather.split('\n')
+                          let inWarm = false
+                          let inCold = false
+                          return lines.map((raw, index) => {
+                            const line = raw.trim()
+                            if (!line) return null
+                            if (/^Warm\s*&\s*Sunny:?$/i.test(line)) { inWarm = true; inCold = false; return <div key={index} className="font-semibold underline text-foreground">Warm & Sunny:</div> }
+                            if (/^Cold\s*&\s*Raining:?$/i.test(line)) { inWarm = false; inCold = true; return <div key={index} className="font-semibold underline text-foreground">Cold & Raining:</div> }
+                            if (line.startsWith('•')) {
+                              const checked = (sectionTaskCompleted.weather || new Set()).has(index)
+                              return (
+                                <label key={index} className="flex items-start gap-2 cursor-pointer">
+                                  <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => markTask('weather', index, e.target.checked)} aria-label={`Weather activity ${index + 1}`} />
+                                  <span className={checked ? 'font-medium text-[#ccff00]' : 'text-foreground'}>{renderQuotedText(line.substring(1).trim())}</span>
+                                </label>
+                              )
+                            }
+                            // Ignore any old header tokens
+                            if (line.startsWith('🌤️')) return null
+                            // Render any plain text lines as context
+                            return <div key={index} className="font-medium text-foreground">{renderQuotedText(line)}</div>
+                          })
+                        })()}
+                       </div>
                       )}
                   </div>
                   

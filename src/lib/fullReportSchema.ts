@@ -76,6 +76,10 @@ export const FullReportSchema = z.object({
   behavioralPatterns: z.array(Loop).min(1).max(2),
   roadmap: z.array(RoadStep).length(5),
   recommendations: z.array(Rec).min(5).max(7),
+  weatherEnvironment: z.object({
+    warmSunny: z.array(z.string()).min(3).max(3),
+    coldRaining: z.array(z.string()).min(3).max(3)
+  }).optional(),
   colorProfile: z.object({
     primary: z.string(),
     secondary: z.string().optional(),
