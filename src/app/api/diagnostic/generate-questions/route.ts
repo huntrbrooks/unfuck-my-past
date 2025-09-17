@@ -1,13 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { db, users } from '../../../../db'
 import { eq } from 'drizzle-orm'
-import { generateDiagnosticQuestions } from '../../../../lib/diagnostic/generate'
-import { mapLegacyToOnboardingPrefs } from '../../../../lib/diagnostic/mapper'
+// Switched to AI-driven question generation per product requirements
+import { AIOnboardingAnalyzer } from '../../../../lib/ai-onboarding-analyzer'
 import { HSI_QUESTIONS } from '@/lib/hsi'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    // Dev/preview failure switch
+    const previewFail = request.headers.get('x-preview-fail') === 'true' || request.nextUrl.searchParams.get('previewFail') === 'true'
+    if (previewFail) {
+      return NextResponse.json({ error: 'Preview: forced question generation failure' }, { status: 500 })
+    }
+
     const { userId } = await auth()
     
     if (!userId) {
@@ -31,55 +37,46 @@ export async function POST() {
       }, { status: 400 })
     }
 
-    // Map legacy onboarding data to new format
-    const legacyData = {
+    // Build AI onboarding payload
+    const onboardingData = {
       tone: user.tone || 'gentle',
       voice: user.voice || 'friend',
       rawness: user.rawness || 'moderate',
       depth: user.depth || 'moderate',
       learning: user.learning || 'text',
-      engagement: user.engagement || 'passive',
-      safety: safetyData
+      engagement: user.engagement || 'moderate',
+      goals: safetyData?.goals || [],
+      experience: safetyData?.experience || 'beginner',
+      timeCommitment: safetyData?.timePerDay || safetyData?.timeCommitment || '15min',
+      safety: {
+        crisisSupport: !!safetyData?.crisisSupport,
+        contentWarnings: !!safetyData?.contentWarnings,
+        skipTriggers: !!safetyData?.skipTriggers,
+        topicsToAvoid: safetyData?.topicsToAvoid || [],
+        triggerWords: safetyData?.triggerWords || ''
+      }
     }
-    
-    const onboardingPrefs = mapLegacyToOnboardingPrefs(legacyData)
-    console.log('Starting personalized questions generation...')
-    console.log('Mapped onboarding preferences:', JSON.stringify(onboardingPrefs, null, 2))
 
-    // Generate questions using the new system
-    const result = generateDiagnosticQuestions({ 
-      onboarding: onboardingPrefs,
-      nowISO: new Date().toISOString()
-    })
+    console.log('Starting AI-based question generation...')
+    const analyzer = new AIOnboardingAnalyzer({ allowFallback: false })
+    const { analysis, questions } = await analyzer.analyzeOnboardingAndGenerateQuestions(onboardingData)
 
-    console.log('Successfully generated questions:', result.count)
-    console.log('Generation rationale:', result.rationale)
+    console.log('AI successfully generated questions:', questions.length)
 
-    // Convert new format to legacy format for backward compatibility
-    const legacyQuestions = result.questions.map((q, index) => ({
+    // Convert AI format to legacy format for backward compatibility
+    const legacyQuestions = questions.map((q, index) => ({
       id: index + 1,
       category: q.category,
-      question: q.prompt,
-      followUp: q.helper,
-      options: [],
-      adaptive: {
-        tone: onboardingPrefs.tones,
-        rawness: [onboardingPrefs.guidanceStrength],
-        depth: [onboardingPrefs.depth]
+      question: q.question,
+      followUp: q.followUp,
+      options: Array.isArray(q.options) ? q.options : [],
+      adaptive: q.adaptive || {
+        tone: [onboardingData.tone],
+        rawness: [onboardingData.rawness],
+        depth: [onboardingData.depth]
       },
-      aiPrompt: `Analyze this response for patterns related to: ${q.tags.join(', ')}`
+      aiPrompt: q.aiPrompt || 'Analyze response for patterns and trauma-informed insights.'
     }))
-
-    // Create analysis object for backward compatibility
-    const analysis = {
-      focusAreas: [onboardingPrefs.primaryFocus],
-      communicationStyle: onboardingPrefs.tones.join(', '),
-      intensityLevel: onboardingPrefs.guidanceStrength,
-      depthLevel: onboardingPrefs.depth,
-      customCategories: result.questions.map(q => q.category),
-      recommendedQuestionCount: result.count,
-      rationale: result.rationale
-    }
 
     if (!legacyQuestions || legacyQuestions.length === 0) {
       throw new Error('No questions were generated')

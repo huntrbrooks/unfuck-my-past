@@ -95,6 +95,21 @@ export default function DiagnosticResults() {
     }
   }, [isLoaded, user]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Ensure route chunk is preloaded before we switch to this page (helps after rebuilds)
+  useEffect(() => {
+    try {
+      const link = document.createElement('link')
+      link.rel = 'prefetch'
+      link.as = 'script'
+      // Let Next resolve the correct chunk; prefetch current route assets
+      link.href = `${window.location.origin}/_next/static/chunks/app/diagnostic/results/page.js`
+      document.head.appendChild(link)
+      setTimeout(() => {
+        try { document.head.removeChild(link) } catch {}
+      }, 10000)
+    } catch {}
+  }, [])
+
   // Start/advance loader at 4s per step and keep at step 5 until preview is ready
   useEffect(() => {
     if (showAnalysisLoader) {
@@ -173,7 +188,18 @@ export default function DiagnosticResults() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questions, answers, miniSummaries: [], crisisNow: false })
       })
-      if (resp.ok) setPreviewReady(true)
+      if (resp.ok) {
+        try {
+          const data = await resp.json()
+          if (data && (data.diagnosticSummary || (Array.isArray(data.insights) && data.insights.length > 0))) {
+            setPreviewReady(true)
+          } else {
+            // treat as pending
+          }
+        } catch {
+          // If server returns empty JSON for now, leave as not ready
+        }
+      }
     } catch {}
   }
 

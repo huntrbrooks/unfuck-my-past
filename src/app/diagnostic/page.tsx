@@ -41,6 +41,10 @@ export default function Diagnostic() {
   const [showLoader, setShowLoader] = useState(false)
   const [loaderStep, setLoaderStep] = useState(1)
   const [showReadyPrompt, setShowReadyPrompt] = useState(false)
+  const [generationFailed, setGenerationFailed] = useState(false)
+  const [showTryAgain, setShowTryAgain] = useState(false)
+  const [retrying, setRetrying] = useState(false)
+  const [showErrorDetails, setShowErrorDetails] = useState(false)
   // HSI (Hidden Struggles Index) state
   const [hsiQuestions, setHsiQuestions] = useState<HSIQuestion[]>([])
   const [hsiAnswers, setHsiAnswers] = useState<Record<number, boolean>>({})
@@ -49,6 +53,7 @@ export default function Diagnostic() {
   const [hsiError, setHsiError] = useState<string | null>(null)
   const [collapsedOptions, setCollapsedOptions] = useState<Record<number, boolean>>({})
   const [hsiCollapsed, setHsiCollapsed] = useState(false)
+  const readyRef = React.useRef(false)
 
   useEffect(() => {
     // Check if we're coming from onboarding with generating=true
@@ -100,28 +105,46 @@ export default function Diagnostic() {
         })
       }, 4000) // 4 seconds per step for 5 steps = 20 seconds total
       
+      // Minimum loader duration with dynamic finish after generation
+      const minLoaderMs = 20000
+      const loaderStartedAt = Date.now()
+
       // Create ref object to pass to generatePersonalizedQuestions
       const stepIntervalRef = { current: stepInterval }
-      generatePersonalizedQuestions(stepIntervalRef)
-      
+      startGenerationLoop(stepIntervalRef, loaderStartedAt, minLoaderMs, () => {
+        const elapsed = Date.now() - loaderStartedAt
+        if (elapsed >= minLoaderMs) {
+          setShowTryAgain(false)
+          setShowReadyPrompt(true)
+          clearInterval(stepInterval)
+        } else {
+          setTimeout(() => {
+            setShowTryAgain(false)
+            setShowReadyPrompt(true)
+            clearInterval(stepInterval)
+          }, minLoaderMs - elapsed)
+        }
+      })
+
       // Clean up the URL
       window.history.replaceState({}, '', '/diagnostic')
-      
-      // Hide loader after exactly 20 seconds (when progression completes)
+
+      // Guard timer to ensure prompt at 20s if generation already done
       const loaderTimeout = setTimeout(() => {
-        console.log('🎯 20-second progression complete, prompting to begin')
-        setShowReadyPrompt(true)
+        console.log('🎯 Minimum loader duration met')
+        if (readyRef.current || questions.length > 0) {
+          setShowReadyPrompt(true)
+        } else if (generationFailed) {
+          setShowTryAgain(true)
+        }
         clearInterval(stepInterval)
-      }, 20000) // 20 second progression
+      }, minLoaderMs)
       
       // Fallback timeout in case something goes wrong with question generation
       const fallbackTimeout = setTimeout(() => {
-        console.log('⚠️ Fallback: Generation took too long, trying to load existing questions...')
-        setShowLoader(false)
-        setIsGeneratingQuestions(false)
-        clearInterval(stepInterval)
-        loadQuestions()
-      }, 60000) // 60 second fallback timeout
+        console.log('⚠️ Fallback: Still waiting; keep loader visible and show Try Again')
+        if (!readyRef.current && questions.length === 0) setShowTryAgain(true)
+      }, 60000) // 60 second soft guard
       
       return () => {
         clearTimeout(loaderTimeout)
@@ -299,6 +322,24 @@ export default function Diagnostic() {
     }
   }
 
+  // Poll the GET endpoint to see if questions were persisted by a parallel/background job
+  const pollForQuestions = async (): Promise<boolean> => {
+    try {
+      const r = await fetch('/api/diagnostic/questions')
+      if (!r.ok) return false
+      const j = await r.json()
+      if (Array.isArray(j.questions) && j.questions.length > 0) {
+        setQuestions(j.questions)
+        if (Array.isArray(j.hsi?.questions)) setHsiQuestions(j.hsi.questions as HSIQuestion[])
+        readyRef.current = true
+        setGenerationFailed(false)
+        setShowTryAgain(false)
+        return true
+      }
+    } catch {}
+    return false
+  }
+
   function dedupeQuestionsByText(qs: DiagnosticQuestion[]): DiagnosticQuestion[] {
     const seen = new Set<string>()
     const out: DiagnosticQuestion[] = []
@@ -337,7 +378,10 @@ export default function Diagnostic() {
     }
   }
 
-  const generatePersonalizedQuestions = async (stepIntervalRef?: { current: NodeJS.Timeout | null }) => {
+  const generatePersonalizedQuestions = async (
+    stepIntervalRef?: { current: NodeJS.Timeout | null },
+    opts?: { onQuestionsReady?: () => void }
+  ): Promise<boolean> => {
     setLoading(true)
     setError('')
     
@@ -347,15 +391,18 @@ export default function Diagnostic() {
         await fetch('/api/diagnostic/reset', { method: 'POST' })
       } catch {}
 
-      const response = await fetch('/api/diagnostic/generate-questions', {
+      const isPreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('previewFail') === 'true'
+      const response = await fetch(`/api/diagnostic/generate-questions${isPreview ? '?previewFail=true' : ''}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(isPreview ? { 'x-preview-fail': 'true' } : {})
         },
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+        setGenerationFailed(true)
         throw new Error(errorData.error || 'Failed to generate questions')
       }
 
@@ -373,23 +420,49 @@ export default function Diagnostic() {
           stepIntervalRef.current = null
         }
         
-        // Jump to final step and show ready prompt immediately
-        setLoaderStep(5)
-        setTimeout(() => {
-          setShowReadyPrompt(true)
-        }, 1000) // Small delay for visual effect
+        // Do not jump steps; let the loader honor minimum duration
+        setGenerationFailed(false)
+        setShowTryAgain(false)
+        readyRef.current = true
+        if (opts?.onQuestionsReady) opts.onQuestionsReady()
+        return true
       } else {
+        setGenerationFailed(true)
         throw new Error('No questions were generated. Please try again.')
       }
     } catch (error) {
       console.error('Error generating questions:', error)
       setError(error instanceof Error ? error.message : 'Failed to generate questions')
-      // Hide loader on error (but let the interval continue in case user retries)
-      setShowLoader(false)
-      setIsGeneratingQuestions(false)
+      // Do not hide the loader here; caller manages timing and retries
+      return false
     } finally {
       setLoading(false)
     }
+  }
+
+  // Keep trying different methods until the loader completes (min duration window)
+  const startGenerationLoop = (
+    stepIntervalRef: { current: NodeJS.Timeout | null },
+    loaderStartedAt: number,
+    minLoaderMs: number,
+    onQuestionsReady: () => void
+  ) => {
+    const attempt = async () => {
+      const now = Date.now()
+      const timeLeft = Math.max(0, minLoaderMs - (now - loaderStartedAt))
+      if (questions.length > 0) return
+      // First try generating
+      const ok = await generatePersonalizedQuestions(stepIntervalRef, { onQuestionsReady })
+      if (ok || questions.length > 0) return
+      // Then try polling existing
+      const polled = await pollForQuestions()
+      if (polled || questions.length > 0) return
+      // Schedule another attempt if within loader window
+      if (timeLeft > 0) {
+        setTimeout(attempt, Math.min(4000, timeLeft))
+      }
+    }
+    attempt()
   }
 
   // Wrapper for button clicks
@@ -505,6 +578,11 @@ export default function Diagnostic() {
         throw new Error('No summary generated. Please try again.')
       }
       
+      // Mark questions as completed so dashboard CTA can disappear
+      try {
+        localStorage.removeItem('uyp_has_ready_questions')
+      } catch {}
+      
       // Redirect to results page
       router.push('/diagnostic/results')
     } catch (error) {
@@ -556,9 +634,62 @@ export default function Diagnostic() {
           totalSteps={5}
           isGenerating={isGeneratingQuestions}
         />
+        {/* Try Again overlay - only if generation actually failed or we timed out; keep loader visible behind */}
+        {showTryAgain && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-transparent">
+            <div className="w-full max-w-md m-4">
+              <div className="rounded-xl glass-card border border-warning/30 shadow-2xl">
+                <div className="p-4 sm:p-5">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-3">We couldn’t fetch your questions yet.</p>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground underline mb-3"
+                      onClick={() => setShowErrorDetails(!showErrorDetails)}
+                    >{showErrorDetails ? 'Hide details' : 'Show details'}</button>
+                    {showErrorDetails && (
+                      <div className="text-left text-xs bg-muted/30 border border-border/40 rounded-md p-3 mb-3 break-words whitespace-pre-wrap">
+                        {error || 'No additional details available.'}
+                      </div>
+                    )}
+                    <div className="flex gap-3 justify-center">
+                      <Button
+                        onClick={async () => {
+                          setRetrying(true)
+                          setShowTryAgain(false)
+                          setGenerationFailed(false)
+                          try {
+                            // Re-attempt generation and polling; keep loader up
+                            const ok = await generatePersonalizedQuestions()
+                            if (!ok) {
+                              await pollForQuestions()
+                            }
+                          } finally {
+                            setRetrying(false)
+                          }
+                        }}
+                        disabled={retrying}
+                        variant="cta"
+                      >{retrying ? 'Trying…' : 'Try Again'}</Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          try { localStorage.setItem('uyp_has_ready_questions', 'true') } catch {}
+                          setShowTryAgain(false)
+                          // For users who want to come back later, go to dashboard now
+                          window.location.href = '/dashboard'
+                        }}
+                      >Continue later</Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showReadyPrompt && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/60 backdrop-blur-sm">
             <div className="rounded-xl glass-card shadow-xl w-full max-w-md">
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-2 neon-heading">Preference analysis complete</h3>
@@ -591,7 +722,8 @@ export default function Diagnostic() {
                       setShowReadyPrompt(false)
                       setShowLoader(false)
                       setIsGeneratingQuestions(false)
-                      // Stay on page; user can return later via Continue Journey
+                      // Redirect to dashboard so the user sees the badge next time
+                      window.location.href = '/dashboard'
                     }}
                   >
                     Continue later

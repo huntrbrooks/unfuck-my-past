@@ -48,13 +48,20 @@ export async function POST(request: NextRequest) {
     // 3. Send to external analytics services
     // 4. Apply data retention policies
     
+    // Dev short-circuit for heartbeats to avoid noisy logs while building
+    if (process.env.NODE_ENV !== 'production' && toInsert.event === 'heartbeat') {
+      return NextResponse.json({ success: true, skipped: true })
+    }
+
     console.log('Analytics event received:', toInsert)
 
     // Store in database (skip silently if table missing)
     try {
       await db.insert(analyticsEvents).values(toInsert as any)
     } catch (e: any) {
-      console.warn('Analytics insert skipped:', e?.message || e)
+      // Collapse repeated warnings: only log minimal info
+      const msg = typeof e?.message === 'string' ? e.message : String(e)
+      console.warn('Analytics insert skipped:', msg.split('\n')[0])
     }
     
     // Example: Send to external service

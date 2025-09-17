@@ -167,6 +167,9 @@ export default function DiagnosticPreview({
       }
 
       const data = await response.json()
+      if (!data || typeof data !== 'object' || !Array.isArray((data as any).insights)) {
+        throw new Error('Preview data invalid. Please try again in a moment.')
+      }
       console.log('✅ DiagnosticPreview: Preview generated successfully')
       setPreview(data)
       
@@ -233,6 +236,8 @@ export default function DiagnosticPreview({
 
   if (!preview) return null
 
+  const safeInsights = Array.isArray(preview.insights) ? preview.insights : []
+
   return (
     <div className="space-y-8">
       {/* Diagnostic Summary */}
@@ -254,7 +259,7 @@ export default function DiagnosticPreview({
 
       {/* Insights */}
       <div className="space-y-6">
-        {preview.insights.map((insight, index) => (
+        {safeInsights.map((insight, index) => (
           <Card key={index} className="feature-card border-0 shadow-[0_0_18px_rgba(0,229,255,0.25)]">
             <CardHeader className="bg-background border-b border-border/50 p-4 sm:p-6">
               <div className="flex items-center justify-between">

@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [achievements, setAchievements] = useState<Array<{ id: string; title: string; completed: boolean }>>([])
   const [points, setPoints] = useState(0)
   const [programProgress, setProgramProgress] = useState<{ currentDay: number; percentage: number } | null>(null)
+  const [questionsReady, setQuestionsReady] = useState(false)
 
   const userId = user?.id
 
@@ -48,6 +49,24 @@ export default function Dashboard() {
     if (isLoaded) {
       loadDashboardData()
     }
+  }, [isLoaded])
+
+  // Detect if diagnostic questions are ready and user chose to continue later
+  useEffect(() => {
+    if (!isLoaded) return
+    try {
+      const flag = localStorage.getItem('uyp_has_ready_questions') === 'true'
+      if (flag) setQuestionsReady(true)
+    } catch {}
+    ;(async () => {
+      try {
+        const r = await fetch('/api/diagnostic/questions')
+        if (r.ok) {
+          const j = await r.json()
+          if (Array.isArray(j.questions) && j.questions.length > 0) setQuestionsReady(true)
+        }
+      } catch {}
+    })()
   }, [isLoaded])
 
   const getMoodEmoji = (rating: number) => {
@@ -437,6 +456,20 @@ export default function Dashboard() {
                 <CardTitle className="text-lg font-semibold text-foreground mb-4">
                   Quick Actions
                 </CardTitle>
+              {questionsReady && (
+                <div className="mb-4 p-3 rounded-xl border border-primary/40 bg-primary/10">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1" />
+                    <Button
+                      className="neon-cta"
+                      onClick={() => {
+                        try { localStorage.removeItem('uyp_has_ready_questions') } catch {}
+                        window.location.href = '/diagnostic'
+                      }}
+                    >Proceed with Journey</Button>
+                  </div>
+                </div>
+              )}
                 <div className="space-y-3">
                   <Button variant="outline" asChild className="w-full justify-start group">
                     <a href="/onboarding">

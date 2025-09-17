@@ -5,21 +5,25 @@ import Image from 'next/image'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { ArrowRight, CheckCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FullReportGenerationLoaderProps {
   currentStep?: number
   totalSteps?: number
   isGenerating?: boolean
+  progress?: number
+  indeterminateFinal?: boolean
 }
 
 export default function FullReportGenerationLoader({ 
   currentStep = 1,
   totalSteps = 5,
-  isGenerating = true
+  isGenerating = true,
+  progress,
+  indeterminateFinal = false
 }: FullReportGenerationLoaderProps) {
-  const progress = (currentStep / totalSteps) * 100
+  const pct = Math.max(0, Math.min(100, typeof progress === 'number' ? progress : (currentStep / totalSteps) * 100))
   const stepsContainerRef = React.useRef<HTMLDivElement | null>(null)
 
   React.useEffect(() => {
@@ -91,10 +95,10 @@ export default function FullReportGenerationLoader({
               </Badge>
             </div>
             
-            <Progress value={progress} variant="neonPinkGlow" glow size="lg" className="h-3 mb-4" />
+            <Progress value={pct} variant="neonPinkGlow" glow size="lg" className="h-3 mb-4" />
             
             <div className="text-center text-sm text-muted-foreground">
-              {Math.round(progress)}% Complete
+              {Math.round(pct)}% Complete
             </div>
           </CardContent>
         </Card>
@@ -155,7 +159,11 @@ export default function FullReportGenerationLoader({
                     </div>
                     
                     {isActive && (
-                      <ArrowRight className="h-5 w-5 text-primary animate-pulse" />
+                      currentStep === 5 && indeterminateFinal ? (
+                        <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                      ) : (
+                        <ArrowRight className="h-5 w-5 text-primary animate-pulse" />
+                      )
                     )}
                   </div>
                 </CardContent>

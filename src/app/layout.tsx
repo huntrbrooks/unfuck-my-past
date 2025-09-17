@@ -43,13 +43,13 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const cookieStore = cookies() as any
-  const initialThemeFromCookie = cookieStore.get?.('theme')?.value
+  const cookieStore = await cookies()
+  const initialThemeFromCookie = cookieStore.get('theme')?.value
   const isDarkFromCookie = initialThemeFromCookie === 'dark'
   return (
     <ClerkProvider>

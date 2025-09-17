@@ -137,6 +137,15 @@ export class AIService {
         if (clone.mostTellingQuote.quote) clone.mostTellingQuote.quote = clampQuote(clone.mostTellingQuote.quote, 180)
         if (clone.mostTellingQuote.questionId != null) clone.mostTellingQuote.questionId = String(clone.mostTellingQuote.questionId)
       }
+      // Derive a fallback Most Telling Quote when missing
+      if (!clone.mostTellingQuote || !clone.mostTellingQuote.quote) {
+        const ev = Array.isArray(clone.traumaAnalysis?.evidence) && clone.traumaAnalysis.evidence.length
+          ? clone.traumaAnalysis.evidence[0]
+          : null
+        if (ev?.quote) {
+          clone.mostTellingQuote = { questionId: String(ev.questionId || 'q1'), quote: clampQuote(String(ev.quote), 180) }
+        }
+      }
       if (clone.traumaAnalysis?.evidence && Array.isArray(clone.traumaAnalysis.evidence)) {
         clone.traumaAnalysis.evidence = clone.traumaAnalysis.evidence.map((e: any) => ({
           questionId: String(e?.questionId ?? ''),
@@ -166,18 +175,24 @@ export class AIService {
         const conf = String(clone.toxicity.confidence || '').toLowerCase()
         clone.toxicity.confidence = ['low','medium','high'].includes(conf) ? conf : 'medium'
       }
-      // Normalize weatherEnvironment to arrays of exactly 3 strings
+      // If toxicity block is missing entirely, derive a conservative estimate from six scores
+      if (!clone.toxicity && clone.scores) {
+        const sc = clone.scores
+        const selfCrit = clamp10(11 - Math.max(3, sc.resilience))
+        const avoid = clamp10(11 - Math.max(3, sc.boundaries))
+        const anx = clamp10(11 - Math.max(3, sc.emotionalRegulation))
+        const ext = clamp10(11 - Math.max(3, sc.growthOrientation))
+        const overall = clamp10(Math.round((selfCrit + avoid + anx + ext) / 4))
+        clone.toxicity = {
+          overall,
+          subscales: { selfCriticism: selfCrit, avoidance: avoid, anxiety: anx, externalPressures: ext },
+          confidence: 'medium',
+          justification: 'Derived from six score patterns and onboarding signals.'
+        }
+      }
+      // Remove any weatherEnvironment content; weather moved to Program page only
       if (clone.weatherEnvironment) {
-        const normList = (arr: any): string[] => {
-          if (!Array.isArray(arr)) return []
-          return arr.map((x: any) => String(x || '').trim()).filter((s: string) => !!s).slice(0, 3)
-        }
-        const warm = normList(clone.weatherEnvironment.warmSunny)
-        const cold = normList(clone.weatherEnvironment.coldRaining)
         clone.weatherEnvironment = undefined
-        if (warm.length === 3 && cold.length === 3) {
-          clone.weatherEnvironment = { warmSunny: warm, coldRaining: cold }
-        }
       }
       // Normalize behavioral patterns for downstream visual (prefer arrays)
       if (Array.isArray(clone.behavioralPatterns)) {
@@ -221,6 +236,19 @@ export class AIService {
           successMarker: typeof step?.successMarker === 'string' ? step.successMarker : ''
         })).slice(0, 5)
       }
+      // Ensure exactly 5 roadmap items by padding safe defaults when needed
+      if (!Array.isArray(clone.roadmap) || clone.roadmap.length < 5) {
+        const mpd = Number(clone.personalization?.minutesPerDay || 15)
+        const mk = (action: string, stage: any) => ({ stage, action, rationale: 'Fits your time and focus.', successMarker: 'Success: logged for 7 days' })
+        const existing = (clone.roadmap || []) as any[]
+        const fill: any[] = []
+        if (existing.length + fill.length < 1) fill.push(mk('Identify and document one trigger today', 'immediate'))
+        if (existing.length + fill.length < 2) fill.push(mk('Practice one boundary in a low‑stakes interaction', 'shortTerm'))
+        if (existing.length + fill.length < 3) fill.push(mk(`Daily ${Math.min(15, Math.max(5, mpd))}‑minute regulation practice`, 'medium'))
+        if (existing.length + fill.length < 4) fill.push(mk('Schedule a peer check‑in this month', 'longTerm'))
+        if (existing.length + fill.length < 5) fill.push(mk('Facilitate one discussion on boundaries', 'aspirational'))
+        clone.roadmap = [...existing, ...fill].slice(0, 5)
+      }
       // Recommendation tags whitelist + duration bounds
       const tagSet = new Set(['Anxiety','Clarity','Sleep','Energy','Relationships'])
       if (Array.isArray(clone.recommendations)) {
@@ -231,6 +259,18 @@ export class AIService {
           durationMin: Math.min(30, Math.max(1, Math.round(Number(r?.durationMin || 10)))),
           tags: Array.isArray(r?.tags) ? r.tags.map((t: any) => String(t)).filter((t: string) => tagSet.has(t)).slice(0, 3) : ['Clarity']
         }))
+      }
+      // Guarantee at least 5 concise recommendations
+      if (!Array.isArray(clone.recommendations) || clone.recommendations.length < 5) {
+        const need = 5 - (Array.isArray(clone.recommendations) ? clone.recommendations.length : 0)
+        const extras = [
+          { action: 'Box breathing (4‑4‑4‑4)', whyItWorks: 'Downshifts arousal', habitStack: 'Before messages', durationMin: 5, tags: ['Anxiety'] },
+          { action: '10‑minute walk', whyItWorks: 'Boosts mood & energy', habitStack: 'After lunch', durationMin: 10, tags: ['Energy'] },
+          { action: 'Two‑minute boundary script', whyItWorks: 'Rehearsal reduces avoidance', habitStack: 'Before calls', durationMin: 2, tags: ['Relationships'] },
+          { action: 'Evening reflection: one win', whyItWorks: 'Counters self‑criticism', habitStack: 'After brushing teeth', durationMin: 3, tags: ['Clarity'] },
+          { action: 'Phone on table in conversations', whyItWorks: 'Reduces avoidance cues', habitStack: 'At meals', durationMin: 1, tags: ['Relationships'] }
+        ]
+        clone.recommendations = [...(clone.recommendations || []), ...extras.slice(0, need)]
       }
       // Ensure resources have name and valid type
       const resTypes = new Set(['app','book','article','podcast','service','crisis'])
@@ -243,6 +283,17 @@ export class AIService {
           }))
           .filter((it: any) => it.name)
       }
+      // Ensure minimum resource set across categories
+      if (!Array.isArray(clone.resources) || clone.resources.length < 3) {
+        const ensure: any[] = clone.resources || []
+        const pushUnique = (type: string, name: string, note?: string) => {
+          if (!ensure.some((r: any) => r.name.toLowerCase() === name.toLowerCase())) ensure.push({ type, name, note })
+        }
+        pushUnique('app', 'Headspace', 'Meditation and calming stress.')
+        pushUnique('book', 'The Body Keeps the Score', 'Trauma and healing insights.')
+        pushUnique('podcast', 'Therapy Chat', 'Trauma‑informed perspectives on healing.')
+        clone.resources = ensure
+      }
       // Personalization + meta guards
       clone.personalization = clone.personalization || {}
       clone.personalization.tone = String(clone.personalization.tone || 'gentle')
@@ -254,6 +305,43 @@ export class AIService {
       clone.meta.quotesUsed = Number(clone.meta.quotesUsed || (clone.traumaAnalysis?.evidence?.length || 2))
       clone.meta.missingData = Array.isArray(clone.meta.missingData) ? clone.meta.missingData : []
       clone.meta.createdAtISO = clone.meta.createdAtISO || new Date().toISOString()
+
+      // Ensure color profile exists to theme the report consistently
+      if (!clone.colorProfile || !clone.colorProfile.primary) {
+        clone.colorProfile = {
+          primary: 'Blue',
+          story: 'This blue profile reflects calm, trust and steady growth.'
+        }
+      }
+
+      // Ensure strengths exist for split card
+      if (!Array.isArray(clone.strengths) || clone.strengths.length < 3) {
+        clone.strengths = [
+          { name: 'Self-awareness', whyItMatters: 'Noticing patterns enables change.', howToApply: 'Name the loop and choose one interrupt.' },
+          { name: 'Support network', whyItMatters: 'Co-regulation reduces shame and avoidance.', howToApply: 'Send one honest check-in weekly.' },
+          { name: 'Growth mindset', whyItMatters: 'Mistakes become data, not verdicts.', howToApply: 'Write one small win nightly.' }
+        ]
+      }
+
+      // Ensure core blocker exists with a practical first step
+      if (!clone.coreBlocker || !clone.coreBlocker.label) {
+        clone.coreBlocker = {
+          label: 'Fear of vulnerability',
+          impactNow: 'Limits emotional connection with others.',
+          firstStep: 'Practice small self‑disclosures with trusted friends.',
+        }
+      }
+
+      // Derive Next Steps when missing using core blocker and roadmap
+      if (!Array.isArray(clone.nextSteps) || clone.nextSteps.length < 3) {
+        const steps: string[] = []
+        if (clone.coreBlocker?.firstStep) steps.push(String(clone.coreBlocker.firstStep))
+        if (Array.isArray(clone.roadmap)) {
+          for (const r of clone.roadmap) { if (r?.action) steps.push(String(r.action)); if (steps.length >= 5) break }
+        }
+        while (steps.length < 3) steps.push('Complete today’s smallest step and log it')
+        clone.nextSteps = steps.slice(0, 5)
+      }
 
       // Ensure at least one podcast recommendation exists
       if (Array.isArray(clone.resources)) {
@@ -271,11 +359,11 @@ export class AIService {
       }
       return clone
     }
-    const systemPrompt = `You are the Full Diagnostic Engine for Unfuck Your Past.
+      const systemPrompt = `You are the Full Diagnostic Engine for Unfuck Your Past.
 Return ONLY valid JSON matching FullReportSchema. Each section will be rendered as a separate card with neon headings.
 
 CRITICAL SECTION STRUCTURE:
-Your output will be formatted into 16 distinct sections with specific color themes:
+Your output will be formatted into 15 distinct sections with specific color themes:
 1. Most Telling Quote (clean quote, no formatting)
 2. Executive Summary (lime) - findings overview, NO advice
 3. Your Colour (from colorProfile) 
@@ -288,10 +376,9 @@ Your output will be formatted into 16 distinct sections with specific color them
 10. Behavioral Patterns (blue) - loops with Trigger → Effect → Break Point (UI may generate an image from this; keep loops stable)
 11. Healing Roadmap (green) - 5 ordered steps with success markers
 12. Actionable Recommendations (red) - 5-7 micro-actions ≤15min (shares split card with Strengths; concise bullet points)
-13. Weather & Environment (yellow) - two lists for conditions: warmSunny (3 items), coldRaining (3 items)
-14. Next Steps (orange) - 3-5 concrete actions
-15. Resources (teal) - apps, books, articles, podcasts (rendered in a sidebar card, not in the main body)
-16. Professional Help (blue) - when to seek help (displayed in a sidebar card for emphasis)
+13. Next Steps (orange) - 3-5 concrete actions
+14. Resources (teal) - apps, books, articles, podcasts (rendered in a sidebar card, not in the main body)
+15. Professional Help (blue) - when to seek help (displayed in a sidebar card for emphasis)
 
 CRITICAL SCHEMA REQUIREMENTS:
 - ALL questionId fields must be STRINGS (not numbers)
@@ -315,15 +402,14 @@ STRICT OUTPUT RULES:
 - roadmap: EXACTLY 5 steps with { stage: "immediate"|"shortTerm"|"medium"|"longTerm"|"aspirational", action: "≤140 chars", rationale, successMarker }.
 - recommendations: 5–7 items { action, whyItWorks, habitStack, durationMin: 1–30, tags: ["Anxiety"|"Clarity"|"Sleep"|"Energy"|"Relationships"] }.
 - colorProfile: { primary: "Blue"|"Red"|"Green"|"Yellow"|"Purple"|"Orange", secondary?: string, story }.
-- weatherEnvironment: { warmSunny: [string, string, string], coldRaining: [string, string, string] }.
 - mostTellingQuote: { questionId: "string", quote: "≤180 chars" } - CLEAN quote only, no prefixes or formatting.
 - resources: ≥2 items { type: "app"|"book"|"article"|"podcast"|"service"|"crisis", name: "required string", note?: string }.
 - nextSteps: OPTIONAL array (3–5 concise actions).
 - personalization: { tone: string, rawness: string, minutesPerDay: number, learningStyle: string, primaryFocus: string }.
 - meta: { quotesUsed: number, missingData: string[], createdAtISO: "ISO string" }.
 
-16-SECTION GOLD STANDARD:
-Your output will be formatted into: Most Telling Quote, Executive Summary, Your Colour, Your Six Scores, Trauma Analysis, Toxicity Score, How To Lean Into Your Strengths, Most Important To Address, Hierarchy of Avoidance, Behavioral Patterns, Healing Roadmap, Actionable Recommendations, Weather & Environment, Next Steps, Resources, Professional Help.
+15-SECTION GOLD STANDARD:
+Your output will be formatted into: Most Telling Quote, Executive Summary, Your Colour, Your Six Scores, Trauma Analysis, Toxicity Score, How To Lean Into Your Strengths, Most Important To Address, Hierarchy of Avoidance, Behavioral Patterns, Healing Roadmap, Actionable Recommendations, Next Steps, Resources, Professional Help.
 
 EXAMPLE STRUCTURE:
 {
@@ -440,9 +526,9 @@ GUIDANCE:
       }
     }
 
-    const messages = [
+      const messages = [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Using this structure wrapper, produce a FullReport JSON STRICTLY matching the schema. Return ONLY JSON.\n${JSON.stringify({ userPayload, structureWrapper })}` }
+      { role: 'user', content: `Using this structure wrapper, produce a FullReport JSON STRICTLY matching the schema (weather excluded). Return ONLY JSON.\n${JSON.stringify({ userPayload, structureWrapper })}` }
     ]
 
     // Prefer OpenAI with response_format json

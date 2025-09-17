@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -80,14 +80,78 @@ export default function ReportPage() {
     })()
   }, [reportKey])
 
-  // Advance the 5-stage loader while generation is in progress
+  // Smoothed progress + weighted stage advancement with minimum durations
+  const [visualProgress, setVisualProgress] = useState(0)
+  const [indeterminateFinal, setIndeterminateFinal] = useState(false)
+  const stageEnteredAtRef = useRef<number>(0)
+  const wasActiveRef = useRef<boolean>(false)
+
+  const STAGE_THRESHOLDS = useMemo(() => [0, 15, 35, 60, 85, 100], []) // 1..5
+  const MIN_STAGE_MS = useMemo(() => [700, 900, 1100, 1100, 800], [])
+
+  // Helper to map progress -> step (1..5)
+  const getStepForProgress = (pct: number) => {
+    for (let i = 1; i < STAGE_THRESHOLDS.length; i++) {
+      if (pct < STAGE_THRESHOLDS[i]) return i
+    }
+    return 5
+  }
+
+  // Reset loader state on activation edge
   useEffect(() => {
-    if (!(showFinalising || generatingReport)) return
-    const interval = setInterval(() => {
-      setLoaderStep(prev => (prev < 5 ? prev + 1 : 5))
-    }, 4000)
-    return () => clearInterval(interval)
+    const active = showFinalising || generatingReport
+    const wasActive = wasActiveRef.current
+    if (active && !wasActive) {
+      setVisualProgress(0)
+      setLoaderStep(1)
+      setIndeterminateFinal(false)
+      stageEnteredAtRef.current = Date.now()
+    }
+    wasActiveRef.current = active
   }, [showFinalising, generatingReport])
+
+  // Smoothly advance progress toward a cap (95% until done)
+  useEffect(() => {
+    const active = showFinalising || generatingReport
+    if (!active) return
+    const interval = setInterval(() => {
+      setVisualProgress(prev => {
+        const cap = generationDone ? 100 : 95
+        if (prev >= cap) return prev
+        const remaining = cap - prev
+        const delta = Math.max(0.15, remaining * 0.03) // decelerating ramp
+        return Math.min(cap, prev + delta)
+      })
+    }, 200)
+    return () => clearInterval(interval)
+  }, [showFinalising, generatingReport, generationDone])
+
+  // Advance steps based on progress, honoring per-step minimum durations
+  useEffect(() => {
+    const active = showFinalising || generatingReport
+    if (!active) return
+    const desired = getStepForProgress(visualProgress)
+    if (desired > loaderStep) {
+      const now = Date.now()
+      const minMs = MIN_STAGE_MS[Math.min(loaderStep - 1, MIN_STAGE_MS.length - 1)]
+      const elapsed = now - stageEnteredAtRef.current
+      if (elapsed >= minMs) {
+        setLoaderStep(loaderStep + 1)
+        stageEnteredAtRef.current = now
+      }
+    }
+  }, [visualProgress, loaderStep, showFinalising, generatingReport, MIN_STAGE_MS])
+
+  // Indeterminate spinner on the last step if it stalls
+  useEffect(() => {
+    if (loaderStep === 5 && !(generationDone)) {
+      setIndeterminateFinal(false)
+      const t = setTimeout(() => setIndeterminateFinal(true), 5000)
+      return () => clearTimeout(t)
+    } else {
+      setIndeterminateFinal(false)
+    }
+  }, [loaderStep, generationDone])
 
   const checkAccess = async () => {
     try {
@@ -436,6 +500,10 @@ export default function ReportPage() {
         // Rendered in the sidebar mini card; skip here to avoid duplication
         return null
       }
+      if (/^WEATHER\s*&\s*ENVIRONMENT$/i.test(title)) {
+        // Weather is now shown dynamically on the Program page only
+        return null
+      }
       if (/^HOW\s+TO\s+LEAN\s+INTO\s+YOUR\s+STRENGTHS$/i.test(title)) {
         // Rendered in split card with Recommendations
         return null
@@ -489,7 +557,7 @@ export default function ReportPage() {
         return (
           <Card key={index} className="feature-card mb-6 overflow-hidden bg-background border-0">
             <CardHeader className="bg-background">
-              <CardTitle className={`flex items-center gap-3 text-foreground neon-glow-purple`}>MAIN BLOCKER</CardTitle>
+              <CardTitle className={`flex items-center gap-3 text-foreground neon-glow-purple`}>PRIMARY BLOCKER</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               {item && (
@@ -1170,7 +1238,7 @@ export default function ReportPage() {
 
   // Show loader when generating report
   if (showFinalising || generatingReport) {
-    return <FullReportGenerationLoader currentStep={loaderStep} totalSteps={5} isGenerating={true} />
+    return <FullReportGenerationLoader currentStep={loaderStep} totalSteps={5} isGenerating={true} progress={visualProgress} indeterminateFinal={indeterminateFinal} />
   }
 
   // Show thank-you completion prompt once after successful paid generation

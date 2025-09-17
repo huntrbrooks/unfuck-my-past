@@ -35,6 +35,23 @@ export default class ErrorBoundary extends Component<Props, State> {
       // TODO: Add error logging service
       console.error('Production error:', { error, errorInfo })
     }
+
+    // Auto-recover once from chunk loading errors by forcing a hard reload
+    try {
+      const isChunkError =
+        error &&
+        (error.name === 'ChunkLoadError' ||
+          /ChunkLoadError/i.test(error.message) ||
+          /Loading chunk .* failed/i.test(error.message))
+      const alreadyReloaded = sessionStorage.getItem('__uyp_chunk_reload__') === '1'
+      if (isChunkError && !alreadyReloaded && typeof window !== 'undefined') {
+        sessionStorage.setItem('__uyp_chunk_reload__', '1')
+        window.location.reload()
+      } else if (typeof window !== 'undefined') {
+        // Reset flag for future sessions
+        sessionStorage.removeItem('__uyp_chunk_reload__')
+      }
+    } catch {}
   }
 
   handleReload = () => {

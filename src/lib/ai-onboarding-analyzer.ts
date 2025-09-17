@@ -44,11 +44,16 @@ interface OnboardingAnalysis {
 export class AIOnboardingAnalyzer {
   private openaiKey: string
   private claudeKey: string
+  private allowFallback: boolean
 
-  constructor() {
+  constructor(options?: { allowFallback?: boolean }) {
     // SECURITY: Never log API keys - only load from environment variables
     this.openaiKey = process.env.OPENAI_API_KEY || ''
     this.claudeKey = process.env.CLAUDE_API_KEY || ''
+    const envAllowFallback = process.env.ALLOW_AI_FALLBACK === 'true'
+    this.allowFallback = (typeof options?.allowFallback === 'boolean')
+      ? Boolean(options?.allowFallback)
+      : envAllowFallback
   }
 
   async analyzeOnboardingAndGenerateQuestions(
@@ -90,7 +95,7 @@ ONBOARDING DATA:
 - Safety: Crisis Support: ${onboardingData.safety.crisisSupport}, Content Warnings: ${onboardingData.safety.contentWarnings}, Skip Triggers: ${onboardingData.safety.skipTriggers}
 
 ANALYZE AND PROVIDE:
-1. Recommended number of diagnostic questions (MUST be between 3-8 based on engagement, time, and depth)
+1. Recommended number of diagnostic questions (MUST be between 4-10 based on engagement, time, and depth)
 2. Primary focus areas for this client
 3. Optimal communication style
 4. Appropriate intensity level
@@ -98,16 +103,17 @@ ANALYZE AND PROVIDE:
 6. Safety considerations
 7. Custom question categories based on their goals
 
-IMPORTANT: The question count must be between 3-8 questions maximum. Consider:
-- Passive engagement = 3-4 questions
-- Moderate engagement = 5-6 questions  
-- High engagement = 7-8 questions
-- 15min time commitment = 3-4 questions
-- 30min time commitment = 5-6 questions
-- 60min time commitment = 7-8 questions
-- Surface depth = 3-4 questions
-- Moderate depth = 5-6 questions
-- Deep depth = 7-8 questions
+IMPORTANT: The question count must be between 4-10 questions. Consider:
+- Passive engagement = 4-5 questions
+- Moderate engagement = 6-8 questions  
+- Active engagement = 8-10 questions
+- 5min time commitment = 4 questions
+- 15min time commitment = 5-6 questions
+- 30min time commitment = 7-8 questions
+- 60min time commitment = 9-10 questions
+- Surface depth = 4-5 questions
+- Moderate depth = 6-7 questions
+- Deep/Profound depth = 8-10 questions
 
 Respond in JSON format:
 {
@@ -157,7 +163,7 @@ Respond in JSON format:
             
             // Validate and enforce question count limits
             if (analysis.recommendedQuestionCount) {
-              analysis.recommendedQuestionCount = Math.max(3, Math.min(8, analysis.recommendedQuestionCount))
+              analysis.recommendedQuestionCount = Math.max(4, Math.min(10, analysis.recommendedQuestionCount))
               console.log(`Adjusted question count to: ${analysis.recommendedQuestionCount}`)
             }
             
@@ -209,7 +215,7 @@ Respond in JSON format:
             
             // Validate and enforce question count limits
             if (analysis.recommendedQuestionCount) {
-              analysis.recommendedQuestionCount = Math.max(3, Math.min(8, analysis.recommendedQuestionCount))
+              analysis.recommendedQuestionCount = Math.max(4, Math.min(10, analysis.recommendedQuestionCount))
               console.log(`Adjusted question count to: ${analysis.recommendedQuestionCount}`)
             }
             
@@ -229,8 +235,11 @@ Respond in JSON format:
       }
     }
 
-    // If both AI services fail or no keys, use a deterministic fallback
-    console.log('Both OpenAI and Claude failed, using fallback analysis')
+    // If both AI services fail or no keys
+    if (!this.allowFallback) {
+      throw new Error('AI analysis unavailable and fallback disabled')
+    }
+    console.log('Both OpenAI and Claude failed, using fallback analysis (allowed)')
     return this.getFallbackAnalysis(onboardingData)
   }
 
@@ -389,38 +398,47 @@ Respond in JSON format:
       }
     }
 
-    // If both AI services fail, use fallback question
-    console.log(`Both AI services failed for question ${questionNumber}, using fallback...`)
+    // If both AI services fail
+    if (!this.allowFallback) {
+      throw new Error('AI question generation unavailable and fallback disabled')
+    }
+    console.log(`Both AI services failed for question ${questionNumber}, using fallback (allowed)...`)
     return this.getFallbackQuestion(questionNumber, onboardingData, analysis)
   }
 
   private getFallbackAnalysis(onboardingData: OnboardingData): OnboardingAnalysis {
-    // Determine question count based on engagement, time commitment, and depth (3-8 range)
-    let questionCount = 5 // default moderate
+    // Determine question count based on engagement, time commitment, and depth (4-10 range)
+    let questionCount = 6 // default moderate baseline
 
     // Adjust based on engagement level
     if (onboardingData.engagement === 'passive') {
-      questionCount = 3
-    } else if (onboardingData.engagement === 'challenging') {
-      questionCount = 7
+      questionCount = 5
+    } else if (onboardingData.engagement === 'active') {
+      questionCount = 8
     }
 
-    // Adjust based on time commitment
-    if (onboardingData.timeCommitment === '15min') {
+    // Adjust based on time commitment caps
+    if (onboardingData.timeCommitment === '5min') {
       questionCount = Math.min(questionCount, 4)
+    } else if (onboardingData.timeCommitment === '15min') {
+      questionCount = Math.min(questionCount, 6)
+    } else if (onboardingData.timeCommitment === '30min') {
+      questionCount = Math.min(questionCount, 8)
     } else if (onboardingData.timeCommitment === '60min') {
-      questionCount = Math.min(questionCount, 8)
+      questionCount = Math.min(questionCount, 10)
     }
 
-    // Adjust based on depth preference
+    // Adjust based on depth preference caps
     if (onboardingData.depth === 'surface') {
-      questionCount = Math.min(questionCount, 4)
-    } else if (onboardingData.depth === 'deep') {
-      questionCount = Math.min(questionCount, 8)
+      questionCount = Math.min(questionCount, 5)
+    } else if (onboardingData.depth === 'moderate') {
+      questionCount = Math.max(6, Math.min(questionCount, 7))
+    } else if (onboardingData.depth === 'deep' || onboardingData.depth === 'profound') {
+      questionCount = Math.min(Math.max(questionCount, 8), 10)
     }
 
-    // Ensure question count is within 3-8 range
-    questionCount = Math.max(3, Math.min(8, questionCount))
+    // Ensure question count is within 4-10 range
+    questionCount = Math.max(4, Math.min(10, questionCount))
 
     // Determine focus areas based on goals
     const focusAreas = onboardingData.goals.length > 0 ? onboardingData.goals : ['general healing']
@@ -444,8 +462,8 @@ Respond in JSON format:
     const analysis = this.getFallbackAnalysis(onboardingData)
     const questions: DiagnosticQuestion[] = []
 
-    // Ensure we don't exceed 8 questions
-    const questionCount = Math.min(analysis.recommendedQuestionCount, 8)
+    // Ensure we don't exceed 10 questions
+    const questionCount = Math.min(analysis.recommendedQuestionCount, 10)
     console.log(`Generating ${questionCount} fallback questions`)
 
     for (let i = 1; i <= questionCount; i++) {

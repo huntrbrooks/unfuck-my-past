@@ -36,7 +36,9 @@ export async function GET() {
       hasSummaryRow = sum.length > 0
     }
 
-    const diagnosticCompleted = Boolean(hasSafetySummary || hasSummaryRow)
+    // Consider questions generated as a ready state that unlocks dashboard
+    const hasQuestions = Boolean(safetyData && Array.isArray(safetyData.personalizedQuestions) && safetyData.personalizedQuestions.length > 0)
+    const diagnosticCompleted = Boolean(hasSafetySummary || hasSummaryRow || hasQuestions)
 
     const nextStep = !onboardingCompleted ? 'onboarding' : (!diagnosticCompleted ? 'diagnostic' : 'unlocked')
 

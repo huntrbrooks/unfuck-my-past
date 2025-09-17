@@ -57,7 +57,7 @@ export default function Program() {
   const [error, setError] = useState('')
   const [hasAccess, setHasAccess] = useState(false)
   const [checkingAccess, setCheckingAccess] = useState(true)
-  const [weatherData, setWeatherData] = useState<{
+  const [weatherData] = useState<{
     insight: {
       weatherSummary: string;
       activityRecommendations: string;
@@ -65,7 +65,6 @@ export default function Program() {
       seasonalPractices: string;
     }
   } | null>(null)
-  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'pending'>('pending')
   const [completedDays, setCompletedDays] = useState<Set<number>>(new Set())
   const [completingDay, setCompletingDay] = useState(false)
   const [showNextDayButton, setShowNextDayButton] = useState(false)
@@ -102,9 +101,7 @@ export default function Program() {
     holistic: false,
   })
   const [isStructuredDay, setIsStructuredDay] = useState(false)
-  const [locationQuery, setLocationQuery] = useState('')
-  const [resolvingLocation, setResolvingLocation] = useState(false)
-  const [countryCode, setCountryCode] = useState('')
+  
   const [reflectionSelected, setReflectionSelected] = useState<Set<number>>(new Set())
   const [reflectionAnswerMode, setReflectionAnswerMode] = useState(false)
   const [reflectionDraftAnswers, setReflectionDraftAnswers] = useState<Record<number, string>>({})
@@ -116,12 +113,7 @@ export default function Program() {
   const [showMiniJournalInsights, setShowMiniJournalInsights] = useState(false)
   const [pendingJournal, setPendingJournal] = useState<{ content: string; mood?: string; insights?: string[] } | null>(null)
 
-  useEffect(() => {
-    if (typeof navigator !== 'undefined' && navigator.language && !countryCode) {
-      const parts = navigator.language.split('-')
-      if (parts[1]) setCountryCode(parts[1].toUpperCase())
-    }
-  }, [])
+  // No geolocation/location support for weather
 
   useEffect(() => {
     // Reset per-day UI state when day changes
@@ -233,6 +225,59 @@ export default function Program() {
   // Section-specific completion helpers
   const SLEEP_EXTRA_INDICES = [10001, 10002, 10010, 10011, 10012]
   const areAllChecked = (done: Set<number>, indices: number[]): boolean => indices.every(i => done.has(i))
+
+  // Weather & Environment completion:
+  // - If legacy warm/cold format: complete when one sub-list fully checked
+  // - If insight format (Current Weather & Environment): complete when all bullets under
+  //   Activity Recommendations and Environmental Adaptations are checked
+  const isWeatherSectionDone = (): boolean => {
+    if (!currentDay) return sectionCompleted.weather
+    const lines = currentDay.content.weather.split('\n')
+    const done = (sectionTaskCompleted.weather || new Set<number>()) as Set<number>
+
+    // Detect insight mode
+    const hasInsightHeader = /Current\s+Weather\s*&\s*Environment/i.test(currentDay.content.weather)
+    if (hasInsightHeader) {
+      const recIndices: number[] = []
+      const envIndices: number[] = []
+      let inRec = false
+      let inEnv = false
+      for (let i = 0; i < lines.length; i++) {
+        const t = (lines[i] || '').trim()
+        if (!t) continue
+        if (/^Activity\s+Recommendations:\s*$/i.test(t)) { inRec = true; inEnv = false; continue }
+        if (/^Environmental\s+Adaptations:\s*$/i.test(t)) { inRec = false; inEnv = true; continue }
+        if (/^Seasonal\s+Practices:\s*$/i.test(t)) { inRec = false; inEnv = false; continue }
+        if (isTaskLine(t)) {
+          if (inRec) recIndices.push(i)
+          else if (inEnv) envIndices.push(i)
+        }
+      }
+      const recDone = recIndices.length ? areAllChecked(done, recIndices) : true
+      const envDone = envIndices.length ? areAllChecked(done, envIndices) : true
+      return sectionCompleted.weather || (recDone && envDone)
+    } else {
+      // Legacy warm/cold mode
+      let inWarm = false
+      let inCold = false
+      const warmTaskIndices: number[] = []
+      const coldTaskIndices: number[] = []
+      for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i] ?? ''
+        const line = raw.trim()
+        if (!line) continue
+        if (/^Warm\s*&\s*Sunny:?$/i.test(line)) { inWarm = true; inCold = false; continue }
+        if (/^Cold\s*&\s*Raining:?$/i.test(line)) { inWarm = false; inCold = true; continue }
+        if (isTaskLine(line)) {
+          if (inWarm) warmTaskIndices.push(i)
+          else if (inCold) coldTaskIndices.push(i)
+        }
+      }
+      const warmComplete = warmTaskIndices.length > 0 && areAllChecked(done, warmTaskIndices)
+      const coldComplete = coldTaskIndices.length > 0 && areAllChecked(done, coldTaskIndices)
+      return sectionCompleted.weather || warmComplete || coldComplete
+    }
+  }
 
   const isSleepSectionDone = (): boolean => {
     if (!currentDay) return sectionCompleted.sleep
@@ -467,15 +512,9 @@ export default function Program() {
     checkProgramAccess()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const requestLocationPermission = async () => {
-    // Weather location feature removed per product decision
-    setLocationPermission('denied')
-  }
+  // Geolocation disabled per product decision
 
-  const resolveManualLocation = async () => {
-    // Manual location resolution removed
-    setResolvingLocation(false)
-  }
+  // Manual location resolution disabled
 
   const checkProgramAccess = async () => {
     try {
@@ -712,8 +751,8 @@ export default function Program() {
       if (!sections.reflection) sections.reflection = pick(3)
     }
 
-    // Do not override; use AI-provided static warm/cold lists
-    sections.weather = sections.weather || 'Warm & Sunny:\n• 10–15 min sunlight walk\n• Ground barefoot on grass\n• Sunlit spot, 5-min warmth meditation\n\nCold & Raining:\n• Indoor mobility flow (10 min)\n• Hot shower ritual\n• Window‑gazing, 3‑min naming practice'
+    // Always use static 3-suggestion lists per subheading
+    sections.weather = 'Warm & Sunny:\n• 10–15 min sunlight walk\n• Ground barefoot on grass\n• Sunlit spot, 5-min warmth meditation\n\nCold & Raining:\n• Indoor mobility flow (10 min)\n• Hot shower ritual\n• Window‑gazing, 3‑min naming practice'
 
     // Ensure all sections have content
     sections.mainFocus = sanitizeFocus(sections.mainFocus) || (() => {
@@ -1196,7 +1235,7 @@ export default function Program() {
       isSectionDone('challenge', currentDay.content.challenge.split('\n')) &&
       isSectionDone('journalingPrompt') &&
       isSectionDone('reflection') &&
-      isSectionDone('weather') &&
+      isWeatherSectionDone() &&
       isSleepSectionDone() &&
       isHolisticSectionDone()
     if (othersDone && !sectionCompleted.mainFocus) {
@@ -1780,7 +1819,7 @@ export default function Program() {
                           className="text-left"
                         >
                           <h5 className="font-semibold neon-glow-teal flex items-center gap-2 text-lg">
-                            <Sun className={`h-5 w-5 ${isSectionDone('weather') ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#f59e0b]'}`} />
+                            <Sun className={`h-5 w-5 ${isWeatherSectionDone() ? 'text-[#ccff00] drop-shadow-[0_0_8px_#ccff00]' : 'text-black dark:text-white drop-shadow-[0_0_8px_#f59e0b]'}`} />
                         Weather & Environment
                             <span className="ml-2 text-muted-foreground">{sectionCollapsed.weather ? '▼' : '▲'}</span>
                       </h5>
@@ -1789,25 +1828,62 @@ export default function Program() {
                           <input
                             id="chk-weather"
                             type="checkbox"
-                            checked={isSectionDone('weather')}
+                            checked={isWeatherSectionDone()}
                             onChange={() => toggleSectionCompleted('weather')}
                             aria-label="Mark Weather & Environment as completed"
                           />
-                          {isSectionDone('weather') && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
+                          {isWeatherSectionDone() && <span className="text-sm text-[#ccff00] drop-shadow-[0_0_10px_#ccff00]">(Completed)</span>}
                         </label>
                       </div>
                       {!sectionCollapsed.weather && (
-                        <div id="section-weather" className={`whitespace-pre-line leading-relaxed space-y-3 ${isSectionDone('weather') ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                        <div id="section-weather" className={`whitespace-pre-line leading-relaxed space-y-3 ${isWeatherSectionDone() ? 'text-[#ccff00]' : 'text-foreground'}`}>
+                          {/* Weather insight header removed; static suggestions only */}
                         {(() => {
                           const lines = currentDay.content.weather.split('\n')
+                          const done = (sectionTaskCompleted.weather || new Set()) as Set<number>
+
+                          // First pass: gather task indices per subheading
+                          let passWarm = false
+                          let passCold = false
+                          const warmTaskIndices: number[] = []
+                          const coldTaskIndices: number[] = []
+                          for (let i = 0; i < lines.length; i++) {
+                            const line = (lines[i] || '').trim()
+                            if (!line) continue
+                            if (/^Warm\s*&\s*Sunny:?$/i.test(line)) { passWarm = true; passCold = false; continue }
+                            if (/^Cold\s*&\s*Raining:?$/i.test(line)) { passWarm = false; passCold = true; continue }
+                            if (isTaskLine(line)) {
+                              if (passWarm) warmTaskIndices.push(i)
+                              else if (passCold) coldTaskIndices.push(i)
+                            }
+                          }
+
+                          const warmComplete = warmTaskIndices.length > 0 && warmTaskIndices.every(i => done.has(i))
+                          const coldComplete = coldTaskIndices.length > 0 && coldTaskIndices.every(i => done.has(i))
+                          const hideWarm = coldComplete && !warmComplete
+                          const hideCold = warmComplete && !coldComplete
+
+                          // Second pass: render while optionally hiding the other subheading
                           let inWarm = false
                           let inCold = false
+                          let skipWarm = false
+                          let skipCold = false
+
                           return lines.map((raw, index) => {
-                            const line = raw.trim()
+                            const line = (raw || '').trim()
                             if (!line) return null
-                            if (/^Warm\s*&\s*Sunny:?$/i.test(line)) { inWarm = true; inCold = false; return <div key={index} className="font-semibold underline text-foreground">Warm & Sunny:</div> }
-                            if (/^Cold\s*&\s*Raining:?$/i.test(line)) { inWarm = false; inCold = true; return <div key={index} className="font-semibold underline text-foreground">Cold & Raining:</div> }
+                            if (/^Warm\s*&\s*Sunny:?$/i.test(line)) {
+                              inWarm = true; inCold = false; skipWarm = hideWarm
+                              if (skipWarm) return null
+                              return <div key={index} className="font-semibold underline text-foreground">Warm & Sunny:</div>
+                            }
+                            if (/^Cold\s*&\s*Raining:?$/i.test(line)) {
+                              inWarm = false; inCold = true; skipCold = hideCold
+                              if (skipCold) return null
+                              return <div key={index} className="font-semibold underline text-foreground">Cold & Raining:</div>
+                            }
                             if (line.startsWith('•')) {
+                              if ((inWarm && skipWarm) || (inCold && skipCold)) return null
                               const checked = (sectionTaskCompleted.weather || new Set()).has(index)
                               return (
                                 <label key={index} className="flex items-start gap-2 cursor-pointer">
@@ -1816,9 +1892,8 @@ export default function Program() {
                                 </label>
                               )
                             }
-                            // Ignore any old header tokens
                             if (line.startsWith('🌤️')) return null
-                            // Render any plain text lines as context
+                            if ((inWarm && skipWarm) || (inCold && skipCold)) return null
                             return <div key={index} className="font-medium text-foreground">{renderQuotedText(line)}</div>
                           })
                         })()}

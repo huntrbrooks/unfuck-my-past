@@ -12,7 +12,6 @@ function unauthorized() {
 const devPublicApi = process.env.NODE_ENV !== 'production' ? ['/api/:path*'] : []
 const isPublicRoute = createRouteMatcher([
   '/',
-  '/_not-found',
   '/how-it-works',
   '/legal(.*)',
   '/sign-in(.*)',
