@@ -16,6 +16,8 @@ const isPublicRoute = createRouteMatcher([
   '/legal(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  // Allow Clerk internal auth endpoints (handshake, callbacks, etc.)
+  '/api/auth(.*)',
   // Public APIs that don't require auth
   '/api/diagnostic-lite',
   '/api/diagnostic/preview',

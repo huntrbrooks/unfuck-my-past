@@ -52,7 +52,15 @@ export default async function RootLayout({
   const initialThemeFromCookie = cookieStore.get('theme')?.value
   const isDarkFromCookie = initialThemeFromCookie === 'dark'
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      afterSignInUrl="/onboarding"
+      afterSignUpUrl="/onboarding"
+      proxyUrl={process.env.NEXT_PUBLIC_CLERK_PROXY_URL}
+      domain={process.env.NEXT_PUBLIC_CLERK_DOMAIN}
+    >
       <html lang="en" className={`${dmSans.variable} ${GeistMono.variable} ${isDarkFromCookie ? 'dark' : ''}`} suppressHydrationWarning={true}>
         <body className="font-sans antialiased" suppressHydrationWarning={true}>
           <Script id="apply-initial-theme" strategy="beforeInteractive">
