@@ -303,7 +303,8 @@ Respond in JSON format:
 }
 `
 
-    // Try OpenAI first (only if available)
+    // Try OpenAI first (if configured). On failure, try Claude (if configured).
+    let lastError: unknown = null
     if (this.openaiKey) {
       try {
         console.log(`Attempting OpenAI question ${questionNumber}...`)
@@ -333,74 +334,72 @@ Respond in JSON format:
         if (response.ok) {
           const data = await response.json()
           const questionText = data.choices[0].message.content
-          
           try {
             const question = JSON.parse(questionText)
             console.log(`OpenAI question ${questionNumber} successful`)
             return question
-          } catch {
-            console.log(`OpenAI question ${questionNumber} parsing failed, using fallback...`)
-            throw new Error('Failed to parse OpenAI response')
+          } catch (parseErr) {
+            console.log(`OpenAI question ${questionNumber} parsing failed; will try Claude if available...`)
+            lastError = parseErr
           }
         } else {
-          console.log(`OpenAI question ${questionNumber} failed, using fallback...`)
-          throw new Error('OpenAI request failed')
+          console.log(`OpenAI question ${questionNumber} failed with status ${response.status}; will try Claude if available...`)
+          lastError = new Error('OpenAI request failed')
         }
       } catch (openaiError) {
         console.log(`OpenAI question ${questionNumber} error:`, openaiError)
-        // Only try Claude if OpenAI completely fails
+        lastError = openaiError
       }
     }
 
-    // Try Claude only if OpenAI failed and Claude is available
-    if (!this.openaiKey || !this.openaiKey.trim()) {
-      if (this.claudeKey) {
-        try {
-          console.log(`Attempting Claude question ${questionNumber}...`)
-          const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                                    'x-api-key': this.claudeKey,
-              'Content-Type': 'application/json',
-              'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                                    model: 'claude-3-5-sonnet-20241022',
-              max_tokens: 1000,
-              messages: [
-                {
-                  role: 'user',
-                  content: prompt
-                }
-              ]
-            })
+    if (this.claudeKey) {
+      try {
+        console.log(`Attempting Claude question ${questionNumber}...`)
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': this.claudeKey,
+            'Content-Type': 'application/json',
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 1000,
+            messages: [
+              {
+                role: 'user',
+                content: prompt
+              }
+            ]
           })
+        })
 
-          if (response.ok) {
-            const data = await response.json()
-            const questionText = data.content[0].text
-            
-            try {
-              const question = JSON.parse(questionText)
-              console.log(`Claude question ${questionNumber} successful`)
-              return question
-            } catch {
-              console.log(`Claude question ${questionNumber} parsing failed, using fallback...`)
-              throw new Error('Failed to parse Claude response')
-            }
-          } else {
-            console.log(`Claude question ${questionNumber} failed, using fallback...`)
-            throw new Error('Claude request failed')
+        if (response.ok) {
+          const data = await response.json()
+          const questionText = data.content[0].text
+          try {
+            const question = JSON.parse(questionText)
+            console.log(`Claude question ${questionNumber} successful`)
+            return question
+          } catch (parseErr) {
+            console.log(`Claude question ${questionNumber} parsing failed`)
+            lastError = parseErr
           }
-        } catch (claudeError) {
-          console.log(`Claude question ${questionNumber} error:`, claudeError)
+        } else {
+          console.log(`Claude question ${questionNumber} failed with status ${response.status}`)
+          lastError = new Error('Claude request failed')
         }
+      } catch (claudeError) {
+        console.log(`Claude question ${questionNumber} error:`, claudeError)
+        lastError = claudeError
       }
     }
 
     // If both AI services fail
     if (!this.allowFallback) {
-      throw new Error('AI question generation unavailable and fallback disabled')
+      // Preserve context from the last provider error if available
+      const message = lastError instanceof Error ? `${lastError.message}` : 'AI question generation unavailable and fallback disabled'
+      throw new Error(message)
     }
     console.log(`Both AI services failed for question ${questionNumber}, using fallback (allowed)...`)
     return this.getFallbackQuestion(questionNumber, onboardingData, analysis)

@@ -6,6 +6,9 @@ import { eq } from 'drizzle-orm'
 import { AIOnboardingAnalyzer } from '../../../../lib/ai-onboarding-analyzer'
 import { HSI_QUESTIONS } from '@/lib/hsi'
 
+// Ensure Node.js runtime for DB driver compatibility and external fetches
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     // Dev/preview failure switch

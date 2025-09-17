@@ -28,6 +28,9 @@ const isPublicRoute = createRouteMatcher([
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   const path = req.nextUrl.pathname
+  // Avoid literal type narrowing of NODE_ENV during build by reading via indexer
+  const env = process.env["NODE_ENV"] || 'production'
+  const isDevEnv = env === 'development'
 
   // Protect admin routes with Basic Auth (env-configurable). Defaults provided per request.
   if (path.startsWith('/admin') || path.startsWith('/api/admin')) {
@@ -56,9 +59,9 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     return NextResponse.next()
   }
 
-  // If Clerk is not configured, skip
+  // If Clerk is not configured OR we are in development, do not enforce auth in middleware
   const hasClerkKeys = !!process.env.CLERK_SECRET_KEY && !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-  if (!hasClerkKeys) {
+  if (!hasClerkKeys || isDevEnv) {
     return NextResponse.next()
   }
 
@@ -68,7 +71,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     req.cookies.has('__clerk_db') ||
     req.cookies.has('__clerk') ||
     req.cookies.has('__clerk_uid')
-  if (!hasDevBrowserCookie && process.env.NODE_ENV !== 'development') {
+  if (!hasDevBrowserCookie && !isDevEnv) {
     return NextResponse.next()
   }
 

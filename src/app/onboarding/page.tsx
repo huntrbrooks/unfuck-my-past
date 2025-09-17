@@ -53,10 +53,11 @@ export default function OnboardingPage() {
   }
   const [pendingData, setPendingData] = React.useState<OnboardingPayload | null>(null)
 
-  // Redirect if not signed in
+  // Redirect to sign-in only in production; in development allow anonymous onboarding
   React.useEffect(() => {
-    if (isLoaded && !user) {
-      router.push('/sign-in')
+    const requireAuth = process.env.NODE_ENV === 'production'
+    if (requireAuth && isLoaded && !user) {
+      router.push('/sign-in?redirect=/onboarding')
     }
   }, [isLoaded, user, router])
 
@@ -207,7 +208,7 @@ export default function OnboardingPage() {
     })()
   }, [user])
 
-  if (!isLoaded || !user) {
+  if (process.env.NODE_ENV === 'production' && (!isLoaded || !user)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

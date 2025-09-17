@@ -38,7 +38,13 @@ export default function Diagnostic() {
   // Removed userPreferences state as it's not currently used
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false)
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false)
-  const [showLoader, setShowLoader] = useState(false)
+  // Initialize loader visibility from URL on first render to prevent a flash of the
+  // "No Questions Available" screen when coming directly from onboarding
+  const [showLoader, setShowLoader] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const href = window.location.href
+    return href.includes('generating=true') || href.includes('#generating=true')
+  })
   const [loaderStep, setLoaderStep] = useState(1)
   const [showReadyPrompt, setShowReadyPrompt] = useState(false)
   const [generationFailed, setGenerationFailed] = useState(false)
@@ -485,11 +491,13 @@ export default function Diagnostic() {
 
   const testAIServices = async () => {
     try {
-      const message = await fetch('/api/diagnostic/test-ai', {
-        method: 'POST',
-      }).then(res => res.json()).then(data => data.message)
-      
-      alert(message)
+      // Use the real connectivity tester which actually calls providers
+      const result = await fetch('/api/test-ai', { method: 'GET' }).then(res => res.json())
+      const openai = result?.results?.openai?.available ? 'OpenAI' : null
+      const claude = result?.results?.claude?.available ? 'Claude' : null
+      const parts = [openai, claude].filter(Boolean)
+      const label = parts.length ? parts.join(' + ') : 'None'
+      alert(`AI services reachable: ${label}. (${result?.timestamp ? 'live check' : 'unknown'})`)
     } catch (error) {
       console.error('Error testing AI services:', error)
       alert('Failed to test AI services')
